@@ -32,7 +32,7 @@ programs_args = {
 
 
 class ProgramSchema(marshmallow.Schema):  # noqa
-    id = fields.Integer(required=True)
+    id = fields.String(required=True)
 
     class Meta:
         strict = True
@@ -67,13 +67,14 @@ async def handle_programs(request):
     args = await webargs.aiohttpparser.parser.parse(programs_args, request)
     program_code = args['program_code']
     program_id = httpstan.program.calculate_program_id(program_code)
-    module_bytes = await httpstan.cache.load_program_extension_module(program_id, request.app['db'])
-    if module_bytes is not None:
+    try:
+        module_bytes = await httpstan.cache.load_program_extension_module(program_id, request.app['db'])
+    except KeyError:
+        logger.info('Compiling Stan Program. Program id is {}.'.format(program_id))
+        module_bytes = await httpstan.program.compile_program_extension_module(program_code)
+        await httpstan.cache.dump_program_extension_module(program_id, module_bytes, request.app['db'])
+    else:
         logger.info('Found Stan Program in cache. Program id is {}.'.format(program_id))
-        return aiohttp.web.json_response({'program': {'id': program_id}})
-    logger.info('Compiling Stan Program. Program id is {}.'.format(program_id))
-    module_bytes = await httpstan.program.compile_program_extension_module(program_code)
-    await httpstan.cache.dump_program_extension_module(program_id, module_bytes, request.app['db'])
     return aiohttp.web.json_response(ProgramSchema(strict=True).dump({'id': program_id}).data)
 
 

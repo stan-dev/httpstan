@@ -90,7 +90,8 @@ async def call_sample(function_name: str, program_module, data: dict,
                      random_seed, chain, init_radius, num_warmup, num_samples)
     parser = StanMessageParser()
     # WISHLIST: can one use ProcessPoolExecutor somehow on Linux and OSX?
-    future = asyncio.get_event_loop().run_in_executor(None, function_wrapper, *function_args)
+    loop = asyncio.get_event_loop()
+    future = asyncio.ensure_future(loop.run_in_executor(None, function_wrapper, *function_args))
     while True:
         try:
             message = queue_wrapper.get_nowait()

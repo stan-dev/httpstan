@@ -94,5 +94,5 @@ async def load_program_extension_module(program_id: str, db: lmdb.Environment) -
     with db.begin(write=False) as txn:
         compressed = txn.get(program_id.encode())
     if compressed is None:
-        raise ValueError(f'Extension module for id `{program_id}` not found.')
+        raise KeyError(f'Extension module for id `{program_id}` not found.')
     return await asyncio.get_event_loop().run_in_executor(None, lzma.decompress, compressed)

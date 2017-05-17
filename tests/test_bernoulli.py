@@ -47,7 +47,7 @@ def test_bernoulli(loop_with_server):
             payload = {'program_code': program_code}
             async with session.post(programs_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200
-                program_id = (await resp.json())['program']['id']
+                program_id = (await resp.json())['id']
 
             programs_actions_url = 'http://{}:{}/v1/programs/{}/actions'.format(host, port, program_id)
             payload = {'type': 'hmc_nuts_diag_e_adapt', 'data': data}
@@ -64,7 +64,7 @@ def test_bernoulli_parallel(loop_with_server):
             payload = {'program_code': program_code}
             async with session.post(programs_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200
-                program_id = (await resp.json())['program']['id']
+                program_id = (await resp.json())['id']
 
         programs_actions_url = 'http://{}:{}/v1/programs/{}/actions'.format(host, port, program_id)
         payload = {'type': 'hmc_nuts_diag_e_adapt', 'data': data}

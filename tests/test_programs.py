@@ -17,6 +17,6 @@ def test_programs(loop_with_server):
             async with session.post(url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 200
                 payload = await resp.json()
-                assert 'program' in payload and 'id' in payload['program']
+                assert 'id' in payload
 
     loop_with_server.run_until_complete(main(loop_with_server))
