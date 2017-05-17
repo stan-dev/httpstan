@@ -1,0 +1,30 @@
+language: cpp
+
+sudo: false
+
+os:
+  - linux
+  
+compiler:
+  - clang
+  - gcc
+
+before_install: make math-revert
+
+before_script: echo "CC=$CXX" > make/local
+
+matrix:
+  fast_finish: true
+
+env:
+  -  TESTFOLDER=src/test/unit/callbacks
+  -  TESTFOLDER=src/test/unit/io
+  -  TESTFOLDER=src/test/unit/lang
+  -  TESTFOLDER=src/test/unit/mcmc
+  -  TESTFOLDER=src/test/unit/model
+  -  TESTFOLDER=src/test/unit/optimization
+  -  TESTFOLDER=src/test/unit/services
+  -  TESTFOLDER=src/test/unit/variational
+  -  TESTFOLDER=src/test/unit/version_test.cpp
+
+script: ./runTests.py -j2 $TESTFOLDER
