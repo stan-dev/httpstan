@@ -11,7 +11,6 @@ headers = {'content-type': 'application/json'}
 
 def test_programs_actions(loop_with_server):
     """Simple test of sampling."""
-
     async def main(loop):
         async with aiohttp.ClientSession() as session:
             data = {'program_code': program_code}
@@ -42,7 +41,6 @@ def test_programs_actions(loop_with_server):
 
 def test_programs_actions_bad_args(loop_with_server):
     """Test handler argument handling."""
-
     async def main(loop):
         async with aiohttp.ClientSession() as session:
             data = {'program_code': program_code}

@@ -34,7 +34,7 @@ programs_args = {
 class ProgramSchema(marshmallow.Schema):  # noqa
     id = fields.String(required=True)
 
-    class Meta:
+    class Meta:  # noqa
         strict = True
 
 
@@ -89,7 +89,7 @@ class ProgramActionSchema(marshmallow.Schema):  # noqa
     num_warmup = fields.Integer(missing=1000)
     num_samples = fields.Integer(missing=1000)
 
-    class Meta:
+    class Meta:  # noqa
         strict = True
 
 
