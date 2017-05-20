@@ -11,7 +11,9 @@ import os
 import string
 import sys
 import tempfile
-from typing import Optional, List
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import Cython
 import Cython.Build
@@ -188,10 +190,10 @@ def _build_extension_module(program_id: str, cpp_code: str, pyx_code_template: s
             os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math_2.15.0', 'lib', 'cvodes_2.9.0', 'include'),
         ]
 
-        stan_macros = [
-            ('BOOST_RESULT_OF_USE_TR1', ''),
-            ('BOOST_NO_DECLTYPE', ''),
-            ('BOOST_DISABLE_ASSERTS', ''),
+        stan_macros: List[Tuple[str, Optional[str]]] = [
+            ('BOOST_RESULT_OF_USE_TR1', None),
+            ('BOOST_NO_DECLTYPE', None),
+            ('BOOST_DISABLE_ASSERTS', None),
         ]
 
         if extra_compile_args is None:
