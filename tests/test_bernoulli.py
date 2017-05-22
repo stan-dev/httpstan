@@ -42,7 +42,7 @@ async def validate_samples(resp):
 
 def test_bernoulli(loop_with_server):
     """Test sampling from Bernoulli program with defaults."""
-    async def main(loop):
+    async def main():
         async with aiohttp.ClientSession() as session:
             payload = {'program_code': program_code}
             async with session.post(programs_url, data=json.dumps(payload), headers=headers) as resp:
@@ -54,12 +54,12 @@ def test_bernoulli(loop_with_server):
             async with session.post(programs_actions_url, data=json.dumps(payload), headers=headers) as resp:
                 await validate_samples(resp)
 
-    loop_with_server.run_until_complete(main(loop_with_server))
+    loop_with_server.run_until_complete(main())
 
 
 def test_bernoulli_parallel(loop_with_server):
     """Test sampling from Bernoulli program in parallel."""
-    async def main(loop):
+    async def main():
         async with aiohttp.ClientSession() as session:
             payload = {'program_code': program_code}
             async with session.post(programs_url, data=json.dumps(payload), headers=headers) as resp:
@@ -73,6 +73,7 @@ def test_bernoulli_parallel(loop_with_server):
         # this must be run in an executor because loop is managing the server
         request_function = functools.partial(requests.post, programs_actions_url, json=payload)
         t0 = time.time()
+        loop = asyncio.get_event_loop()
         r = await loop.run_in_executor(None, request_function)
         elapsed = time.time() - t0
 
@@ -85,4 +86,4 @@ def test_bernoulli_parallel(loop_with_server):
             assert r.text
         assert (time.time() - t0) < num_threads * elapsed
 
-    loop_with_server.run_until_complete(main(loop_with_server))
+    loop_with_server.run_until_complete(main())

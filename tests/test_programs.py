@@ -11,7 +11,7 @@ headers = {'content-type': 'application/json'}
 
 def test_programs(loop_with_server):
     """Test compilation of an extension module."""
-    async def main(loop):
+    async def main():
         async with aiohttp.ClientSession() as session:
             data = {'program_code': program_code}
             async with session.post(url, data=json.dumps(data), headers=headers) as resp:
@@ -19,4 +19,4 @@ def test_programs(loop_with_server):
                 payload = await resp.json()
                 assert 'id' in payload
 
-    loop_with_server.run_until_complete(main(loop_with_server))
+    loop_with_server.run_until_complete(main())
