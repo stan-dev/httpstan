@@ -3,6 +3,9 @@ import aiohttp
 import json
 import statistics
 
+import httpstan.callbacks_writer_pb2
+
+
 host, port = '127.0.0.1', 8080
 programs_url = 'http://{}:{}/v1/programs'.format(host, port)
 program_code = 'parameters {real y;} model {y ~ normal(0,1);}'
@@ -30,11 +33,15 @@ def test_programs_actions(loop_with_server):
                     assert len(chunk)
                     payload = json.loads(chunk)
                     assert len(payload) > 0
-                    assert 'message' in payload, payload
-                    if payload['message']['writer'] == 'sample_writer':
-                        if isinstance(payload['message']['values'], dict):
-                            draws.append(payload['message']['values'])
-            assert -5 < statistics.mean(draw['y'] for draw in draws) < 5
+                    assert 'topic' in payload
+                    assert 'MESSAGE' in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
+                    assert 'SAMPLE' in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
+                    if payload['topic'] == 'SAMPLE':
+                        assert isinstance(payload['feature'], dict)
+                        if 'y' in payload['feature']:
+                            draws.append(payload['feature'])
+            assert len(draws) == 1000
+            assert -5 < statistics.mean(draw['y']['doubleList']['value'].pop() for draw in draws) < 5
 
     loop_with_server.run_until_complete(main(loop_with_server))
 

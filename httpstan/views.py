@@ -8,6 +8,7 @@ import logging
 import random
 
 import aiohttp.web
+import google.protobuf.json_format
 import marshmallow
 import marshmallow.fields as fields
 import marshmallow.validate as validate
@@ -146,6 +147,6 @@ async def handle_programs_actions(request):
                                                        args['chain'], args['init_radius'],
                                                        args['num_warmup'], args['num_samples']):
             assert message is not None, message
-            stream.write(json.dumps(message).encode())
+            stream.write(google.protobuf.json_format.MessageToJson(message).encode().replace(b'\n', b''))
             stream.write(b'\n')
     return stream

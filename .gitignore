@@ -57,7 +57,12 @@ ChangeLog
 # Files created by releasenotes build
 releasenotes/build
 
+# Caches
+.cache
+.mypy_cache
+
 # project-specific
 *.c
 *.cpp
 doc/source/openapi.json
+*_pb2.py

@@ -13,7 +13,7 @@ import sys
 import tempfile
 from typing import List
 from typing import Optional
-from typing import Tuple
+from typing import Tuple  # noqa: flake8 bug, #118
 
 import Cython
 import Cython.Build
