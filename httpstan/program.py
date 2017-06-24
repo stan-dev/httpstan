@@ -184,10 +184,10 @@ def _build_extension_module(program_id: str, cpp_code: str, pyx_code_template: s
             httpstan_dir,  # for queue_writer.hpp
             temporary_dir,
             os.path.join(httpstan_dir, 'lib', 'stan', 'src'),
-            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math_2.15.0'),
-            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math_2.15.0', 'lib', 'eigen_3.2.9'),
-            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math_2.15.0', 'lib', 'boost_1.62.0'),
-            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math_2.15.0', 'lib', 'cvodes_2.9.0', 'include'),
+            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math'),
+            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math', 'lib', 'eigen_3.3.3'),
+            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math', 'lib', 'boost_1.62.0'),
+            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math', 'lib', 'cvodes_2.9.0', 'include'),
         ]
 
         stan_macros: List[Tuple[str, Optional[str]]] = [
