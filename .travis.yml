@@ -4,9 +4,14 @@ language: python
 python:
   - "3.6"
   - "nightly"
-compiler:
-  - gcc
-  - clang
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-5
+before_install:
+  - CC=gcc-5 CXX=g++-5
 install:
   - pip install cython
   - pip install tox
