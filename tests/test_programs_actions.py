@@ -34,7 +34,7 @@ def test_programs_actions(loop_with_server):
                     payload = json.loads(chunk)
                     assert len(payload) > 0
                     assert 'topic' in payload
-                    assert 'MESSAGE' in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
+                    assert 'LOGGER' in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
                     assert 'SAMPLE' in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
                     if payload['topic'] == 'SAMPLE':
                         assert isinstance(payload['feature'], dict)
