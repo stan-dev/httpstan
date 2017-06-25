@@ -4,6 +4,8 @@ language: python
 python:
   - "3.6"
   - "nightly"
+env:
+  - CC=gcc-5 CXX=g++-5
 addons:
   apt:
     sources:
@@ -11,7 +13,9 @@ addons:
     packages:
       - g++-5
 before_install:
-  - CC=gcc-5 CXX=g++-5
+  - $CC --version
+  - $CXX --version
+  - python --version
 install:
   - pip install cython
   - pip install tox
