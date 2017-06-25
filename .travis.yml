@@ -1,20 +1,18 @@
-sudo: false
 dist: trusty
+sudo: false
 language: python
 python:
   - "3.6"
   - "nightly"
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - g++-6
+compiler:
+  - gcc
+  - clang
 install:
   - pip install cython
   - pip install tox
 before_script:
   - make cython
+  - pip install grpcio-tools
+  - make protos
 script:
-  - export COMPILER_NAME=gcc CXX=g++-6 CC=gcc-6
   - travis_wait 60 tox

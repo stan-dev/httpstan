@@ -198,9 +198,12 @@ def _build_extension_module(program_id: str, cpp_code: str, pyx_code_template: s
 
         if extra_compile_args is None:
             if sys.platform.startswith('win'):
-                extra_compile_args = ['/EHsc']
+                extra_compile_args = ['/EHsc', '-DBOOST_DATE_TIME_NO_LIB']
             else:
-                extra_compile_args = ['-O3', '-std=c++11']
+                extra_compile_args = [
+                    '-O3',
+                    '-std=c++11',
+                ]
 
         build_extension = Cython.Build.Inline._get_build_extension()
 
