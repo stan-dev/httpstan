@@ -6,9 +6,8 @@ package stan;
 // WriterMessage is a data format for all messages written by the callback
 // writers defined in stan::callbacks.  These writers are used by the functions
 // defined in stan::services. For example, stan::services::sample::hmc_nuts_diag_e
-// uses five writers:
-// * `message_writer` Writer for messages
-// * `error_writer` Writer for messages
+// uses one logger and three writers:
+// * `logger` Logger for informational and error messages
 // * `init_writer` Writer callback for unconstrained inits
 // * `sample_writer` Writer for draws
 // * `diagnostic_writer` Writer for diagnostic information
@@ -104,11 +103,10 @@ message WriterMessage {
 
   enum Topic {
     UNKNOWN = 0;
-    MESSAGE = 1;         // non-error messages
-    ERROR = 2;           // error messages
-    INITIALIZATION = 3;  // unconstrained inits
-    SAMPLE = 4;          // draws
-    DIAGNOSTIC = 5;      // diagnostic information
+    LOGGER = 1;          // logger messages
+    INITIALIZATION = 2;  // unconstrained inits
+    SAMPLE = 3;          // draws
+    DIAGNOSTIC = 4;      // diagnostic information
   }
 
   Topic topic = 1;

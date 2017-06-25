@@ -58,18 +58,28 @@ cdef extern from "<stan/callbacks/writer.hpp>" namespace "stan::callbacks" nogil
     cdef cppclass writer:
         pass
 
+cdef extern from "<stan/callbacks/stream_logger.hpp>" namespace "stan::callbacks" nogil:
+    cdef cppclass logger:
+        pass
+
 
 cdef extern from "stan/callbacks/interrupt.hpp" namespace "stan::callbacks" nogil:
     cdef cppclass interrupt:
         void operator()()
 
 
-# httpstan custom callback writer
+# httpstan custom callbacks
 
 cdef extern from "queue_writer.hpp" namespace "stan::callbacks" nogil:
     cdef cppclass queue_writer(writer):
         queue_writer(boost.spsc_queue[string]* output)
         queue_writer(boost.spsc_queue[string]* output, string& comment_prefix)
+
+
+cdef extern from "queue_logger.hpp" namespace "stan::callbacks" nogil:
+    cdef cppclass queue_logger(logger):
+        queue_logger(boost.spsc_queue[string]* output)
+        queue_logger(boost.spsc_queue[string]* output, string& comment_prefix)
 
 
 # stan sample
@@ -82,8 +92,7 @@ cdef extern from "stan/services/sample/hmc_nuts_diag_e.hpp" namespace "stan::ser
                                 double stepsize, double stepsize_jitter,
                                 int max_depth,
                                 interrupt& interrupt,
-                                writer& message_writer,
-                                writer& error_writer,
+                                logger& logger,
                                 writer& init_writer,
                                 writer& sample_writer,
                                 writer& diagnostic_writer)
@@ -99,8 +108,7 @@ cdef extern from "stan/services/sample/hmc_nuts_diag_e_adapt.hpp" namespace "sta
                                      double t0, unsigned int init_buffer,
                                      unsigned int term_buffer, unsigned int window,
                                      interrupt& interrupt,
-                                     writer& message_writer,
-                                     writer& error_writer,
+                                     logger& logger,
                                      writer& init_writer,
                                      writer& sample_writer,
                                      writer& diagnostic_writer)

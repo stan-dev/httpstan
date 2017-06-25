@@ -9,8 +9,8 @@ TopicEnum = callbacks_writer_pb2.WriterMessage.Topic
 
 def test_callbacks_writer_parser_message_writer():
     """Test that callback writer messages are parsed correctly."""
-    message = '''message_writer:Gradient evaluation took 4.7e-05 seconds'''
-    message_pb = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value('MESSAGE'))
+    message = '''logger:Gradient evaluation took 4.7e-05 seconds'''
+    message_pb = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value('LOGGER'))
     message_pb.feature[''].string_list.value.append(message.split(':', 1).pop())
     parser = httpstan.callbacks_writer_parser.WriterParser()
     observed = parser.parse(message)

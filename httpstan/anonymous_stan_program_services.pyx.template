@@ -40,8 +40,7 @@ def hmc_nuts_diag_e_wrapper(object array_var_context_capsule, object queue_capsu
     cdef stan.var_context * init_var_context = new stan.empty_var_context()
     cdef stan_model * model = new stan_model(deref(var_context_ptr))
     cdef stan.interrupt interrupt
-    cdef stan.writer * message_writer = new stan.queue_writer(queue_ptr, b'message_writer:')
-    cdef stan.writer * error_writer = new stan.queue_writer(queue_ptr, b'error_writer:')
+    cdef stan.logger * logger = new stan.queue_logger(queue_ptr, b'logger:')
     cdef stan.writer * init_writer = new stan.queue_writer(queue_ptr, b'init_writer:')
     cdef stan.writer * sample_writer = new stan.queue_writer(queue_ptr, b'sample_writer:')
     cdef stan.writer * diagnostic_writer = new stan.queue_writer(queue_ptr, b'diagnostic_writer:')
@@ -55,15 +54,13 @@ def hmc_nuts_diag_e_wrapper(object array_var_context_capsule, object queue_capsu
                                             0.0,  # stepsize_jitter
                                             10,   # max_depth
                                             interrupt,
-                                            deref(message_writer),
-                                            deref(error_writer),
+                                            deref(logger),
                                             deref(init_writer),
                                             deref(sample_writer),
                                             deref(diagnostic_writer))
     del model
     del init_var_context
-    del message_writer
-    del error_writer
+    del logger
     del init_writer
     del diagnostic_writer
     return return_code
@@ -78,8 +75,7 @@ def hmc_nuts_diag_e_adapt_wrapper(object array_var_context_capsule, object queue
     cdef stan.var_context * init_var_context = new stan.empty_var_context()
     cdef stan_model * model = new stan_model(deref(var_context_ptr))
     cdef stan.interrupt interrupt
-    cdef stan.writer * message_writer = new stan.queue_writer(queue_ptr, b'message_writer:')
-    cdef stan.writer * error_writer = new stan.queue_writer(queue_ptr, b'error_writer:')
+    cdef stan.logger * logger = new stan.queue_logger(queue_ptr, b'logger:')
     cdef stan.writer * init_writer = new stan.queue_writer(queue_ptr, b'init_writer:')
     cdef stan.writer * sample_writer = new stan.queue_writer(queue_ptr, b'sample_writer:')
     cdef stan.writer * diagnostic_writer = new stan.queue_writer(queue_ptr, b'diagnostic_writer:')
@@ -100,15 +96,13 @@ def hmc_nuts_diag_e_adapt_wrapper(object array_var_context_capsule, object queue
                                                   50,   # * @param[in] term_buffer width of final fast adaptation interval
                                                   25,   # * @param[in] window initial width of slow adaptation interval
                                                   interrupt,
-                                                  deref(message_writer),
-                                                  deref(error_writer),
+                                                  deref(logger),
                                                   deref(init_writer),
                                                   deref(sample_writer),
                                                   deref(diagnostic_writer))
     del model
     del init_var_context
-    del message_writer
-    del error_writer
+    del logger
     del init_writer
     del diagnostic_writer
     return return_code

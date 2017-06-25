@@ -128,16 +128,9 @@ class WriterParser:
             message.feature[key].double_list.value.append(value)
         return message
 
-    def parse_message_writer(self, values) -> callbacks_writer_pb2.WriterMessage:
+    def parse_logger(self, values) -> callbacks_writer_pb2.WriterMessage:
         """Convert raw writer message into protobuf message."""
-        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value('MESSAGE'))
-        for value in values:
-            message.feature[''].string_list.value.append(value)
-        return message
-
-    def parse_error_writer(self, values) -> callbacks_writer_pb2.WriterMessage:
-        """Convert raw writer message into protobuf message."""
-        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value('ERROR'))
+        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value('LOGGER'))
         for value in values:
             message.feature[''].string_list.value.append(value)
         return message

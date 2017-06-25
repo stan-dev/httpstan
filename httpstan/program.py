@@ -181,7 +181,7 @@ def _build_extension_module(program_id: str, cpp_code: str, pyx_code_template: s
 
         httpstan_dir = os.path.dirname(__file__)
         include_dirs = [
-            httpstan_dir,  # for queue_writer.hpp
+            httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
             temporary_dir,
             os.path.join(httpstan_dir, 'lib', 'stan', 'src'),
             os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math'),
