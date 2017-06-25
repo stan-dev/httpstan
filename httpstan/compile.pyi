@@ -1,0 +1,3 @@
+"""Stub file for compile module."""
+
+def compile(program_code: str, program_name: str) -> str: ...

@@ -1,0 +1,29 @@
+# The order of packages is significant, because pip processes them in the order
+# of appearance. Changing the order has an impact on the overall integration
+# process, which may cause wedges in the gate later.
+
+# hacking 0.13.0 does not support Python 3.5, manually run python3 -m pip install -U flake8
+# when hacking 0.14.0 released, uncomment the following line and remove this comment and
+# remove the requirements in this block (except for hacking)
+# hacking<0.15,>=0.14.0 # Apache-2.0
+flake8==3.3.0
+mccabe==0.6.1
+pyflakes==1.5.0
+flake8-docstrings>=1.1.0
+
+pytest<4,>=3.0.7
+coverage>=4.0 # Apache-2.0
+sphinx>=1.5.1 # BSD
+
+# releasenotes
+reno>=1.8.0 # Apache-2.0
+
+# style checking
+pep8-naming>=0.4.1
+pydocstyle>=1.1.1
+
+# type checking
+mypy>=0.5
+
+# additional packages used by tests
+requests<3,>=2.13

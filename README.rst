@@ -2,6 +2,12 @@
 httpstan
 ========
 
+.. image:: https://raw.githubusercontent.com/stan-dev/logos/master/logo.png
+    :alt: Stan logo
+    :scale: 20 %
+
+|pypi| |travis|
+
 HTTP interface to Stan, a package for Bayesian inference.
 
 An HTTP 1.1 interface to the Stan_ C++ package, **httpstan** is a shim_ that
@@ -86,3 +92,11 @@ ISC License.
 .. _Stan: http://mc-stan.org/
 .. _`OpenAPI documentation for httpstan`: api.html
 .. _bash: https://en.wikipedia.org/wiki/Bash_%28Unix_shell%29
+
+.. |pypi| image:: https://badge.fury.io/py/httpstan.png
+    :target: https://badge.fury.io/py/httpstan
+    :alt: pypi version
+
+.. |travis| image:: https://travis-ci.org/stan-dev/httpstan.png?branch=master
+    :target: https://travis-ci.org/stan-dev/httpstan
+    :alt: travis-ci build status
