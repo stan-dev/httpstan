@@ -1,0 +1,62 @@
+# tests
+/test/*/*/*/*/*/*
+/test/*/*/*/*/*
+/test/*/*/*/*
+/test/*/*/*
+/test/*/*
+/test/*
+!/test/*/*/*/*/*/*/
+!/test/*/*/*/*/*/
+!/test/*/*/*/*/
+!/test/*/*/*/
+!/test/*/*/
+!/test/*/
+!/test/*/*/*/*/*/*.*
+!/test/*/*/*/*/*.*
+!/test/*/*/*/*.*
+!/test/*/*/*.*
+!/test/*/*.*
+!/test/*.*
+/test/**/*_generated_*_test.cpp
+/test/**/*.xml
+/test/dummy.cpp
+/test/**/*.so
+
+# other binary
+*.o
+*.o-*
+*.exe
+*.a
+
+# /doc/
+/doc/api
+/doc/*.pdf
+/doc/*.txt
+
+# temporary latex files
+*.idx
+*.ilg
+*.ind
+*.fdb_latexmk
+*.fls
+
+# temporary emacs files
+*~
+\#*#
+
+# temporary vim files
+.*.swp
+
+# depedencies files
+*.d
+*.d.*
+.Rproj.user
+.kdev4/
+.Rapp.history
+
+
+# For the Mac
+*.DS_Store
+
+# local make include
+/make/local
