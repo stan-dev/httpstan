@@ -5,7 +5,7 @@ import pytest
 import httpstan.main
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
 def loop_with_server(request):
     """Return event loop with httpstan server already running.
 
