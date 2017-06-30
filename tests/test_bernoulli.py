@@ -50,7 +50,7 @@ def test_bernoulli(loop_with_server):
                 program_id = (await resp.json())['id']
 
             programs_actions_url = 'http://{}:{}/v1/programs/{}/actions'.format(host, port, program_id)
-            payload = {'type': 'hmc_nuts_diag_e_adapt', 'data': data}
+            payload = {'type': 'stan::services::sample::hmc_nuts_diag_e_adapt', 'data': data}
             async with session.post(programs_actions_url, data=json.dumps(payload), headers=headers) as resp:
                 await validate_samples(resp)
 
@@ -67,7 +67,7 @@ def test_bernoulli_parallel(loop_with_server):
                 program_id = (await resp.json())['id']
 
         programs_actions_url = 'http://{}:{}/v1/programs/{}/actions'.format(host, port, program_id)
-        payload = {'type': 'hmc_nuts_diag_e_adapt', 'data': data}
+        payload = {'type': 'stan::services::sample::hmc_nuts_diag_e_adapt', 'data': data}
 
         # record time for sampling
         # this must be run in an executor because loop is managing the server

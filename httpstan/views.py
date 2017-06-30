@@ -5,7 +5,6 @@ Handlers are separated from the endpoint names. Endpoints are defined in
 """
 import json
 import logging
-import random
 
 import aiohttp.web
 import google.protobuf.json_format
@@ -79,16 +78,17 @@ async def handle_programs(request):
     return aiohttp.web.json_response(ProgramSchema(strict=True).dump({'id': program_id}).data)
 
 
-# TODO(AR): remove defaults, must be provided explicitly
-SAMPLE_ALGOS = frozenset({'hmc_nuts_diag_e', 'hmc_nuts_diag_e_adapt'})
+# TODO(AR): supported functions can be fetched from stub Python files
+FUNCTION_NAMES = frozenset({
+    'stan::services::sample::hmc_nuts_diag_e',
+    'stan::services::sample::hmc_nuts_diag_e_adapt',
+})
+
 class ProgramActionSchema(marshmallow.Schema):  # noqa
-    type = fields.String(required=True, validate=validate.OneOf(SAMPLE_ALGOS))
+    # action `type` is full name of function in stan::services (e.g.,
+    # `stan::services::sample::hmc_nuts_diag_e_adapt`)
+    type = fields.String(required=True, validate=validate.OneOf(FUNCTION_NAMES))
     data = fields.Dict(missing={})
-    random_seed = fields.Integer(missing=random.randrange(2 ** 31))
-    chain = fields.Integer(missing=1)
-    init_radius = fields.Float(missing=2.0)
-    num_warmup = fields.Integer(missing=1000)
-    num_samples = fields.Integer(missing=1000)
 
     class Meta:  # noqa
         strict = True
@@ -127,7 +127,7 @@ async def handle_programs_actions(request):
                 description: Stream of newline-delimited JSON.
     """
     program_id = request.match_info['program_id']
-    args = await webargs.aiohttpparser.parser.parse(ProgramActionSchema(), request)
+    kwargs = await webargs.aiohttpparser.parser.parse(ProgramActionSchema(), request)
 
     module_bytes = await httpstan.cache.load_program_extension_module(program_id, request.app['db'])
     if module_bytes is None:
@@ -143,9 +143,8 @@ async def handle_programs_actions(request):
     # exclusive lock needed until thread_local option available for autodiff.
     # See https://github.com/stan-dev/math/issues/551
     with await request.app['sample_lock']:
-        async for message in services_stub.call_sample(args['type'], program_module, args['data'], args['random_seed'],
-                                                       args['chain'], args['init_radius'],
-                                                       args['num_warmup'], args['num_samples']):
+        type, data = kwargs.pop('type'), kwargs.pop('data')
+        async for message in services_stub.call_sample(type, program_module, data, **kwargs):
             assert message is not None, message
             stream.write(google.protobuf.json_format.MessageToJson(message).encode().replace(b'\n', b''))
             stream.write(b'\n')

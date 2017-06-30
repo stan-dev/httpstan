@@ -22,7 +22,7 @@ def test_programs_actions(loop_with_server):
                 program_id = (await resp.json())['id']
 
             programs_actions_url = 'http://{}:{}/v1/programs/{}/actions'.format(host, port, program_id)
-            data = {'type': 'hmc_nuts_diag_e'}
+            data = {'type': 'stan::services::sample::hmc_nuts_diag_e'}
             draws = []
             async with session.post(programs_actions_url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 200
