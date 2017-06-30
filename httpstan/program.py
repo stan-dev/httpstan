@@ -20,6 +20,7 @@ import Cython.Build
 import Cython.Build.Inline
 import distutils
 import distutils.extension
+import pkg_resources
 
 import httpstan.compile
 import httpstan.stan
@@ -84,9 +85,7 @@ async def compile_program_extension_module(program_code: str) -> bytes:
     program_name = f'_{program_id}'  # C++ identifiers cannot start with digits
     cpp_code = await asyncio.get_event_loop().run_in_executor(None, httpstan.compile.compile,
                                                               program_code, program_name)
-    # TODO(AR): get this file via pkg_resources
-    with open(os.path.join(os.path.dirname(__file__), 'anonymous_stan_program_services.pyx.template')) as fh:
-        pyx_code_template = fh.read()
+    pyx_code_template = pkg_resources.resource_string(__name__, 'anonymous_stan_program_services.pyx.template').decode()
     module_bytes = _build_extension_module(program_id, cpp_code, pyx_code_template)
     return module_bytes
 
