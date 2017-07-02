@@ -22,7 +22,12 @@ def test_programs_actions(loop_with_server):
                 program_id = (await resp.json())['id']
 
             programs_actions_url = 'http://{}:{}/v1/programs/{}/actions'.format(host, port, program_id)
-            data = {'type': 'stan::services::sample::hmc_nuts_diag_e'}
+            num_samples, num_warmup = 500, 300
+            data = {
+                'type': 'stan::services::sample::hmc_nuts_diag_e',
+                'num_samples': num_samples,
+                'num_warmup': num_warmup,
+            }
             draws = []
             async with session.post(programs_actions_url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 200
@@ -40,7 +45,9 @@ def test_programs_actions(loop_with_server):
                         assert isinstance(payload['feature'], dict)
                         if 'y' in payload['feature']:
                             draws.append(payload['feature'])
-            assert len(draws) == 1000
+            assert len(draws) > 0
+            assert len(draws) == num_samples + num_warmup
+
             assert -5 < statistics.mean(draw['y']['doubleList']['value'].pop() for draw in draws) < 5
 
     loop_with_server.run_until_complete(main())

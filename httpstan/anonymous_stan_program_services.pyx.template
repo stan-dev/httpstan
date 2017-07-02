@@ -24,6 +24,7 @@ import httpstan.stan
 
 cimport cpython
 cimport cython.operator.dereference as deref
+cimport libcpp
 from libcpp.string cimport string
 
 cimport httpstan.boost as boost
@@ -36,8 +37,9 @@ cdef extern from "${cpp_filename}" nogil:
 
 
 def hmc_nuts_diag_e_wrapper(object array_var_context_capsule, object queue_capsule,
-                             int random_seed, int chain, double init_radius,
-                             int num_warmup, int num_samples):
+                            int random_seed, int chain, double init_radius,
+                            int num_warmup, int num_samples, int num_thin, libcpp.bool save_warmup,
+                            int refresh, double stepsize, double stepsize_jitter, int max_depth):
     cdef int return_code
     cdef stan.array_var_context * var_context_ptr = <stan.array_var_context*> cpython.PyCapsule_GetPointer(array_var_context_capsule, b'array_var_context')
     cdef boost.spsc_queue[string] * queue_ptr = <boost.spsc_queue[string] *> cpython.PyCapsule_GetPointer(queue_capsule, b'spsc_queue')
@@ -50,18 +52,10 @@ def hmc_nuts_diag_e_wrapper(object array_var_context_capsule, object queue_capsu
     cdef stan.writer * diagnostic_writer = new stan.queue_writer(queue_ptr, b'diagnostic_writer:')
     with nogil:
         return_code = stan.hmc_nuts_diag_e(deref(model), deref(init_var_context), random_seed, chain, init_radius,
-                                            num_warmup, num_samples,
-                                            1,    # num_thin
-                                            0,    # save_warmup
-                                            10,   # refresh
-                                            1.0,  # stepsize
-                                            0.0,  # stepsize_jitter
-                                            10,   # max_depth
-                                            interrupt,
-                                            deref(logger),
-                                            deref(init_writer),
-                                            deref(sample_writer),
-                                            deref(diagnostic_writer))
+                                           num_warmup, num_samples, num_thin, save_warmup,
+                                           refresh, stepsize, stepsize_jitter, max_depth,
+                                           interrupt, deref(logger), deref(init_writer),
+                                           deref(sample_writer), deref(diagnostic_writer))
     del model
     del init_var_context
     del logger
@@ -71,8 +65,11 @@ def hmc_nuts_diag_e_wrapper(object array_var_context_capsule, object queue_capsu
 
 
 def hmc_nuts_diag_e_adapt_wrapper(object array_var_context_capsule, object queue_capsule,
-                                   int random_seed, int chain, double init_radius,
-                                   int num_warmup, int num_samples):
+                                  int random_seed, int chain, double init_radius,
+                                  int num_warmup, int num_samples, int num_thin, libcpp.bool save_warmup,
+                                  int refresh, double stepsize, double stepsize_jitter, int max_depth,
+                                  double delta, double gamma, double kappa, double t0, int init_buffer,
+                                  int term_buffer, int window):
     cdef int return_code
     cdef stan.array_var_context * var_context_ptr = <stan.array_var_context*> cpython.PyCapsule_GetPointer(array_var_context_capsule, b'array_var_context')
     cdef boost.spsc_queue[string] * queue_ptr = <boost.spsc_queue[string] *> cpython.PyCapsule_GetPointer(queue_capsule, b'spsc_queue')
@@ -85,25 +82,11 @@ def hmc_nuts_diag_e_adapt_wrapper(object array_var_context_capsule, object queue
     cdef stan.writer * diagnostic_writer = new stan.queue_writer(queue_ptr, b'diagnostic_writer:')
     with nogil:
         return_code = stan.hmc_nuts_diag_e_adapt(deref(model), deref(init_var_context), random_seed, chain, init_radius,
-                                                  num_warmup, num_samples,
-                                                  1,    # num_thin
-                                                  0,    # save_warmup
-                                                  10,   # refresh
-                                                  1.0,  # stepsize
-                                                  0.0,  # stepsize_jitter
-                                                  10,   # max_depth
-                                                  0.8,  # * @param[in] delta adaptation target acceptance statistic
-                                                  0.05, # * @param[in] gamma adaptation regularization scale
-                                                  0.75, # * @param[in] kappa adaptation relaxation exponent
-                                                  10,   # * @param[in] t0 adaptation iteration offset
-                                                  75,   # * @param[in] init_buffer width of initial fast adaptation interval
-                                                  50,   # * @param[in] term_buffer width of final fast adaptation interval
-                                                  25,   # * @param[in] window initial width of slow adaptation interval
-                                                  interrupt,
-                                                  deref(logger),
-                                                  deref(init_writer),
-                                                  deref(sample_writer),
-                                                  deref(diagnostic_writer))
+                                                 num_warmup, num_samples, num_thin, save_warmup,
+                                                 refresh, stepsize, stepsize_jitter, max_depth,
+                                                 delta, gamma, kappa, t0, init_buffer, term_buffer, window,
+                                                 interrupt, deref(logger), deref(init_writer),
+                                                 deref(sample_writer), deref(diagnostic_writer))
     del model
     del init_var_context
     del logger

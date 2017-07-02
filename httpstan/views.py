@@ -127,7 +127,11 @@ async def handle_programs_actions(request):
                 description: Stream of newline-delimited JSON.
     """
     program_id = request.match_info['program_id']
-    kwargs = await webargs.aiohttpparser.parser.parse(ProgramActionSchema(), request)
+    # use webargs to make sure `type` is present and data is a mapping (or
+    # absent). Do not discard any other information in the request body.
+    kwargs_schema = await webargs.aiohttpparser.parser.parse(ProgramActionSchema(), request)
+    kwargs = await request.json()
+    kwargs.update(kwargs_schema)
 
     module_bytes = await httpstan.cache.load_program_extension_module(program_id, request.app['db'])
     if module_bytes is None:

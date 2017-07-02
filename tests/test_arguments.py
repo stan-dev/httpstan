@@ -40,7 +40,10 @@ def test_function_arguments(loop_with_server):
         assert module_bytes is not None
         program_module = httpstan.program.load_program_extension_module(program_id, module_bytes)
 
-        expected = ['random_seed', 'chain', 'init_radius', 'num_warmup', 'num_samples']
+        expected = ['random_seed', 'chain', 'init_radius', 'num_warmup',
+                    'num_samples', 'num_thin', 'save_warmup', 'refresh',
+                    'stepsize', 'stepsize_jitter', 'max_depth']
+
         assert expected == arguments.function_arguments('hmc_nuts_diag_e', program_module)
 
     loop_with_server.run_until_complete(main())

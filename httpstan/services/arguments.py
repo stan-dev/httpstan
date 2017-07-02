@@ -50,6 +50,13 @@ def lookup_default(method: Method, arg: str) -> typing.Union[float, int]:
     # special handling for chain, argument name differs from CmdStan name
     if arg == 'chain':
         return 1
+    # special handling for ``num_thin``, since argument name differs from CmdStan name
+    if arg == 'num_thin':
+        arg = 'thin'
+    # special handling for ``refresh`` since the choice is up to httpstan, value
+    # determines how often messages are sent to callback logger
+    if arg == 'refresh':
+        return 100
     # special handling for init_radius. There is an interaction with 'init'.
     if arg == 'init_radius':
         return 2
