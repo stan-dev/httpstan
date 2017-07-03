@@ -42,6 +42,15 @@ Install
 
     python3 -m pip install httpstan
 
+Install from Source
+-------------------
+
+::
+
+    make cython  # genreate C++ code from Cython .pyx files
+    make protos  # generate Python modules for protocol buffer schemas
+    python3 setup.py install
+
 Usage
 =====
 
