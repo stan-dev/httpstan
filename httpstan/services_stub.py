@@ -16,7 +16,7 @@ import httpstan.spsc_queue
 import httpstan.stan
 
 
-async def call_sample(function_name: str, program_module, data: dict, **kwargs):
+async def call(function_name: str, program_module, data: dict, **kwargs):
     """Call stan::services function.
 
     Yields (asynchronously) messages from the stan::callbacks writers which are

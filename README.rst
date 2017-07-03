@@ -67,13 +67,12 @@ This request will return a program id similar to the following::
 To draw samples from this model using default settings, we make the following request::
 
     curl -X POST -H "Content-Type: application/json" \
-        -d '{"type":"hmc_nuts_diag_e_adapt"}' \
+        -d '{"type":"stan::services::sample::hmc_nuts_diag_e_adapt"}' \
         http://localhost:8080/v1/programs/8137474d19926b0aa8efd4f1d3944131d59269d97a7bd8dab8e79d667eb314df/actions
 
 This request will return samples from the normal distribution. The output is
-taken more or less directly from the output of the relevant function defined by
-the Stan C++ package (in the ``stan::services`` namespace). Consult the Stan
-C++ documentation for details.
+taken directly from the output of the relevant function defined in the Stan C++
+package. Consult the Stan C++ documentation for details.
 
 Contribute
 ==========

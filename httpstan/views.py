@@ -104,8 +104,8 @@ async def handle_programs_actions(request):
             The action `type` indicates the name of the stan::services function
             which should be called given the Stan Program associated with the id
             `program_id`.  For example, if sampling using
-            ``stan::services::hmc_nuts_diag_e`` the action `type` is the
-            function name ``hmc_nuts_diag_e``.
+            ``stan::services::sample::hmc_nuts_diag_e`` the action `type` is the
+            full function name ``stan::services::sample::hmc_nuts_diag_e``.
         consumes:
             - application/json
         produces:
@@ -118,7 +118,7 @@ async def handle_programs_actions(request):
               type: string
             - name: body
               in: body
-              description: "'Action' specifying stan::services function to call with Stan Program."
+              description: "'Action' specifying full stan::services function name to call with Stan Program."
               required: true
               schema:
                  $ref: '#/definitions/ProgramAction'
@@ -148,7 +148,7 @@ async def handle_programs_actions(request):
     # See https://github.com/stan-dev/math/issues/551
     with await request.app['sample_lock']:
         type, data = kwargs.pop('type'), kwargs.pop('data')
-        async for message in services_stub.call_sample(type, program_module, data, **kwargs):
+        async for message in services_stub.call(type, program_module, data, **kwargs):
             assert message is not None, message
             stream.write(google.protobuf.json_format.MessageToJson(message).encode().replace(b'\n', b''))
             stream.write(b'\n')

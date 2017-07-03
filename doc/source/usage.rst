@@ -54,7 +54,7 @@ interfaces (CmdStan, PyStan, RStan).
 ::
 
     curl -X POST -H "Content-Type: application/json" \
-        -d '{"type":"hmc_nuts_diag_e_adapt","data":{"N":10,"y":[0, 1, 0, 1, 0, 0, 0, 0, 0, 0]}}' \
+        -d '{"type":"stan::services::sample::hmc_nuts_diag_e_adapt","data":{"N":10,"y":[0, 1, 0, 1, 0, 0, 0, 0, 0, 0]}}' \
         http://localhost:8080/v1/programs/150384037eefeb670b31c4bd91920c2c6bda6cfc05623d79867b9579a99575d9/actions
 
 
