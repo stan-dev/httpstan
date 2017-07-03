@@ -66,6 +66,9 @@ def lookup_default(method: Method, arg: str) -> typing.Union[float, int]:
     except StopIteration:
         raise ValueError(f'No argument `{arg}` is associated with `{method}`.')
     type = _pythonize_cmdstan_type(item['type'])
+    if type == bool:
+        # bool needs special handling because bool('0') == True
+        return item['default'] != '0'
     return type(item['default'])
 
 

@@ -22,7 +22,7 @@ def test_programs_actions(loop_with_server):
                 program_id = (await resp.json())['id']
 
             programs_actions_url = 'http://{}:{}/v1/programs/{}/actions'.format(host, port, program_id)
-            num_samples, num_warmup = 500, 300
+            num_samples = num_warmup = 500
             data = {
                 'type': 'stan::services::sample::hmc_nuts_diag_e',
                 'num_samples': num_samples,
@@ -46,7 +46,7 @@ def test_programs_actions(loop_with_server):
                         if 'y' in payload['feature']:
                             draws.append(payload['feature'])
             assert len(draws) > 0
-            assert len(draws) == num_samples + num_warmup
+            assert len(draws) == num_samples
 
             assert -5 < statistics.mean(draw['y']['doubleList']['value'].pop() for draw in draws) < 5
 
