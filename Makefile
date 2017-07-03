@@ -1,7 +1,9 @@
 PYTHON ?= python
 CYTHON ?= cython
 
-%.cpp: %.pyx httpstan/*.pxd
+default: cython protos
+
+%.cpp: %.pyx
 	$(CYTHON) -3 --cplus $<
 
 cython: httpstan/stan.cpp httpstan/compile.cpp httpstan/spsc_queue.cpp
