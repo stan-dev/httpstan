@@ -24,6 +24,8 @@ install:
 
   - ECHO "Installed SDKs:"
   - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
+  - ECHO "DEBUG:"
+  - ps: "ls C:/MinGW/bin"
 
   # checkout submodules
   - git submodule update --init --recursive
@@ -55,8 +57,7 @@ install:
   - "%CMD_IN_ENV% pip install -r test-requirements.txt"
   # generate code required for building the wheel
   - "%CMD_IN_ENV% pip install grpcio-tools"
-  - "%CMD_IN_ENV% make cython"
-  - "%CMD_IN_ENV% make protos"
+  - "%CMD_IN_ENV% C:\\MinGW\\bin\\make.exe"
   # build the wheel and install it
   - "%CMD_IN_ENV% python setup.py bdist_wheel"
   - ps: "ls dist"
