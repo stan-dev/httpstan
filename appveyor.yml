@@ -52,12 +52,10 @@ install:
   - "%CMD_IN_ENV% pip install -r ./continuous_integration/appveyor/requirements.txt"
   - "%CMD_IN_ENV% pip install -r requirements.txt"
   - "%CMD_IN_ENV% pip install -r test-requirements.txt"
-  # these steps are normally handled by using the ``Makefile``
+  # generate code required for building the wheel
   - "%CMD_IN_ENV% pip install grpcio-tools"
-  - "%CMD_IN_ENV% cython -3 --cplus httpstan/stan.pyx"
-  - "%CMD_IN_ENV% cython -3 --cplus httpstan/compile.pyx"
-  - "%CMD_IN_ENV% cython -3 --cplus httpstan/spsc_queue.pyx"
-  - "%CMD_IN_ENV% python -m grpc_tools.protoc -Iprotos --python_out=httpstan protos/callbacks_writer.proto"
+  - "%CMD_IN_ENV% make cython"
+  - "%CMD_IN_ENV% make protos"
   # build the wheel and install it
   - "%CMD_IN_ENV% python setup.py bdist_wheel"
   - ps: "ls dist"
