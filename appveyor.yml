@@ -35,7 +35,8 @@ install:
   # Prepend newly installed Python to the PATH of this build (this cannot be
   # done from inside the powershell script as it would require to restart
   # the parent CMD process).
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  # Also add C:\MinGW\bin for make.exe
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;C:\\MinGW\\bin;%PATH%"
 
   # Check that we have the expected version and architecture for Python
   - "python --version"
