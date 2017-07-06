@@ -7,13 +7,11 @@ global-exclude *.png
 prune httpstan/lib/stan/make
 prune httpstan/lib/stan/src/docs
 prune httpstan/lib/stan/src/doxygen
-prune httpstan/lib/stan/src/python
 prune httpstan/lib/stan/src/test
 
 # unused parts of the stan math source
-prune httpstan/lib/stan/lib/stan_math*/doc
-prune httpstan/lib/stan/lib/stan_math*/doxygen
-prune httpstan/lib/stan/lib/stan_math*/lib/cpplint_*
-prune httpstan/lib/stan/lib/stan_math*/lib/gtest_*
-prune httpstan/lib/stan/lib/stan_math*/make
-prune httpstan/lib/stan/lib/stan_math*/test
+prune httpstan/lib/stan/lib/stan_math/doxygen
+prune httpstan/lib/stan/lib/stan_math/lib/cpplint_*
+prune httpstan/lib/stan/lib/stan_math/lib/gtest_*
+prune httpstan/lib/stan/lib/stan_math/make
+prune httpstan/lib/stan/lib/stan_math/test
