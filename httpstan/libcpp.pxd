@@ -13,5 +13,5 @@ cdef extern from "<iostream>" namespace "std" nogil:
 cdef extern from "<sstream>" namespace "std" nogil:
     cdef cppclass stringstream(istream, ostream):
         stringstream()
-        stringstream(string&)
         string str()
+        void str(const string&)

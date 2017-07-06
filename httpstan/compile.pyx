@@ -32,10 +32,10 @@ def compile(program_code: str, program_name: str) -> str:
     cdef libcpp.bool valid_program
     cdef stringstream out
     cdef stringstream err
-    cdef stringstream stan_lang_in = stringstream(program_code.encode())
-
+    cdef stringstream program_code_stringstream
+    program_code_stringstream.str(program_code.encode())
     # compile may raise C++ exception. Cython will raise it as Python exception.
-    valid_program = lang.compile(&err, stan_lang_in, out, program_name.encode())
+    valid_program = lang.compile(&err, program_code_stringstream, out, program_name.encode())
     if not valid_program:
         error_message = err.str().encode()
         raise ValueError(f'Syntax error in program: {error_message}')
