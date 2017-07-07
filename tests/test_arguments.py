@@ -2,8 +2,6 @@
 import json
 
 import aiohttp
-import appdirs
-import lmdb
 
 import httpstan.program
 import httpstan.services.arguments as arguments
@@ -33,9 +31,9 @@ def test_function_arguments(loop_with_server, host, port):
                 program_id = (await resp.json())['id']
 
         # get a reference to the program_module
-        cache_path = appdirs.user_cache_dir('httpstan')
-        db = lmdb.Environment(cache_path, map_size=httpstan.cache.HTTPSTAN_LMDB_MAP_SIZE)
-        module_bytes = await httpstan.cache.load_program_extension_module(program_id, db)
+        app = {}  # mock aiohttp.web.Application
+        await httpstan.cache.init_cache(app)  # setup database, populates app['db']
+        module_bytes = await httpstan.cache.load_program_extension_module(program_id, app['db'])
         assert module_bytes is not None
         program_module = httpstan.program.load_program_extension_module(program_id, module_bytes)
 

@@ -6,13 +6,12 @@ import asyncio
 import logging
 import lzma
 import os
+import sqlite3
 
 import appdirs
-import lmdb
 
 
 logger = logging.getLogger('httpstan')
-HTTPSTAN_LMDB_MAP_SIZE = os.environ.get('HTTPSTAN_LMDB_MAP_SIZE', 1024 ** 3)
 
 
 async def init_cache(app):
@@ -31,9 +30,13 @@ async def init_cache(app):
 
     """
     cache_path = appdirs.user_cache_dir('httpstan')
+    os.makedirs(cache_path, exist_ok=True)
     logging.info(f'Opening cache in `{cache_path}`.')
-    db = lmdb.Environment(cache_path, map_size=HTTPSTAN_LMDB_MAP_SIZE)
-    app['db'] = db
+    conn = sqlite3.connect(os.path.join(cache_path, 'cache.db'), check_same_thread=False)
+    # create tables if they do not exist
+    conn.execute("""CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB);""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB);""")
+    app['db'] = conn
 
 
 async def close_cache(app):
@@ -52,7 +55,7 @@ async def close_cache(app):
     app['db'].close()
 
 
-async def dump_program_extension_module(program_id: str, module_bytes: bytes, db: lmdb.Environment):
+async def dump_program_extension_module(program_id: str, module_bytes: bytes, db: sqlite3.Connection):
     """Store Stan Program extension module the cache.
 
     The Stan Program extension module is passed via ``module_bytes``. The bytes
@@ -70,11 +73,11 @@ async def dump_program_extension_module(program_id: str, module_bytes: bytes, db
 
     """
     compressed = await asyncio.get_event_loop().run_in_executor(None, lzma.compress, module_bytes)
-    with db.begin(write=True) as txn:
-        txn.put(program_id.encode(), compressed)
+    with db:
+        db.execute("""INSERT INTO models VALUES (?, ?)""", (program_id.encode(), compressed))
 
 
-async def load_program_extension_module(program_id: str, db: lmdb.Environment) -> bytes:
+async def load_program_extension_module(program_id: str, db: sqlite3.Connection) -> bytes:
     """Load Stan Program extension module the cache.
 
     The extension module is stored in compressed form. Since decompressing the
@@ -91,8 +94,8 @@ async def load_program_extension_module(program_id: str, db: lmdb.Environment) -
         bytes: Bytes of compiled extension module.
 
     """
-    with db.begin(write=False) as txn:
-        compressed = txn.get(program_id.encode())
-    if compressed is None:
+    row = db.execute("""SELECT value FROM models WHERE key=?""", (program_id.encode(),)).fetchone()
+    if not row:
         raise KeyError(f'Extension module for id `{program_id}` not found.')
+    compressed = row[0]
     return await asyncio.get_event_loop().run_in_executor(None, lzma.decompress, compressed)
