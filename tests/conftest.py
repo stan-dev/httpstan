@@ -5,8 +5,20 @@ import pytest
 import httpstan.main
 
 
+@pytest.fixture(scope='session')
+def host():
+    """Host for server to listen on."""
+    return '127.0.0.1'
+
+
+@pytest.fixture(scope='session')
+def port():
+    """Port for server to listen on."""
+    return 8080
+
+
 @pytest.fixture(scope='module')
-def loop_with_server(request):
+def loop_with_server(request, host, port):
     """Return event loop with httpstan server already running.
 
     HTTP server shutdown is handled as well.
@@ -15,8 +27,6 @@ def loop_with_server(request):
     asyncio.set_event_loop(None)
 
     # setup server
-    host = '127.0.0.1'
-    port = 8080
     app = httpstan.main.make_app(l)
     handler = app.make_handler(loop=l)
     srv = l.run_until_complete(l.create_server(handler, host, port))

@@ -9,8 +9,6 @@ import httpstan.program
 import httpstan.services.arguments as arguments
 
 
-host, port = '127.0.0.1', 8080
-programs_url = 'http://{}:{}/v1/programs'.format(host, port)
 program_code = 'parameters {real y;} model {y ~ normal(0,1);}'
 headers = {'content-type': 'application/json'}
 
@@ -23,11 +21,12 @@ def test_lookup_default():
     assert expected == arguments.lookup_default(arguments.Method.SAMPLE, 'gamma')
 
 
-def test_function_arguments(loop_with_server):
+def test_function_arguments(loop_with_server, host, port):
     """Test function argument name lookup."""
     # function_arguments needs compiled module, so we have to get one
     async def main():
         async with aiohttp.ClientSession() as session:
+            programs_url = 'http://{}:{}/v1/programs'.format(host, port)
             data = {'program_code': program_code}
             async with session.post(programs_url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 200

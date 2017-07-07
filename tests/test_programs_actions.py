@@ -6,16 +6,15 @@ import statistics
 import httpstan.callbacks_writer_pb2
 
 
-host, port = '127.0.0.1', 8080
-programs_url = 'http://{}:{}/v1/programs'.format(host, port)
-program_code = 'parameters {real y;} model {y ~ normal(0,1);}'
 headers = {'content-type': 'application/json'}
+program_code = 'parameters {real y;} model {y ~ normal(0,1);}'
 
 
-def test_programs_actions(loop_with_server):
+def test_programs_actions(loop_with_server, host, port):
     """Simple test of sampling."""
     async def main():
         async with aiohttp.ClientSession() as session:
+            programs_url = 'http://{}:{}/v1/programs'.format(host, port)
             data = {'program_code': program_code}
             async with session.post(programs_url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 200
@@ -53,11 +52,12 @@ def test_programs_actions(loop_with_server):
     loop_with_server.run_until_complete(main())
 
 
-def test_programs_actions_bad_args(loop_with_server):
+def test_programs_actions_bad_args(loop_with_server, host, port):
     """Test handler argument handling."""
     async def main(loop):
         async with aiohttp.ClientSession() as session:
             data = {'program_code': program_code}
+            programs_url = 'http://{}:{}/v1/programs'.format(host, port)
             async with session.post(programs_url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 200
                 program_id = (await resp.json())['id']

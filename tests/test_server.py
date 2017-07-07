@@ -2,9 +2,8 @@
 import aiohttp
 
 
-def test_server(loop_with_server):
+def test_server(loop_with_server, host, port):
     """Rudimentary test of server."""
-    host, port = '127.0.0.1', 8080
     url = 'http://{}:{}/v1/programs'.format(host, port)
 
     async def main():

@@ -8,8 +8,6 @@ import functools
 import requests
 
 
-host, port = '127.0.0.1', 8080
-programs_url = 'http://{}:{}/v1/programs'.format(host, port)
 headers = {'content-type': 'application/json'}
 program_code = """
     data {
@@ -40,10 +38,11 @@ async def validate_samples(resp):
     return True
 
 
-def test_bernoulli(loop_with_server):
+def test_bernoulli(loop_with_server, host, port):
     """Test sampling from Bernoulli program with defaults."""
     async def main():
         async with aiohttp.ClientSession() as session:
+            programs_url = 'http://{}:{}/v1/programs'.format(host, port)
             payload = {'program_code': program_code}
             async with session.post(programs_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200
@@ -57,10 +56,11 @@ def test_bernoulli(loop_with_server):
     loop_with_server.run_until_complete(main())
 
 
-def test_bernoulli_parallel(loop_with_server):
+def test_bernoulli_parallel(loop_with_server, host, port):
     """Test sampling from Bernoulli program in parallel."""
     async def main():
         async with aiohttp.ClientSession() as session:
+            programs_url = 'http://{}:{}/v1/programs'.format(host, port)
             payload = {'program_code': program_code}
             async with session.post(programs_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200

@@ -5,8 +5,6 @@ import aiohttp
 import numpy as np
 
 
-host, port = '127.0.0.1', 8080
-programs_url = 'http://{}:{}/v1/programs'.format(host, port)
 headers = {'content-type': 'application/json'}
 program_code = """
     data {
@@ -35,10 +33,11 @@ y = np.dot(X, beta_true) + np.random.normal(size=n)
 data = {'N': n, 'p': p, 'x': X.tolist(), 'y': y.tolist()}
 
 
-def test_linear_regression(loop_with_server):
+def test_linear_regression(loop_with_server, host, port):
     """Test sampling from linear regression posterior with defaults."""
     async def main():
         async with aiohttp.ClientSession() as session:
+            programs_url = 'http://{}:{}/v1/programs'.format(host, port)
             payload = {'program_code': program_code}
             async with session.post(programs_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200
