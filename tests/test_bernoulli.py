@@ -1,11 +1,7 @@
 """Test sampling from Bernoulli model."""
-import asyncio
 import json
-import time
 
 import aiohttp
-import functools
-import requests
 
 
 headers = {'content-type': 'application/json'}
