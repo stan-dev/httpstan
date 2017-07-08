@@ -203,6 +203,8 @@ def _build_extension_module(program_id: str, cpp_code: str, pyx_code_template: s
                     '-O3',
                     '-std=c++11',
                 ]
+        if os.environ.get('CC', '').startswith('clang'):
+            extra_compile_args += ['-stdlib=libc++', '-mmacosx-version-min=10.9']
 
         build_extension = Cython.Build.Inline._get_build_extension()
 
