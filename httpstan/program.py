@@ -15,11 +15,10 @@ from typing import List
 from typing import Optional
 from typing import Tuple  # noqa: flake8 bug, #118
 
+import setuptools  # noqa: see bugs.python.org/issue23114, must come before any module imports distutils
 import Cython
 import Cython.Build
 import Cython.Build.Inline
-import distutils
-import distutils.extension
 import pkg_resources
 
 import httpstan.compile
@@ -204,15 +203,14 @@ def _build_extension_module(program_id: str, cpp_code: str, pyx_code_template: s
                     '-std=c++11',
                 ]
 
-        build_extension = Cython.Build.Inline._get_build_extension()
-
         cython_include_path = [os.path.dirname(httpstan_dir)]
-        extension = distutils.extension.Extension(module_name,
-                                                  language='c++',
-                                                  sources=[pyx_filepath],
-                                                  define_macros=stan_macros,
-                                                  include_dirs=include_dirs,
-                                                  extra_compile_args=extra_compile_args)
+        extension = setuptools.Extension(module_name,
+                                         language='c++',
+                                         sources=[pyx_filepath],
+                                         define_macros=stan_macros,
+                                         include_dirs=include_dirs,
+                                         extra_compile_args=extra_compile_args)
+        build_extension = Cython.Build.Inline._get_build_extension()
         build_extension.extensions = Cython.Build.cythonize([extension],
                                                             include_path=cython_include_path)
         build_extension.build_temp = build_extension.build_lib = temporary_dir
