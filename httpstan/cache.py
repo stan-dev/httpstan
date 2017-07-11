@@ -32,10 +32,12 @@ async def init_cache(app):
     cache_path = appdirs.user_cache_dir('httpstan')
     os.makedirs(cache_path, exist_ok=True)
     logging.info(f'Opening cache in `{cache_path}`.')
-    conn = sqlite3.connect(os.path.join(cache_path, 'cache.db'), check_same_thread=False)
+    conn = sqlite3.connect(os.path.join(cache_path, 'cache.sqlite3'), check_same_thread=False)
     # create tables if they do not exist
-    conn.execute("""CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB);""")
-    conn.execute("""CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB);""")
+    conn.execute("""PRAGMA journal_mode=WAL;""")  # use write-ahead-log, available since sqlite 3.7.0
+    with conn:
+        conn.execute("""CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB);""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB);""")
     app['db'] = conn
 
 
