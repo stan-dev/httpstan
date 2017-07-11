@@ -10,3 +10,4 @@ numpy<2,>=1.7
 Cython<1,>=0.25.2
 apispec>=0.21.0
 protobuf<4,>=3.3.0
+setuptools>=28.8
