@@ -220,6 +220,6 @@ def _build_extension_module(model_id: str, cpp_code: str, pyx_code_template: str
         build_extension.run()
 
         module = _load_module(module_name, build_extension.build_lib)
-        with open(module.__file__, 'rb') as fh:
+        with open(module.__file__, 'rb') as fh:  # type: ignore  # pending fix, see mypy#3062
             assert module.__name__ == module_name, (module.__name__, module_name)
-            return fh.read()
+            return fh.read()  # type: ignore  # pending fix, see mypy#3062
