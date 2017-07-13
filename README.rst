@@ -4,7 +4,9 @@ httpstan
 
 .. image:: https://raw.githubusercontent.com/stan-dev/logos/master/logo.png
     :alt: Stan logo
-    :scale: 20 %
+    :height: 333px
+    :width: 333px
+    :scale: 40 %
 
 |pypi| |travis|
 
@@ -18,8 +20,9 @@ to make HTTP requests. The primary audience for this package is developers.
 In addition to providing all the functionality of the command-line interface
 to Stan (CmdStan_) over HTTP 1.1, **httpstan** provides:
 
-* Automatic caching of compiled Stan models and samples from models.
-* Parallel sampling.
+* Automatic caching of compiled Stan models
+* Automatic caching of samples from Stan models
+* Parallel sampling
 
 Important Disclaimer
 ====================
