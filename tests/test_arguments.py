@@ -3,7 +3,7 @@ import json
 
 import aiohttp
 
-import httpstan.program
+import httpstan.models
 import httpstan.services.arguments as arguments
 
 
@@ -24,23 +24,23 @@ def test_function_arguments(loop_with_server, host, port):
     # function_arguments needs compiled module, so we have to get one
     async def main():
         async with aiohttp.ClientSession() as session:
-            programs_url = 'http://{}:{}/v1/programs'.format(host, port)
+            models_url = 'http://{}:{}/v1/models'.format(host, port)
             data = {'program_code': program_code}
-            async with session.post(programs_url, data=json.dumps(data), headers=headers) as resp:
+            async with session.post(models_url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 200
-                program_id = (await resp.json())['id']
+                model_id = (await resp.json())['id']
 
-        # get a reference to the program_module
+        # get a reference to the model_module
         app = {}  # mock aiohttp.web.Application
         await httpstan.cache.init_cache(app)  # setup database, populates app['db']
-        module_bytes = await httpstan.cache.load_program_extension_module(program_id, app['db'])
+        module_bytes = await httpstan.cache.load_model_extension_module(model_id, app['db'])
         assert module_bytes is not None
-        program_module = httpstan.program.load_program_extension_module(program_id, module_bytes)
+        model_module = httpstan.models.load_model_extension_module(model_id, module_bytes)
 
         expected = ['random_seed', 'chain', 'init_radius', 'num_warmup',
                     'num_samples', 'num_thin', 'save_warmup', 'refresh',
                     'stepsize', 'stepsize_jitter', 'max_depth']
 
-        assert expected == arguments.function_arguments('hmc_nuts_diag_e', program_module)
+        assert expected == arguments.function_arguments('hmc_nuts_diag_e', model_module)
 
     loop_with_server.run_until_complete(main())

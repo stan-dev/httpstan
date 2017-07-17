@@ -1,4 +1,4 @@
-"""Compile a Stan Program extension module given code written in Stan.
+"""Compile a Stan model extension module given code written in Stan.
 
 These functions manage the process of compiling a Python extension module
 from C++ code generated and loading the resulting module.
@@ -25,17 +25,17 @@ import httpstan.compile
 import httpstan.stan
 
 
-def calculate_program_id(program_code: str) -> str:
-    """Calculate program identifier from Stan program code.
+def calculate_model_id(program_code: str) -> str:
+    """Calculate model identifier from Stan program code.
 
     Identifier is a hash of the concatenation of the following:
 
-    - UTF-8 encoded Stan Program written in the Stan language
+    - UTF-8 encoded Stan program code.
     - UTF-8 encoded string recording the current Stan version.
-    - UTF-8 encoded string identifying the current system platform
+    - UTF-8 encoded string identifying the current system platform.
 
     Arguments:
-        program_code: Stan Program code.
+        program_code: Stan program code.
 
     Returns:
         str: hex-encoded unique identifier.
@@ -47,31 +47,31 @@ def calculate_program_id(program_code: str) -> str:
     return hash.hexdigest()
 
 
-def calculate_module_name(program_id: str) -> str:
-    """Calculate module name from `program_id`.
+def calculate_module_name(model_id: str) -> str:
+    """Calculate module name from `model_id`.
 
     Python module names may not begin with digits. Since unique identifiers are
     often integers or hex-encoded strings, using identifiers as module names is
     not possible.
 
     Arguments:
-        program_id
+        model_id
 
     Returns:
-        str: module name derived from `program_id`.
+        str: module name derived from `model_id`.
 
     """
     # NOTE: must add prefix because a module name, like any variable name in
     # Python, must not begin with a number.
-    return 'program_{}'.format(program_id)
+    return 'model_{}'.format(model_id)
 
 
-async def compile_program_extension_module(program_code: str) -> bytes:
-    """Compile extension module for a Stan Program.
+async def compile_model_extension_module(program_code: str) -> bytes:
+    """Compile extension module for a Stan model.
 
     Returns bytes of the compiled module.
 
-    Since compiling a Stan Program extension module takes a long time,
+    Since compiling a Stan model extension module takes a long time,
     compilation takes place in a different thread.
 
     This is a coroutine function.
@@ -80,12 +80,12 @@ async def compile_program_extension_module(program_code: str) -> bytes:
         bytes: binary representation of module.
 
     """
-    program_id = calculate_program_id(program_code)
-    program_name = f'_{program_id}'  # C++ identifiers cannot start with digits
+    model_id = calculate_model_id(program_code)
+    model_name = f'_{model_id}'  # C++ identifiers cannot start with digits
     cpp_code = await asyncio.get_event_loop().run_in_executor(None, httpstan.compile.compile,
-                                                              program_code, program_name)
-    pyx_code_template = pkg_resources.resource_string(__name__, 'anonymous_stan_program_services.pyx.template').decode()
-    module_bytes = _build_extension_module(program_id, cpp_code, pyx_code_template)
+                                                              program_code, model_name)
+    pyx_code_template = pkg_resources.resource_string(__name__, 'anonymous_stan_model_services.pyx.template').decode()
+    module_bytes = _build_extension_module(model_id, cpp_code, pyx_code_template)
     return module_bytes
 
 
@@ -106,14 +106,14 @@ def _load_module(module_name: str, module_path: str):
     return module
 
 
-def load_program_extension_module(program_id: str, module_bytes: bytes):
-    """Load Stan Program extension module from binary representation.
+def load_model_extension_module(model_id: str, module_bytes: bytes):
+    """Load Stan model extension module from binary representation.
 
     This function presents a security risk! It will load a Python module which
     can execute arbitrary Python code.
 
     Arguments:
-        program_id
+        model_id
         module_bytes
 
     Returns:
@@ -129,7 +129,7 @@ def load_program_extension_module(program_id: str, module_bytes: bytes):
     # suffix) does matter: Python calls an initialization function using the
     # module name, e.g., PyInit_mymodule.  Filenames which do not match the name
     # of this function will not load.
-    module_name = calculate_module_name(program_id)
+    module_name = calculate_module_name(model_id)
     module_filename = f'{module_name}.so'
     with tempfile.TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), 'wb') as fh:
@@ -140,7 +140,7 @@ def load_program_extension_module(program_id: str, module_bytes: bytes):
 
 
 @functools.lru_cache()
-def _build_extension_module(program_id: str, cpp_code: str, pyx_code_template: str,
+def _build_extension_module(model_id: str, cpp_code: str, pyx_code_template: str,
                             extra_compile_args: Optional[List[str]] = None) -> bytes:
     """Build extension module and return its name and binary representation.
 
@@ -148,15 +148,15 @@ def _build_extension_module(program_id: str, cpp_code: str, pyx_code_template: s
     module is not loaded by this function.
 
     `cpp_code` and `pyx_code_template` are written to
-    ``program_{program_id}.hpp`` and `program_{program_id}.pyx` respectively.
+    ``model_{model_id}.hpp`` and `model_{model_id}.pyx` respectively.
 
     The string `pyx_code_template` must contain the string ``${cpp_filename}``
-    which will be replaced by ``program_{program_id}.hpp``.
+    which will be replaced by ``model_{model_id}.hpp``.
 
-    The module name is a deterministic function of its `program_id`.
+    The module name is a deterministic function of its `model_id`.
 
     Arguments:
-        program_id
+        model_id
         cpp_code
         pyx_code_template: string passed to ``string.Template``.
         extra_compile_args
@@ -165,7 +165,7 @@ def _build_extension_module(program_id: str, cpp_code: str, pyx_code_template: s
         bytes: binary representation of module.
 
     """
-    module_name = calculate_module_name(program_id)
+    module_name = calculate_module_name(model_id)
 
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.

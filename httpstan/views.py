@@ -14,7 +14,7 @@ import marshmallow.validate as validate
 import webargs.aiohttpparser
 
 import httpstan.cache
-import httpstan.program
+import httpstan.models
 import httpstan.services_stub as services_stub
 
 
@@ -26,24 +26,24 @@ def json_error(message):  # noqa
                                 content_type='application/json')
 
 
-programs_args = {
+models_args = {
     'program_code': fields.Str(required=True),
 }
 
 
-class ProgramSchema(marshmallow.Schema):  # noqa
+class ModelSchema(marshmallow.Schema):  # noqa
     id = fields.String(required=True)
 
     class Meta:  # noqa
         strict = True
 
 
-async def handle_programs(request):
-    """Compile Stan Program.
+async def handle_models(request):
+    """Compile Stan model.
 
     ---
     post:
-        description: Compile a Stan Program
+        description: Compile a Stan model
         consumes:
             - application/json
         produces:
@@ -51,7 +51,7 @@ async def handle_programs(request):
         parameters:
             - in: body
               name: body
-              description: Stan Program code to compile
+              description: Stan program code to compile
               required: true
               schema:
                   type: object
@@ -60,22 +60,22 @@ async def handle_programs(request):
                           type: string
         responses:
             200:
-              description: Compiled Stan Program
+              description: Identifier for compiled Stan model
               schema:
-                 $ref: '#/definitions/Program'
+                 $ref: '#/definitions/Model'
     """
-    args = await webargs.aiohttpparser.parser.parse(programs_args, request)
+    args = await webargs.aiohttpparser.parser.parse(models_args, request)
     program_code = args['program_code']
-    program_id = httpstan.program.calculate_program_id(program_code)
+    model_id = httpstan.models.calculate_model_id(program_code)
     try:
-        module_bytes = await httpstan.cache.load_program_extension_module(program_id, request.app['db'])
+        module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app['db'])
     except KeyError:
-        logger.info('Compiling Stan Program. Program id is {}.'.format(program_id))
-        module_bytes = await httpstan.program.compile_program_extension_module(program_code)
-        await httpstan.cache.dump_program_extension_module(program_id, module_bytes, request.app['db'])
+        logger.info('Compiling Stan model. Model id is {}.'.format(model_id))
+        module_bytes = await httpstan.models.compile_model_extension_module(program_code)
+        await httpstan.cache.dump_model_extension_module(model_id, module_bytes, request.app['db'])
     else:
-        logger.info('Found Stan Program in cache. Program id is {}.'.format(program_id))
-    return aiohttp.web.json_response(ProgramSchema().dump({'id': program_id}).data)
+        logger.info('Found Stan model in cache. Model id is {}.'.format(model_id))
+    return aiohttp.web.json_response(ModelSchema().dump({'id': model_id}).data)
 
 
 # TODO(AR): supported functions can be fetched from stub Python files
@@ -84,7 +84,7 @@ FUNCTION_NAMES = frozenset({
     'stan::services::sample::hmc_nuts_diag_e_adapt',
 })
 
-class ProgramActionSchema(marshmallow.Schema):  # noqa
+class ModelsActionSchema(marshmallow.Schema):  # noqa
     # action `type` is full name of function in stan::services (e.g.,
     # `stan::services::sample::hmc_nuts_diag_e_adapt`)
     type = fields.String(required=True, validate=validate.OneOf(FUNCTION_NAMES))
@@ -94,7 +94,7 @@ class ProgramActionSchema(marshmallow.Schema):  # noqa
         strict = True
 
 
-async def handle_programs_actions(request):
+async def handle_models_actions(request):
     """Call function defined in stan::services.
 
     ---
@@ -102,8 +102,8 @@ async def handle_programs_actions(request):
         summary: Call function defined in stan::services.
         description: >
             The action `type` indicates the name of the stan::services function
-            which should be called given the Stan Program associated with the id
-            `program_id`.  For example, if sampling using
+            which should be called given the Stan model associated with the id
+            `model_id`.  For example, if sampling using
             ``stan::services::sample::hmc_nuts_diag_e`` the action `type` is the
             full function name ``stan::services::sample::hmc_nuts_diag_e``.
         consumes:
@@ -111,32 +111,32 @@ async def handle_programs_actions(request):
         produces:
             - application/x-ndjson
         parameters:
-            - name: program_id
+            - name: model_id
               in: path
-              description: ID of Stan Program to use
+              description: ID of Stan model to use
               required: true
               type: string
             - name: body
               in: body
-              description: "'Action' specifying full stan::services function name to call with Stan Program."
+              description: "'Action' specifying full stan::services function name to call with Stan model."
               required: true
               schema:
-                 $ref: '#/definitions/ProgramAction'
+                 $ref: '#/definitions/ModelsAction'
         responses:
             200:
                 description: Stream of newline-delimited JSON.
     """
-    program_id = request.match_info['program_id']
+    model_id = request.match_info['model_id']
     # use webargs to make sure `type` is present and data is a mapping (or
     # absent). Do not discard any other information in the request body.
-    kwargs_schema = await webargs.aiohttpparser.parser.parse(ProgramActionSchema(), request)
+    kwargs_schema = await webargs.aiohttpparser.parser.parse(ModelsActionSchema(), request)
     kwargs = await request.json()
     kwargs.update(kwargs_schema)
 
-    module_bytes = await httpstan.cache.load_program_extension_module(program_id, request.app['db'])
+    module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app['db'])
     if module_bytes is None:
-        return json_error('Stan Program with id `{}` not found.'.format(program_id))
-    program_module = httpstan.program.load_program_extension_module(program_id, module_bytes)
+        return json_error('Stan model with id `{}` not found.'.format(model_id))
+    model_module = httpstan.models.load_model_extension_module(model_id, module_bytes)
 
     # setup streaming response
     stream = aiohttp.web.StreamResponse()
@@ -148,14 +148,14 @@ async def handle_programs_actions(request):
     # See https://github.com/stan-dev/math/issues/551
     with await request.app['sample_lock']:
         type, data = kwargs.pop('type'), kwargs.pop('data')
-        async for message in services_stub.call(type, program_module, data, **kwargs):
+        async for message in services_stub.call(type, model_module, data, **kwargs):
             assert message is not None, message
             stream.write(google.protobuf.json_format.MessageToJson(message).encode().replace(b'\n', b''))
             stream.write(b'\n')
     return stream
 
 
-programs_params_args = {
+models_params_args = {
     'data': fields.Dict(required=True),
 }
 
@@ -168,7 +168,7 @@ class ParamSchema(marshmallow.Schema):  # noqa
         strict = True
 
 
-async def handle_programs_params(request):
+async def handle_models_params(request):
     """Get parameter names and dimensions.
 
     ---
@@ -182,9 +182,9 @@ async def handle_programs_params(request):
         produces:
             - application/json
         parameters:
-            - name: program_id
+            - name: model_id
               in: path
-              description: ID of Stan Program to use
+              description: ID of Stan model to use
               required: true
               type: string
             - name: body
@@ -210,21 +210,21 @@ async def handle_programs_params(request):
                           items:
                               $ref: '#/definitions/ParamSchema'
     """
-    args = await webargs.aiohttpparser.parser.parse(programs_params_args, request)
-    program_id = request.match_info['program_id']
+    args = await webargs.aiohttpparser.parser.parse(models_params_args, request)
+    model_id = request.match_info['model_id']
     data = args['data']
 
-    module_bytes = await httpstan.cache.load_program_extension_module(program_id, request.app['db'])
+    module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app['db'])
     if module_bytes is None:
-        return json_error('Stan Program with id `{}` not found.'.format(program_id))
-    program_module = httpstan.program.load_program_extension_module(program_id, module_bytes)
+        return json_error('Stan model with id `{}` not found.'.format(model_id))
+    model_module = httpstan.models.load_model_extension_module(model_id, module_bytes)
 
     array_var_context_capsule = httpstan.stan.make_array_var_context(data)
-    # ``param_names`` and ``dims`` are defined in ``anonymous_stan_program_services.pyx.template``.
+    # ``param_names`` and ``dims`` are defined in ``anonymous_stan_model_services.pyx.template``.
     # Apart from converting C++ types into corresponding Python types, they do no processing of the
     # output of ``get_param_names`` and ``get_dims``.
-    param_names_bytes = program_module.param_names(array_var_context_capsule)
+    param_names_bytes = model_module.param_names(array_var_context_capsule)
     param_names = [name.decode() for name in param_names_bytes]
-    dims = program_module.dims(array_var_context_capsule)
+    dims = model_module.dims(array_var_context_capsule)
     params = [ParamSchema().dump({'name': name, 'dims': dims_}).data for name, dims_ in zip(param_names, dims)]
-    return aiohttp.web.json_response({'id': program_id, 'params': params})
+    return aiohttp.web.json_response({'id': model_id, 'params': params})
