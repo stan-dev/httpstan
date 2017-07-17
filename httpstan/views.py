@@ -75,7 +75,7 @@ async def handle_programs(request):
         await httpstan.cache.dump_program_extension_module(program_id, module_bytes, request.app['db'])
     else:
         logger.info('Found Stan Program in cache. Program id is {}.'.format(program_id))
-    return aiohttp.web.json_response(ProgramSchema(strict=True).dump({'id': program_id}).data)
+    return aiohttp.web.json_response(ProgramSchema().dump({'id': program_id}).data)
 
 
 # TODO(AR): supported functions can be fetched from stub Python files
@@ -153,3 +153,78 @@ async def handle_programs_actions(request):
             stream.write(google.protobuf.json_format.MessageToJson(message).encode().replace(b'\n', b''))
             stream.write(b'\n')
     return stream
+
+
+programs_params_args = {
+    'data': fields.Dict(required=True),
+}
+
+
+class ParamSchema(marshmallow.Schema):  # noqa
+    name = fields.String(required=True)
+    dims = fields.List(fields.List(fields.Integer()), required=True)
+
+    class Meta:  # noqa
+        strict = True
+
+
+async def handle_programs_params(request):
+    """Get parameter names and dimensions.
+
+    ---
+    post:
+        summary: Get parameter names and dimensions.
+        description: >
+            Returns, wrapped in JSON, the output of two Stan C++ model class
+            methods, ``get_param_names`` and ``get_dims``.
+        consumes:
+            - application/json
+        produces:
+            - application/json
+        parameters:
+            - name: program_id
+              in: path
+              description: ID of Stan Program to use
+              required: true
+              type: string
+            - name: body
+              in: body
+              description: >
+                  Data for Stan Model. Needed to calculate param names and dimensions.
+              required: true
+              schema:
+                  type: object
+                  properties:
+                      data:
+                          type: object
+        responses:
+            200:
+              description: Parameters for Stan Model
+              schema:
+                  type: object
+                  properties:
+                      id:
+                          type: string
+                      params:
+                          type: array
+                          items:
+                              $ref: '#/definitions/ParamSchema'
+    """
+    args = await webargs.aiohttpparser.parser.parse(programs_params_args, request)
+    program_id = request.match_info['program_id']
+    data = args['data']
+
+    module_bytes = await httpstan.cache.load_program_extension_module(program_id, request.app['db'])
+    if module_bytes is None:
+        return json_error('Stan Program with id `{}` not found.'.format(program_id))
+    program_module = httpstan.program.load_program_extension_module(program_id, module_bytes)
+
+    array_var_context_capsule = httpstan.stan.make_array_var_context(data)
+    # ``param_names`` and ``dims`` are defined in ``anonymous_stan_program_services.pyx.template``.
+    # Apart from converting C++ types into corresponding Python types, they do no processing of the
+    # output of ``get_param_names`` and ``get_dims``.
+    param_names_bytes = program_module.param_names(array_var_context_capsule)
+    param_names = [name.decode() for name in param_names_bytes]
+    dims = program_module.dims(array_var_context_capsule)
+    params = [ParamSchema().dump({'name': name, 'dims': dims_}).data for name, dims_ in zip(param_names, dims)]
+    return aiohttp.web.json_response({'id': program_id, 'params': params})

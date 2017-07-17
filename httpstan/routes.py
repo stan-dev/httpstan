@@ -19,6 +19,7 @@ def setup_routes(app):
     """
     app.router.add_post('/v1/programs', views.handle_programs)
     app.router.add_post('/v1/programs/{program_id}/actions', views.handle_programs_actions)
+    app.router.add_post('/v1/programs/{program_id}/params', views.handle_programs_params)
 
 
 def openapi_spec() -> str:
@@ -30,6 +31,8 @@ def openapi_spec() -> str:
     )
     spec.add_path(path='/v1/programs', view=views.handle_programs)
     spec.add_path(path='/v1/programs/{program_id}/actions', view=views.handle_programs_actions)
+    spec.add_path(path='/v1/programs/{program_id}/params', view=views.handle_programs_params)
     spec.definition('Program', schema=views.ProgramSchema)
     spec.definition('ProgramAction', schema=views.ProgramActionSchema)
+    spec.definition('ParamSchema', schema=views.ParamSchema)
     return json.dumps(spec.to_dict())
