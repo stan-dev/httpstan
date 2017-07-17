@@ -50,3 +50,28 @@ def test_bernoulli(loop_with_server, host, port):
                 await validate_samples(resp)
 
     loop_with_server.run_until_complete(main())
+
+
+def test_bernoulli_params(loop_with_server, host, port):
+    """Test getting parameters from Bernoulli model."""
+    async def main():
+        async with aiohttp.ClientSession() as session:
+            programs_url = 'http://{}:{}/v1/programs'.format(host, port)
+            payload = {'program_code': program_code}
+            async with session.post(programs_url, data=json.dumps(payload), headers=headers) as resp:
+                assert resp.status == 200
+                program_id = (await resp.json())['id']
+
+            programs_params_url = 'http://{}:{}/v1/programs/{}/params'.format(host, port, program_id)
+            payload = {'data': data}
+            async with session.post(programs_params_url, data=json.dumps(payload), headers=headers) as resp:
+                assert resp.status == 200
+                response_payload = await resp.json()
+                assert 'id' in response_payload and response_payload['id'] == program_id
+                assert 'params' in response_payload and len(response_payload['params'])
+                params = response_payload['params']
+                param = params[0]
+                assert param['name'] == 'theta'
+                assert param['dims'] == []
+
+    loop_with_server.run_until_complete(main())

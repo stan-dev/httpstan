@@ -26,6 +26,7 @@ cimport cpython
 cimport cython.operator.dereference as deref
 cimport libcpp
 from libcpp.string cimport string
+from libcpp.vector cimport vector
 
 cimport httpstan.boost as boost
 cimport httpstan.stan as stan
@@ -34,6 +35,36 @@ cimport httpstan.stan as stan
 cdef extern from "${cpp_filename}" nogil:
     cdef cppclass stan_model:
         stan_model(stan.var_context& var_context) except +
+        void get_param_names(vector[string]&)
+        void get_dims(vector[vector[size_t]]&)
+
+
+def param_names(object array_var_context_capsule):
+    """Call the ``get_params`` method of the ``stan_model``."""
+    cdef stan.array_var_context * var_context_ptr = <stan.array_var_context*> cpython.PyCapsule_GetPointer(array_var_context_capsule, b'array_var_context')
+    cdef stan_model * model = new stan_model(deref(var_context_ptr))
+
+    cdef vector[string] names
+    model.get_param_names(names)
+
+    del model
+    # array_var_context_capsule is responsible for freeing its memory
+
+    return names
+
+
+def dims(object array_var_context_capsule):
+    """Call the ``get_dims`` method of the ``stan_model``."""
+    cdef stan.array_var_context * var_context_ptr = <stan.array_var_context*> cpython.PyCapsule_GetPointer(array_var_context_capsule, b'array_var_context')
+    cdef stan_model * model = new stan_model(deref(var_context_ptr))
+
+    cdef vector[vector[size_t]] dims_
+    model.get_dims(dims_)
+
+    del model
+    # array_var_context_capsule is responsible for freeing its memory
+
+    return dims_
 
 
 def hmc_nuts_diag_e_wrapper(object array_var_context_capsule, object queue_capsule,
