@@ -27,3 +27,6 @@ mypy>=0.5
 
 # additional packages used by tests
 requests<3,>=2.13
+
+# OpenAPI doc
+sphinxcontrib-redoc<2,>=1.3
