@@ -37,13 +37,13 @@ def test_linear_regression(loop_with_server, host, port):
     """Test sampling from linear regression posterior with defaults."""
     async def main():
         async with aiohttp.ClientSession() as session:
-            programs_url = 'http://{}:{}/v1/programs'.format(host, port)
+            models_url = 'http://{}:{}/v1/models'.format(host, port)
             payload = {'program_code': program_code}
-            async with session.post(programs_url, data=json.dumps(payload), headers=headers) as resp:
+            async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200
-                program_id = (await resp.json())['id']
+                model_id = (await resp.json())['id']
 
-            programs_actions_url = 'http://{}:{}/v1/programs/{}/actions'.format(host, port, program_id)
+            models_actions_url = 'http://{}:{}/v1/models/{}/actions'.format(host, port, model_id)
             payload = {
                 'type': 'stan::services::sample::hmc_nuts_diag_e_adapt',
                 'data': data,
@@ -51,9 +51,9 @@ def test_linear_regression(loop_with_server, host, port):
                 'num_warmup': 500,
             }
 
-            # XXX: this function is repeated from programs_actions
+            # XXX: this function is repeated from models_actions
             draws = []
-            async with session.post(programs_actions_url, data=json.dumps(payload), headers=headers) as resp:
+            async with session.post(models_actions_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200
                 while True:
                     chunk = await resp.content.readline()

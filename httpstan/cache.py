@@ -1,6 +1,6 @@
 """Cache management.
 
-Functions in this module manage the Stan Program cache and related caches.
+Functions in this module manage the Stan model cache and related caches.
 """
 import asyncio
 import logging
@@ -57,10 +57,10 @@ async def close_cache(app):
     app['db'].close()
 
 
-async def dump_program_extension_module(program_id: str, module_bytes: bytes, db: sqlite3.Connection):
-    """Store Stan Program extension module the cache.
+async def dump_model_extension_module(model_id: str, module_bytes: bytes, db: sqlite3.Connection):
+    """Store Stan model extension module the cache.
 
-    The Stan Program extension module is passed via ``module_bytes``. The bytes
+    The Stan model extension module is passed via ``module_bytes``. The bytes
     will be compressed before writing to the cache.
 
     Since compressing the bytes will take time, the compression function is run
@@ -69,18 +69,18 @@ async def dump_program_extension_module(program_id: str, module_bytes: bytes, db
     This function is a coroutine.
 
     Arguments:
-        program_id: Stan Program id
-        module_bytes: Bytes of the compile Stan Program extension module.
+        model_id: Stan model id
+        module_bytes: Bytes of the compile Stan model extension module.
         db: Cache database handle.
 
     """
     compressed = await asyncio.get_event_loop().run_in_executor(None, lzma.compress, module_bytes)
     with db:
-        db.execute("""INSERT INTO models VALUES (?, ?)""", (program_id.encode(), compressed))
+        db.execute("""INSERT INTO models VALUES (?, ?)""", (model_id.encode(), compressed))
 
 
-async def load_program_extension_module(program_id: str, db: sqlite3.Connection) -> bytes:
-    """Load Stan Program extension module the cache.
+async def load_model_extension_module(model_id: str, db: sqlite3.Connection) -> bytes:
+    """Load Stan model extension module the cache.
 
     The extension module is stored in compressed form. Since decompressing the
     module will take time, the decompression function is run in a different
@@ -89,15 +89,15 @@ async def load_program_extension_module(program_id: str, db: sqlite3.Connection)
     This function is a coroutine.
 
     Arguments:
-        program_id: Stan Program id
+        model_id: Stan model id
         db: Cache database handle.
 
     Returns
         bytes: Bytes of compiled extension module.
 
     """
-    row = db.execute("""SELECT value FROM models WHERE key=?""", (program_id.encode(),)).fetchone()
+    row = db.execute("""SELECT value FROM models WHERE key=?""", (model_id.encode(),)).fetchone()
     if not row:
-        raise KeyError(f'Extension module for id `{program_id}` not found.')
+        raise KeyError(f'Extension module for id `{model_id}` not found.')
     compressed = row[0]
     return await asyncio.get_event_loop().run_in_executor(None, lzma.decompress, compressed)

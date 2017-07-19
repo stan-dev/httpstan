@@ -17,9 +17,9 @@ def setup_routes(app):
         app (aiohttp.Application): Application to which routes should be added.
 
     """
-    app.router.add_post('/v1/programs', views.handle_programs)
-    app.router.add_post('/v1/programs/{program_id}/actions', views.handle_programs_actions)
-    app.router.add_post('/v1/programs/{program_id}/params', views.handle_programs_params)
+    app.router.add_post('/v1/models', views.handle_models)
+    app.router.add_post('/v1/models/{model_id}/actions', views.handle_models_actions)
+    app.router.add_post('/v1/models/{model_id}/params', views.handle_models_params)
 
 
 def openapi_spec() -> str:
@@ -29,10 +29,10 @@ def openapi_spec() -> str:
         version=httpstan.__version__,
         plugins=['apispec.ext.marshmallow'],
     )
-    spec.add_path(path='/v1/programs', view=views.handle_programs)
-    spec.add_path(path='/v1/programs/{program_id}/actions', view=views.handle_programs_actions)
-    spec.add_path(path='/v1/programs/{program_id}/params', view=views.handle_programs_params)
-    spec.definition('Program', schema=views.ProgramSchema)
-    spec.definition('ProgramAction', schema=views.ProgramActionSchema)
-    spec.definition('ParamSchema', schema=views.ParamSchema)
+    spec.add_path(path='/v1/models', view=views.handle_models)
+    spec.add_path(path='/v1/models/{model_id}/actions', view=views.handle_models_actions)
+    spec.add_path(path='/v1/models/{model_id}/params', view=views.handle_models_params)
+    spec.definition('Model', schema=views.ModelSchema)
+    spec.definition('ModelsAction', schema=views.ModelsActionSchema)
+    spec.definition('Param', schema=views.ParamSchema)
     return json.dumps(spec.to_dict())

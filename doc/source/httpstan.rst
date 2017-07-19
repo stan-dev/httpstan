@@ -28,10 +28,10 @@ httpstan\.main module
     :undoc-members:
     :show-inheritance:
 
-httpstan\.program module
+httpstan\.models module
 ------------------------
 
-.. automodule:: httpstan.program
+.. automodule:: httpstan.models
     :members:
     :undoc-members:
     :show-inheritance:

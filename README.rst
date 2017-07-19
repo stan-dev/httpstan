@@ -18,7 +18,7 @@ to make HTTP requests. The primary audience for this package is developers.
 In addition to providing all the functionality of the command-line interface
 to Stan (CmdStan_) over HTTP 1.1, **httpstan** provides:
 
-* Automatic caching of compiled Stan Programs and samples from programs.
+* Automatic caching of compiled Stan models and samples from models.
 * Parallel sampling.
 
 Important Disclaimer
@@ -60,24 +60,24 @@ localhost, port 8080::
     python3 -m httpstan
 
 In a different terminal, make a POST request to
-``http://localhost:8080/v1/programs`` with a Stan Program to compile the
+``http://localhost:8080/v1/models`` with Stan program code to compile the
 program::
 
     curl -X POST -H "Content-Type: application/json" \
         -d '{"program_code":"parameters {real y;} model {y ~ normal(0,1);}"}' \
-        http://localhost:8080/v1/programs
+        http://localhost:8080/v1/models
 
-This request will return a program id similar to the following::
+This request will return a model id similar to the following::
 
-    {"program": {"id": "8137474d19926b0aa8efd4f1d3944131d59269d97a7bd8dab8e79d667eb314df"}}
+    {"model": {"id": "8137474d19926b0aa8efd4f1d3944131d59269d97a7bd8dab8e79d667eb314df"}}
 
-(The program ``id`` will be different on different platforms and with different versions of Stan.)
+(The model ``id`` will be different on different platforms and with different versions of Stan.)
 
 To draw samples from this model using default settings, we make the following request::
 
     curl -X POST -H "Content-Type: application/json" \
         -d '{"type":"stan::services::sample::hmc_nuts_diag_e_adapt"}' \
-        http://localhost:8080/v1/programs/8137474d19926b0aa8efd4f1d3944131d59269d97a7bd8dab8e79d667eb314df/actions
+        http://localhost:8080/v1/models/8137474d19926b0aa8efd4f1d3944131d59269d97a7bd8dab8e79d667eb314df/actions
 
 This request will return samples from the normal distribution. The output is
 taken directly from the output of the relevant function defined in the Stan C++
