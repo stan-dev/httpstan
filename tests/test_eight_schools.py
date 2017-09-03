@@ -1,4 +1,4 @@
-"""Test sampling from Bernoulli model."""
+"""Test sampling from Eight Schools model."""
 import json
 
 import aiohttp
@@ -7,19 +7,30 @@ import aiohttp
 headers = {'content-type': 'application/json'}
 program_code = """
     data {
-        int<lower=0> N;
-        int<lower=0,upper=1> y[N];
+      int<lower=0> J; // number of schools
+      real y[J]; // estimated treatment effects
+      real<lower=0> sigma[J]; // s.e. of effect estimates
     }
     parameters {
-        real<lower=0,upper=1> theta;
+      real mu;
+      real<lower=0> tau;
+      real eta[J];
+    }
+    transformed parameters {
+      real theta[J];
+      for (j in 1:J)
+        theta[j] = mu + tau * eta[j];
     }
     model {
-        theta ~ beta(1,1);
-        for (n in 1:N)
-        y[n] ~ bernoulli(theta);
+      target += normal_lpdf(eta | 0, 1);
+      target += normal_lpdf(y | theta, sigma);
     }
-    """
-data = {'N': 10, 'y': (0, 1, 0, 0, 0, 0, 0, 0, 0, 1)}
+"""
+schools_data = {
+    'J': 8,
+    'y': (28, 8, -3, 7, -1, 1, 18, 12),
+    'sigma': (15, 10, 16, 11, 9, 11, 10, 18),
+}
 
 
 async def validate_samples(resp):
@@ -34,8 +45,8 @@ async def validate_samples(resp):
     return True
 
 
-def test_bernoulli(loop_with_server, host, port):
-    """Test sampling from Bernoulli model with defaults."""
+def test_eight_schools(loop_with_server, host, port):
+    """Test sampling from Eight Schools model with defaults."""
     async def main():
         async with aiohttp.ClientSession() as session:
             models_url = 'http://{}:{}/v1/models'.format(host, port)
@@ -45,15 +56,15 @@ def test_bernoulli(loop_with_server, host, port):
                 model_id = (await resp.json())['id']
 
             models_actions_url = 'http://{}:{}/v1/models/{}/actions'.format(host, port, model_id)
-            payload = {'type': 'stan::services::sample::hmc_nuts_diag_e_adapt', 'data': data}
+            payload = {'type': 'stan::services::sample::hmc_nuts_diag_e_adapt', 'data': schools_data}
             async with session.post(models_actions_url, data=json.dumps(payload), headers=headers) as resp:
                 await validate_samples(resp)
 
     loop_with_server.run_until_complete(main())
 
 
-def test_bernoulli_params(loop_with_server, host, port):
-    """Test getting parameters from Bernoulli model."""
+def test_eight_schools_params(loop_with_server, host, port):
+    """Test getting parameters from Eight Schools model."""
     async def main():
         async with aiohttp.ClientSession() as session:
             models_url = 'http://{}:{}/v1/models'.format(host, port)
@@ -63,7 +74,7 @@ def test_bernoulli_params(loop_with_server, host, port):
                 model_id = (await resp.json())['id']
 
             models_params_url = 'http://{}:{}/v1/models/{}/params'.format(host, port, model_id)
-            payload = {'data': data}
+            payload = {'data': schools_data}
             async with session.post(models_params_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200
                 response_payload = await resp.json()
@@ -71,8 +82,16 @@ def test_bernoulli_params(loop_with_server, host, port):
                 assert 'params' in response_payload and len(response_payload['params'])
                 params = response_payload['params']
                 param = params[0]
-                assert param['name'] == 'theta'
+                assert param['name'] == 'mu'
                 assert param['dims'] == []
-                assert param['constrained_names'] == ['theta']
+                assert param['constrained_names'] == ['mu']
+                param = params[1]
+                assert param['name'] == 'tau'
+                assert param['dims'] == []
+                assert param['constrained_names'] == ['tau']
+                param = params[2]
+                assert param['name'] == 'eta'
+                assert param['dims'] == [schools_data['J']]
+                assert param['constrained_names'] == [f'eta.{i}' for i in range(1, schools_data['J'] + 1)]
 
     loop_with_server.run_until_complete(main())

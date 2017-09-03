@@ -5,6 +5,7 @@ Handlers are separated from the endpoint names. Endpoints are defined in
 """
 import json
 import logging
+import re
 
 import aiohttp.web
 import google.protobuf.json_format
@@ -161,8 +162,10 @@ models_params_args = {
 
 
 class ParamSchema(marshmallow.Schema):  # noqa
+    """Schema for single parameter."""
     name = fields.String(required=True)
-    dims = fields.List(fields.List(fields.Integer()), required=True)
+    dims = fields.List(fields.Integer(), required=True)
+    constrained_names = fields.List(fields.String(), required=True)
 
     class Meta:  # noqa
         strict = True
@@ -171,12 +174,15 @@ class ParamSchema(marshmallow.Schema):  # noqa
 async def handle_models_params(request):
     """Get parameter names and dimensions.
 
+    Data must be provided as model parameters can and frequently do
+    depend on the data.
+
     ---
     post:
         summary: Get parameter names and dimensions.
         description: >
-            Returns, wrapped in JSON, the output of two Stan C++ model class
-            methods, ``get_param_names`` and ``get_dims``.
+            Returns, wrapped in JSON, the output of Stan C++ model class
+            methods: ``constrained_param_names``, ``get_param_names`` and ``get_dims``.
         consumes:
             - application/json
         produces:
@@ -226,5 +232,12 @@ async def handle_models_params(request):
     param_names_bytes = model_module.param_names(array_var_context_capsule)
     param_names = [name.decode() for name in param_names_bytes]
     dims = model_module.dims(array_var_context_capsule)
-    params = [ParamSchema().dump({'name': name, 'dims': dims_}).data for name, dims_ in zip(param_names, dims)]
+    constrained_param_names_bytes = model_module.constrained_param_names(array_var_context_capsule)
+    constrained_param_names = [name.decode() for name in constrained_param_names_bytes]
+    params = []
+    for name, dims_ in zip(param_names, dims):
+        constrained_names = tuple(filter(lambda s: re.match(fr'{name}\.?', s), constrained_param_names))
+        assert isinstance(dims_, list)
+        assert constrained_names, constrained_names
+        params.append(ParamSchema().dump({'name': name, 'dims': dims_, 'constrained_names': constrained_names}).data)
     return aiohttp.web.json_response({'id': model_id, 'params': params})
