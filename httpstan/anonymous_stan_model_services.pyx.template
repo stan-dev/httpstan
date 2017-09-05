@@ -37,6 +37,7 @@ cdef extern from "${cpp_filename}" nogil:
         stan_model(stan.var_context& var_context) except +
         void get_param_names(vector[string]&)
         void get_dims(vector[vector[size_t]]&)
+        void constrained_param_names(vector[string]&)
 
 
 def param_names(object array_var_context_capsule):
@@ -46,6 +47,20 @@ def param_names(object array_var_context_capsule):
 
     cdef vector[string] names
     model.get_param_names(names)
+
+    del model
+    # array_var_context_capsule is responsible for freeing its memory
+
+    return names
+
+
+def constrained_param_names(object array_var_context_capsule):
+    """Call the ``constrained_param_names`` method of the ``stan_model``."""
+    cdef stan.array_var_context * var_context_ptr = <stan.array_var_context*> cpython.PyCapsule_GetPointer(array_var_context_capsule, b'array_var_context')
+    cdef stan_model * model = new stan_model(deref(var_context_ptr))
+
+    cdef vector[string] names
+    model.constrained_param_names(names)
 
     del model
     # array_var_context_capsule is responsible for freeing its memory
