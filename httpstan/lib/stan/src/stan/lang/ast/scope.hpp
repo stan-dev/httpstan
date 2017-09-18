@@ -38,8 +38,7 @@ namespace stan {
        *
        * @param program_block enclosing program block
        */
-      scope(const
-                 origin_block& program_block);   // NOLINT(runtime/explicit)
+      scope(const origin_block& program_block);   // NOLINT(runtime/explicit)
 
       /**
        * Construct scope for a variable in specified outer program block,
@@ -65,6 +64,16 @@ namespace stan {
        * @return true when scope is nested (local) block.
        */
       bool is_local() const;
+
+      /**
+       * Flags local scopes which permit parameter variables.
+       * Allows local blocks in functions, transfromed parameter,
+       * and model blocks; disallows local blocks in transformed data
+       * and generated quantities program blocks.
+       *
+       * @return true for local parameter origin block types
+       */
+      bool local_allows_var() const;
 
       /**
        * Flags scopes where parameter variables are declared,

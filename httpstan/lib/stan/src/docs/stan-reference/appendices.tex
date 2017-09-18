@@ -108,7 +108,7 @@ in designing Stan, we wanted to keep many of the useful features of
 Bugs.
 
 To start, take a look at the files of translated \BUGS models at
-\url{http://mc-stan.org/}.  These are 40 or so models from the \BUGS
+\url{http://mc-stan.org}.  These are 40 or so models from the \BUGS
 example volumes, all translated and tested (to provide the same
 answers as \BUGS) in Stan.  For any particular model you want to fit,
 you can look for similar structures in these examples.
@@ -526,13 +526,13 @@ conditionals have regressions with slope 0.8.
 
 \item Stan can be set up from within R using two lines of code.
   Follow the instructions for running Stan from R on
-  \url{http://mc-stan.org/}.  You don't need to separately download
+  \url{http://mc-stan.org}.  You don't need to separately download
   Stan and RStan.  Installing RStan will automatically set up Stan.
   When RStan moves to CRAN, it will get even easier.
 \item In practice we typically run the same Stan model repeatedly.  If
   you pass RStan the result of a previously fitted model the model will
   not need be recompiled. An example is given on the running
-  Stan from R pages available from \code{http://mc-stan.org/}.
+  Stan from R pages available from \code{http://mc-stan.org}.
 \item When you run Stan, it saves various conditions including
   starting values, some control variables for the tuning and running
   of the no-U-turn sampler, and the initial random seed. You can
@@ -560,7 +560,7 @@ conditionals have regressions with slope 0.8.
 \begin{itemize}
 \item Stan, like WinBUGS, OpenBUGS, and JAGS, has an active community,
   which you can access via the user's mailing list and the developer's
-  mailing list; see \code{http://mc-stan.org/} for information on
+  mailing list; see \code{http://mc-stan.org} for information on
   subscribing and posting and to look at archives.
 \end{itemize}
 
@@ -663,7 +663,7 @@ identifier ::= [a-zA-Z] [a-zA-Z0-9_]*
 \small
 \begin{Verbatim}[fontsize=\small]
 expressions ::= expression % ','
-expression ::= numeric_literal
+expression ::= real_literal
              | variable
              | '{' expressions '}'
              | expression `?` expression `:` expression
@@ -678,14 +678,14 @@ expression ::= numeric_literal
                '(' function_literal (',' expression){6|9} ')'
              | integrate_ode_bdf
                '(' function_literal (',' expression){6|9} ')'
+             | algebra_solver
+             '('function_literal (',' expression){4|7} ')'
              | '(' expression ')'
 
 index ::= ?(expression | expression ':' | ':' expression
             | expression ':' expression)
 
 indexes ::= index % ','
-
-numeric_literal ::= integer_literal | real_literal
 
 integer_literal ::= 0 | [1-9] [0-9]*
 
@@ -706,17 +706,19 @@ statement ::= atomic_statement | nested_statement
 
 atomic_statement ::= atomic_statement_body ';'
 atomic_statement_body
-::=  lhs ('=' | '<-') expression
+::=  lhs assignment_op expression
    | expression '~' identifier '(' expressions ')' ?truncation
    | function_literal '(' expressions ')'
    | 'increment_log_prob' '(' expression ')'
    | 'target' '+=' expression
    | 'break'
    | 'continue'
-   | 'print' '(' (expression | string_literal)* ')'
-   | 'reject' '(' (expression | string_literal)* ')'
+   | 'print' '(' (expression | string_literal) % ',' ')'
+   | 'reject' '(' (expression | string_literal) % ',' ')'
    | 'return' expression
    | ''
+
+assignment_op ::= '<-' | '=' | '+=' | '-=' | '*=' | '/=' | '.*=' | '/*='
 
 string_literal ::= '"' char* '"'
 
@@ -802,6 +804,34 @@ user-defined functions with names ending in \code{\_rng}.
 
 A probability function literal must have one of the following
 suffixes: \code{\_lpdf}, \code{\_lpmf}, \code{\_lcdf}, or \code{\_lccdf}.
+
+\subsection{Algebraic Solver Argument Types and Origins}
+
+The \code{algebra\_solver} function may be used without control
+parameters; in this case
+%
+\begin{itemize}
+\item its first argument refers to a function with signature
+\begin{quote}
+  \code{(~vector, ~vector,~real[],~int[])~:~vector},
+\end{quote}
+\item the remaining four arguments must be assignable to types
+\begin{quote}
+  \code{vector}, \code{vector}, \code{real[]}, \code{int[]}
+\end{quote}
+  respectively and
+  \item the second, fourth, and fifth arguments must be expressions
+  containing only variables originating from the data or transformed
+  data blocks.
+\end{itemize}
+%
+The \code{algebra\_solver} function may accept three additional arguments,
+which like the second, fourth, and fifth arguments, must be expressions free
+of parameter references. The final free arguments must be assignable to types
+\begin{quote}
+\code{real}, \code{real}, \code{int}
+\end{quote}
+
 
 \subsection{ODE Solver Argument Types and Origins}
 
