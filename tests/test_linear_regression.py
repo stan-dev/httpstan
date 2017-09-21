@@ -4,6 +4,8 @@ import json
 import aiohttp
 import numpy as np
 
+import helpers
+
 
 headers = {'content-type': 'application/json'}
 program_code = """
@@ -51,24 +53,8 @@ def test_linear_regression(loop_with_server, host, port):
                 'num_warmup': 500,
             }
 
-            # XXX: this function is repeated from models_actions
-            draws = []
             async with session.post(models_actions_url, data=json.dumps(payload), headers=headers) as resp:
-                assert resp.status == 200
-                while True:
-                    chunk = await resp.content.readline()
-                    if not chunk:
-                        break
-                    assert len(chunk)
-                    payload = json.loads(chunk)
-                    assert len(payload) > 0
-                    if payload['topic'] == 'SAMPLE':
-                        assert isinstance(payload['feature'], dict)
-                        if 'beta.1' in payload['feature']:
-                            draws.append(payload['feature'])
-
-            assert len(draws) > 0
-            beta_0 = np.array([draw['beta.1']['doubleList']['value'].pop() for draw in draws])
+                beta_0 = await helpers.extract_draws(resp, 'beta.1')
             assert all(np.abs(beta_0 - np.array(beta_true)[0]) < 0.05)
 
     loop_with_server.run_until_complete(main())
