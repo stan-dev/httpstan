@@ -4,18 +4,21 @@
 
 Stan does not technically support functions that do not return values.
 It does support two types of statements that look like functions, one
-for incrementing log probabilities and one for printing.
-Documentation on these functions is included here for completeness.
-The special keyword \code{void} is used for the return type of void
-functions.
+for printing and one for rejecting outputs.  Documentation on these
+functions is included here for completeness.  The special keyword
+\code{void} is used for the return type of void functions, because
+they behave like variadic functions with void return type, even though
+they are special kinds of statements.
 
-\section{Print}
+Although \code{print} and \code{reject} appear to have the syntax of
+functions, they are actually special kinds of statements with slightly
+different form and behavior than other functions.  First, they are the
+constructs that allow a variable number of arguments.  Second, they
+are the the only constructs to accept string literals (e.g.,
+\code{"hello world"}) as arguments.  Third, they have no effect on the
+log density function and operate solely through side effects.
 
-The \code{print} statement is unique among Stan's syntactic constructs
-in two ways.  First, it is the only function-like construct that
-allows a variable number of arguments.  Second, it is the only
-function-like construct to accept string literals (e.g., \code{"hello
-  world"}) as arguments.
+\section{Print ``Function''}
 
 Printing has no effect on the model's log probability function.  Its
 sole purpose is the side effect (i.e., an effect not represented in a
@@ -26,7 +29,7 @@ or the R console in RStan).
 \begin{description}
   \fitem{void}{print}{T1 \farg{x1},..., TN \farg{xN}}{Print the values
     denoted by the arguments \farg{x1} through \farg{xN} on the
-    standard output stream.  There are no spaces between items in the
+    output message stream.  There are no spaces between items in the
     print, but a line feed (LF; Unicode U+000A; \Cpp literal
     \code{'\textbackslash{n}'}) is inserted at the end of the printed
     line.  The types \code{T1} through \code{TN} can be any of Stan's
@@ -37,6 +40,28 @@ or the R console in RStan).
 The full behavior of the \code{print} statement with examples is
 documented in \refsection{print-statements}.
 
+\section{Reject ``Function''}
+
+The reject statement has the same syntax as the print statement,
+accepting an arbitrary number of arguments of any type (including
+string literals).   The effect of executing a reject statement is to
+throw an exception internally that terminates the current iteration
+with a rejection (the behavior of which will depend on the algorithmic
+context in which it occurs).
+%
+\begin{description}
+  \fitem{void}{reject}{T1 \farg{x1},..., TN \farg{xN}}{Reject the
+    current iteration and print the values denoted by the arguments
+    \farg{x1} through \farg{xN} on the output message stream.  There
+    are no spaces between items in the print, but a line feed (LF;
+    Unicode U+000A; \Cpp literal \code{'\textbackslash{n}'}) is
+    inserted at the end of the printed line.  The types \code{T1}
+    through \code{TN} can be any of Stan's built-in numerical types or
+    double quoted strings of ASCII characters.}
+\end{description}
+%
+The full behavior of the \code{print} statement with examples is
+documented in \refsection{reject-statements}.
 
 \chapter{Integer-Valued Basic Functions}
 
@@ -162,14 +187,16 @@ This is a no-op.
 \fitemnobody{int}{int\_step}{int \farg{x}}
 %
 \fitem{int}{int\_step}{real \farg{x}}{
-  Returns the integer step, or Heaviside, function of \farg{x}.
+  Returns the step function of \farg{x} as an integer,
   \[
   \mbox{int\_step}(x) =
   \begin{cases}
-    0 & \mbox{if } x \leq 0 \\
-    1 & \mbox{if } x > 0
+    1 & \mbox{if } x > 0 \\
+    0 & \mbox{if } x \leq 0 \mathrm{ or } x \mathrm{ is } Nan
   \end{cases}
-  \]}
+  \]
+{\it Warning:} \code{int\_step(0)} and \code{int\_step(NaN)} return 0
+whereas \code{step(0)} and \code{step(NaN)} return 1.}
 %
 \end{description}
 %
@@ -577,11 +604,13 @@ are primarily provided for compatibility with BUGS and JAGS.
     \[
     \mbox{step}(x) =
     \begin{cases}
-      1 & \mbox{if } x > 0   \\
-      0 & \mbox{otherwise}
+      0 & \mbox{if } x < 0   \\
+      1 & \mbox{otherwise}
     \end{cases}
-    \]}
-  %
+    \]
+{\it Warning:} \code{int\_step(0)} and \code{int\_step(NaN)} return 0
+whereas \code{step(0)} and \code{step(NaN)} return 1.}
+%
 \end{description}
 %
 The step function is often used in BUGS to perform conditional
@@ -1531,16 +1560,16 @@ with respect to the combination operation (min, max, sum, or product).
 \subsection{Minimum and Maximum}
 
 \begin{description}
-\fitem{real}{min}{real \farg{x}[]}{
+\fitem{real}{min}{real[] \farg{x}}{
 The minimum value in \farg{x}, or $+\infty$ if \farg{x} is size 0.}
 %
-\fitem{int}{min}{int \farg{x}[]}{
+\fitem{int}{min}{int[] \farg{x}}{
 The minimum value in \farg{x}, or error if \farg{x} is size 0.}
 %
-\fitem{real}{max}{real \farg{x}[]}{
+\fitem{real}{max}{real[] \farg{x}}{
 The maximum value in \farg{x}, or $-\infty$ if \farg{x} is size 0.}
 %
-\fitem{int}{max}{int \farg{x}[]}{
+\fitem{int}{max}{int[] \farg{x}}{
 The maximum value in \farg{x}, or error if \farg{x} is size 0.}
 %
 \end{description}
@@ -1549,7 +1578,7 @@ The maximum value in \farg{x}, or error if \farg{x} is size 0.}
 
 \begin{description}
 %
-\fitem{int}{sum}{int \farg{x}[]}{
+\fitem{int}{sum}{int[] \farg{x}}{
 The sum of the elements in \farg{x}, defined for $x$ of size $N$ by
 \[
 \mbox{\code{sum}}(x)
@@ -1562,13 +1591,13 @@ The sum of the elements in \farg{x}, defined for $x$ of size $N$ by
 \]
 }
 %
-\fitem{real}{sum}{real \farg{x}[]}{
+\fitem{real}{sum}{real[] \farg{x}}{
 The sum of the elements in \farg{x}; see definition above.}
 %
-\fitem{real}{prod}{real \farg{x}[]}{
+\fitem{real}{prod}{real[] \farg{x}}{
 The product of the elements in \farg{x}, or 1 if \farg{x} is size 0.}
 %
-\fitem{real}{prod}{int \farg{x}[]}{
+\fitem{real}{prod}{int[] \farg{x}}{
 The product of the elements in \farg{x},
 \[
 \mbox{\code{product}}(x) =
@@ -1580,7 +1609,7 @@ The product of the elements in \farg{x},
 \]
 }
 %
-\fitem{real}{log\_sum\_exp}{real \farg{x}[]}{
+\fitem{real}{log\_sum\_exp}{real[] \farg{x}}{
 The natural logarithm of the sum of the exponentials of the elements
 in \farg{x}, or $-\infty$ if the array is empty.}
 \end{description}
@@ -1603,7 +1632,7 @@ The sample deviation is defined as the square root of the
 sample deviation, but is not unbiased.
 
 \begin{description}
-\fitem{real}{mean}{real \farg{x}[]}{
+\fitem{real}{mean}{real[] \farg{x}}{
 The sample mean of the elements in \farg{x}.
 For an array $x$ of size
 $N > 0$,
@@ -1617,7 +1646,7 @@ $N > 0$,
 It is an error to the call the mean function with an array of size $0$.
 }
 %
-\fitem{real}{variance}{real \farg{x}[]}{
+\fitem{real}{variance}{real[] \farg{x}}{
 The sample variance of the elements in \farg{x}. For $N > 0$,
 \[
 \mbox{\code{variance}}(x)
@@ -1632,7 +1661,7 @@ The sample variance of the elements in \farg{x}. For $N > 0$,
 It is an error to call the \code{variance} function with an array of size 0.
 }
 %
-\fitem{real}{sd}{real \farg{x}[]}{The sample standard deviation of
+\fitem{real}{sd}{real[] \farg{x}}{The sample standard deviation of
 elements in \farg{x}.
 \[
 \mbox{sd}(x)
@@ -1683,12 +1712,12 @@ where \code{N} is the size of \farg{x} and \farg{y}.  It is an error
 to call \code{squared\_distance} with arguments of unequal size.}
 %
 \fitem{real}{squared\_distance}{vector \farg{x}, row\_vector
-  \farg{y}[]}{The squared Euclidean distance between \farg{x} and \farg{y}}
+ [] \farg{y}}{The squared Euclidean distance between \farg{x} and \farg{y}}
 %
 \fitem{real}{squared\_distance}{row\_vector \farg{x}, vector
-  \farg{y}[]}{The squared Euclidean distance between \farg{x} and \farg{y}}
+ [] \farg{y}}{The squared Euclidean distance between \farg{x} and \farg{y}}
 %
-\fitem{real}{squared\_distance}{row\_vector \farg{x}, row\_vector \farg{y}[]}{The Euclidean
+\fitem{real}{squared\_distance}{row\_vector \farg{x}, row\_vector[] \farg{y}}{The Euclidean
   distance between \farg{x} and \farg{y}}
 %
 \end{description}
@@ -1743,7 +1772,6 @@ used to extract the dimensions of vectors and matrices.
   total number of elements contained.  For example, if \code{x} is of
   type \code{real[4,3]} then \code{size(x)} is 4.}
 \end{description}
-
 
 \section{Array Broadcasting}\label{array-broadcasting.section}
 
@@ -1817,6 +1845,29 @@ After the assignment to \code{b}, the value for \code{b[j,k,m,n]} is
 equal to \code{a[m,n]} where it is defined, for \code{j} in \code{1:3},
 \code{k} in \code{1:4}, \code{m} in \code{1:5}, and \code{n} in
 \code{1:6}.
+
+%
+\section{Array Concatenation}\label{array-concatenation.section}
+
+\begin{description}
+\fitem{T}{append\_array}{T \farg{x}, T \farg{y}}{
+  Return the concatenation of two arrays in the order of the arguments.
+  T must be an N-dimensional array of any Stan type (with a maximum N of 7). All
+  dimensions but the first must match. }
+\end{description}
+%
+For example, the following code appends two three dimensional arrays of matrices
+together. Note that all dimensions except the first match. Any mismatches will
+cause an error to be thrown.
+%
+\begin{stancode}
+matrix[4, 6] x1[2, 1, 7];
+matrix[4, 6] x2[3, 1, 7];
+matrix[4, 6] x3[5, 1, 7];
+// ...
+x3 = append_array(x1, x2);
+\end{stancode}
+%
 
 \section{Sorting functions}\label{sorting-functions.section}
 
@@ -3425,6 +3476,268 @@ one-dimensional array in row-major order.}
 \end{description}
 
 
+\chapter{Compound Arithmetic and Assignment}
+
+The compound arithmetic and assignment operations are coded directly
+as statements, as described in
+\refsection{compound-arithmetic-assignment}.  They allow statements of
+the form
+%
+\begin{stancode}
+x = x op y;
+\end{stancode}
+%
+with the compound form
+%
+\begin{stancode}
+x op= y;
+\end{stancode}
+%
+The signatures of the supported compound arithmetic and assignment
+operations are as follows.
+
+\section{Compound Addition and Assignment}
+
+\begin{description}
+\fitem{void}{operator+=}{int \farg{x}, int \farg{y}}{\code{\farg{x} +=
+    y} is equivalent to \code{\farg{x} = \farg{x} + \farg{y}}.}
+\fitem{void}{operator+=}{real \farg{x}, real \farg{y}}{\code{\farg{x} +=
+    y} is equivalent to \code{\farg{x} = \farg{x} + \farg{y}}.}
+%
+\fitem{void}{operator+=}{vector \farg{x}, real \farg{y}}{\code{\farg{x} +=
+    y} is equivalent to \code{\farg{x} = \farg{x} + \farg{y}}.}
+\fitem{void}{operator+=}{row\_vector \farg{x}, real \farg{y}}{\code{\farg{x} +=
+    y} is equivalent to \code{\farg{x} = \farg{x} + \farg{y}}.}
+\fitem{void}{operator+=}{matrix \farg{x}, real \farg{y}}{\code{\farg{x} +=
+    y} is equivalent to \code{\farg{x} = \farg{x} + \farg{y}}.}
+%
+\fitem{void}{operator+=}{vector \farg{x}, vector \farg{y}}{\code{\farg{x} +=
+    y} is equivalent to \code{\farg{x} = \farg{x} + \farg{y}}.}
+\fitem{void}{operator+=}{row\_vector \farg{x}, row\_vector \farg{y}}{\code{\farg{x} +=
+    y} is equivalent to \code{\farg{x} = \farg{x} + \farg{y}}.}
+\fitem{void}{operator+=}{matrix \farg{x}, matrix \farg{y}}{\code{\farg{x} +=
+    y} is equivalent to \code{\farg{x} = \farg{x} + \farg{y}}.}
+\end{description}
+
+\section{Compound Subtraction and Assignment}
+
+\begin{description}
+\fitem{void}{operator-=}{int \farg{x}, int \farg{y}}{\code{\farg{x} -=
+    y} is equivalent to \code{\farg{x} = \farg{x} - \farg{y}}.}
+\fitem{void}{operator-=}{real \farg{x}, real \farg{y}}{\code{\farg{x} -=
+    y} is equivalent to \code{\farg{x} = \farg{x} - \farg{y}}.}
+%
+\fitem{void}{operator-=}{vector \farg{x}, real \farg{y}}{\code{\farg{x} -=
+    y} is equivalent to \code{\farg{x} = \farg{x} - \farg{y}}.}
+\fitem{void}{operator-=}{row\_vector \farg{x}, real \farg{y}}{\code{\farg{x} -=
+    y} is equivalent to \code{\farg{x} = \farg{x} - \farg{y}}.}
+\fitem{void}{operator-=}{matrix \farg{x}, real \farg{y}}{\code{\farg{x} -=
+    y} is equivalent to \code{\farg{x} = \farg{x} - \farg{y}}.}
+%
+\fitem{void}{operator-=}{vector \farg{x}, vector \farg{y}}{\code{\farg{x} -=
+    y} is equivalent to \code{\farg{x} = \farg{x} - \farg{y}}.}
+\fitem{void}{operator-=}{row\_vector \farg{x}, row\_vector \farg{y}}{\code{\farg{x} -=
+    y} is equivalent to \code{\farg{x} = \farg{x} - \farg{y}}.}
+\fitem{void}{operator-=}{matrix \farg{x}, matrix \farg{y}}{\code{\farg{x} -=
+    y} is equivalent to \code{\farg{x} = \farg{x} - \farg{y}}.}
+\end{description}
+
+\section{Compound Multiplication and Assignment}
+
+\begin{description}
+\fitem{void}{operator*=}{int \farg{x}, int \farg{y}}{\code{\farg{x} *=
+    y} is equivalent to \code{\farg{x} = \farg{x} * \farg{y}}.}
+\fitem{void}{operator*=}{real \farg{x}, real \farg{y}}{\code{\farg{x} *=
+    y} is equivalent to \code{\farg{x} = \farg{x} * \farg{y}}.}
+%
+\fitem{void}{operator*=}{vector \farg{x}, real \farg{y}}{\code{\farg{x} *=
+    y} is equivalent to \code{\farg{x} = \farg{x} * \farg{y}}.}
+\fitem{void}{operator*=}{row\_vector \farg{x}, real \farg{y}}{\code{\farg{x} *=
+    y} is equivalent to \code{\farg{x} = \farg{x} * \farg{y}}.}
+\fitem{void}{operator*=}{matrix \farg{x}, real \farg{y}}{\code{\farg{x} *=
+    y} is equivalent to \code{\farg{x} = \farg{x} * \farg{y}}.}
+%
+\fitem{void}{operator*=}{row\_vector \farg{x}, matrix \farg{y}}{\code{\farg{x} *=
+    y} is equivalent to \code{\farg{x} = \farg{x} * \farg{y}}.}
+%
+\fitem{void}{operator*=}{matrix \farg{x}, matrix \farg{y}}{\code{\farg{x} *=
+    y} is equivalent to \code{\farg{x} = \farg{x} * \farg{y}}.}
+\end{description}
+
+\section{Compound Division and Assignment}
+
+\begin{description}
+\fitem{void}{operator/=}{int \farg{x}, int \farg{y}}{\code{\farg{x} /=
+    y} is equivalent to \code{\farg{x} = \farg{x} / \farg{y}}.}
+\fitem{void}{operator/=}{real \farg{x}, real \farg{y}}{\code{\farg{x} /=
+    y} is equivalent to \code{\farg{x} = \farg{x} / \farg{y}}.}
+%
+\fitem{void}{operator/=}{vector \farg{x}, real \farg{y}}{\code{\farg{x} /=
+    y} is equivalent to \code{\farg{x} = \farg{x} / \farg{y}}.}
+\fitem{void}{operator/=}{row\_vector \farg{x}, real \farg{y}}{\code{\farg{x} /=
+    y} is equivalent to \code{\farg{x} = \farg{x} / \farg{y}}.}
+\fitem{void}{operator/=}{matrix \farg{x}, real \farg{y}}{\code{\farg{x} /=
+    y} is equivalent to \code{\farg{x} = \farg{x} / \farg{y}}.}
+\end{description}
+
+\section{Compound Elementwise Multiplication and Assignment}
+
+\begin{description}
+\fitem{void}{operator.*=}{vector \farg{x}, vector \farg{y}}{\code{\farg{x} .*=
+    y} is equivalent to \code{\farg{x} = \farg{x} .* \farg{y}}.}
+\fitem{void}{operator.*=}{row\_vector \farg{x}, row\_vector \farg{y}}{\code{\farg{x} .*=
+    y} is equivalent to \code{\farg{x} = \farg{x} .* \farg{y}}.}
+\fitem{void}{operator.*=}{matrix \farg{x}, matrix \farg{y}}{\code{\farg{x} .*=
+    y} is equivalent to \code{\farg{x} = \farg{x} .* \farg{y}}.}
+\end{description}
+
+\section{Compound Elementwise Division and Assignment}
+
+\begin{description}
+\fitem{void}{operator./=}{vector \farg{x}, vector \farg{y}}{\code{\farg{x} ./=
+    y} is equivalent to \code{\farg{x} = \farg{x} ./ \farg{y}}.}
+\fitem{void}{operator./=}{row\_vector \farg{x}, row\_vector \farg{y}}{\code{\farg{x} ./=
+    y} is equivalent to \code{\farg{x} = \farg{x} ./ \farg{y}}.}
+\fitem{void}{operator./=}{matrix \farg{x}, matrix \farg{y}}{\code{\farg{x} ./=
+    y} is equivalent to \code{\farg{x} = \farg{x} ./ \farg{y}}.}
+%
+\fitem{void}{operator./=}{vector \farg{x}, real \farg{y}}{\code{\farg{x} ./=
+    y} is equivalent to \code{\farg{x} = \farg{x} ./ \farg{y}}.}
+\fitem{void}{operator./=}{row\_vector \farg{x}, real \farg{y}}{\code{\farg{x} ./=
+    y} is equivalent to \code{\farg{x} = \farg{x} ./ \farg{y}}.}
+\fitem{void}{operator./=}{matrix \farg{x}, real \farg{y}}{\code{\farg{x} ./=
+    y} is equivalent to \code{\farg{x} = \farg{x} ./ \farg{y}}.}
+\end{description}
+
+\chapter{Algebraic Equation Solver}
+\label{functions-algebraic-solver.chapter}
+
+Stan provides a built-in algebraic equation solver. Although it
+looks like other function applications, the algebraic solver is
+special in two ways.
+
+First, the algebraic solver is a higher-order function, i.e. it takes
+another function as one of its arguments. The only other functions
+in Stan which share this feature are the ordinary differential equation
+solvers (see section~\ref{functions-ode-solver.chapter}). Ordinary Stan
+functions do not allow functions as arguments.
+
+Second, some of the arguments of the algebraic solvers are restricted
+to data only expressions. These expressions must not contain variables
+other than those declared in the data or transformed data blocks. Ordinary
+Stan functions place no restriction on the origin of variables in their argument
+expressions.
+
+\section{Specifying an Algebraic Equation as a Function}
+\label{functions-algebra-function.section}
+
+An algebraic system is specified as an ordinary function in Stan within the
+function block. The algebraic system function must have this signature:
+%
+\begin{stancode}
+vector algebra_system(vector y, vector theta,
+                      real[] x_r, int[] x_i)
+\end{stancode}
+%
+The algebraic system function should return the value of the algebraic
+function which goes to 0, when we plug in the solution to the algebraic
+system.
+
+The argument of this function are:
+\begin{itemize}
+\item \farg{y}, the unknowns we wish to solve for
+\item \farg{theta}, parameter values used to evaluate the algebraic system
+\item \farg{x\_r}, data values used to evaluate the algebraic system
+\item \farg{x\_i}, integer data used to evaluate the algebraic system
+\end{itemize}
+
+The algebraic system function separates parameter values, \farg{theta},
+from data values, \farg{x\_r}, for efficiency in computing the gradients
+of the algebraic system.
+
+\section{Call to the Algebraic Solver}
+
+\begin{description}
+%
+   \fitemthreelines{vector}{algebra\_solver}%
+                  {function \farg{algebra\_system}}%
+                  {vector \farg{y\_guess}}%
+                  {vector \farg{theta}, real[] \farg{x\_r}, int[] \farg{x\_i}}%
+                  {Solves the algebraic system, given an initial guess,
+                    using the Powell hybrid algorithm.}
+
+\fitemfourlines{vector}{algebra\_solver}%
+                  {function \farg{algebra\_system}}%
+                  {vector \farg{y\_guess}}%
+                  {vector \farg{theta}, real[] \farg{x\_r}, int[] \farg{x\_i}}%
+                  {real \farg{rel\_tol}, real \farg{f\_tol}, int \farg{max\_steps}}%
+                  {Solves the algebraic system, given an initial guess,
+                    using the Powell hybrid algorithm with additional control
+                    parameters for the solver.}
+%
+\end{description}
+
+
+\subsection{Arguments to the Algebraic Solver}
+
+The arguments to the algebraic solver are as follows:
+%
+\begin{enumerate}
+\item \farg{algebra\_system}: function literal referring to a function
+  specifying the system of algebraic equations with signature described
+  in \refsection{functions-algebra-function}:
+  \begin{quote}
+    (vector, vector, real[], int[]):vector
+  \end{quote}
+  The arguments represent (1) unknowns, (2) parameters, (3) real data, and
+  (4) integer data, and the return value contains the value of the algebraic
+  function, which goes to 0 when we plug in the solution to the algebraic system,
+\item \farg{y\_guess}: initia guess for the solution, type \code{vector},
+\item \farg{theta}: parameters, type \code{vector},
+\item \farg{x\_r}: real data, type \code{real[]}, data only, and
+\item \farg{x\_i}: parameters, type \code{int[]}, data only.
+\end{enumerate}
+
+For more fine-grained control of the algebraic solver, these parameters can also
+be provided:
+%
+\begin{enumerate}
+  \addtocounter{enumi}{5}
+  \item \farg{rel\_tol}: relative tolerance for the algebraic solver, type \code{real}, data only,
+  \item \farg{function\_tol}: function tolerance for the algebraic solver, type \code{real}, data only,
+  \item \farg{max\_num\_steps}: maximum number of steps to take in the algebraic solver, type \code{int}, data only.
+\end{enumerate}
+
+\subsection{Return Value}
+The return value for the algebraic solver is an object of type \code{vector}, with values
+which, when plugged in as \code{y} make the algebraic function go to 0.
+
+\subsection{Sizes and Parallel Arrays}
+Certain sizes have to be consistent. The initial guess, return value of the solver, and
+return value of the algebraic function must all be the same size.
+
+The parameters, real data, and integer data will be passed from the solver directly to the
+system function.
+
+\subsection{Algorithmic Details}
+
+The algebraic solver uses the Powell hybrid method \citep{Powell:1970}. The
+Stan code builds on the implementation of the hybrid solver in the
+unsupported module for nonlinear optimization problems of the Eigen library
+\citep{Eigen:2013}. This solver is in turn based on the algorithm developed
+for the package MINPACK-1 \citep{minpack:1980}.
+
+The Jacobian of the solution with respect to auxiliary parameters is computed
+using the implicit function theorem. Intermediate Jacobians (of the the algebraic
+function's output with respect to the unknowns \farg{y} and with respect to the
+auxiliary parameters \farg{theta}) are computed using Stan's automatic
+differentiation.
+
+\subsection{Example}
+
+An example of Stan code with a system definition and solver call is shown
+in \refchapter{algebra-solver}.
+
 \chapter{Ordinary Differential Equation Solvers}
 \label{functions-ode-solver.chapter}
 
@@ -3588,7 +3901,3 @@ the same size:
 An example of a complete Stan program with a system definition and
 solver call is shown for data simulation in \reffigure{sho-sim} and
 estimation in \reffigure{sho-both}.
-
-
-
-
