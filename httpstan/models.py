@@ -189,9 +189,10 @@ def _build_extension_module(model_id: str, cpp_code: str, pyx_code_template: str
         ]
 
         stan_macros: List[Tuple[str, Optional[str]]] = [
-            ('BOOST_RESULT_OF_USE_TR1', None),
-            ('BOOST_NO_DECLTYPE', None),
             ('BOOST_DISABLE_ASSERTS', None),
+            ('BOOST_NO_DECLTYPE', None),
+            ('BOOST_PHOENIX_NO_VARIADIC_EXPRESSION', None),
+            ('BOOST_RESULT_OF_USE_TR1', None),
         ]
 
         if extra_compile_args is None:
