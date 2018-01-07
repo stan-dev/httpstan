@@ -1,24 +1,24 @@
 #include <gtest/gtest.h>
+#include <exception>
+#include <stdexcept>
 #include <test/unit/lang/utility.hpp>
 
-TEST(langParser, functionSigErrorsFunUnknown) { 
+TEST(langParser, functionSigErrorsFunUnknown) {
   test_throws("signature_function_unknown",
-              "No matches for:",
-              "  foo_whatev_log(vector, vector)",
-              "Function foo_whatev_log not found.");
+              "Function foo_whatev_log not found");
 }
-TEST(langParser, functionSigErrorsFunKnown) { 
+TEST(langParser, functionSigErrorsFunKnown) {
   test_throws("signature_function_known",
               "No matches for:",
               "bernoulli_logit_log(vector, vector)",
               "Available argument signatures for bernoulli_logit_log:");
 }
-TEST(langParser, functionSigErrorsSampUnknown) { 
+TEST(langParser, functionSigErrorsSampUnknown) {
   test_throws("signature_sampling_unknown",
-              "Distribution foo_whatev not found."
-              " Require function with _lpdf or _lpmf or _log suffix");
+              "Probability function must end in _lpdf or _lpmf."
+              " Found distribution family = foo_whatev");
 }
-TEST(langParser, functionSigErrorsSampKnown) { 
+TEST(langParser, functionSigErrorsSampKnown) {
   test_throws("signature_sampling_known",
               "No matches for:",
               "vector ~ bernoulli_logit(vector)",
@@ -29,3 +29,9 @@ TEST(langParser, functionSigErrorsMultiDef) {
   test_throws("multi_fun",
               "Function already defined, name=foo");
 }
+TEST(langParser, functionSigErrorsFactorial) {
+  EXPECT_THROW(is_parsable("src/test/test-models/bad/function-signatures/falling_factorial.stan"),
+                           std::invalid_argument);
+  EXPECT_THROW(is_parsable("src/test/test-models/bad/function-signatures/rising_factorial.stan"),
+                           std::invalid_argument);
+}  
