@@ -30,3 +30,6 @@ requests<3,>=2.13
 
 # OpenAPI doc
 sphinxcontrib-redoc<2,>=1.3
+
+# protobuf generation
+grpcio-tools<2,>=1.8.4
