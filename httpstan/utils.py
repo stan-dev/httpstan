@@ -37,7 +37,7 @@ def _split_data(data: dict) -> Tuple[List[str], List[float], List[List[int]], Li
     names_i, values_i, dim_i = [], [], []  # type: List[str], List[int], List[List[int]]
 
     for k, v in data.items():
-        if np.issubdtype(np.asarray(v).dtype, float):
+        if np.issubdtype(np.asarray(v).dtype, np.floating):
             names_r.append(k.encode('utf-8'))
             # unravel multi-dimensional arrays using column-major ('F') order
             values_r.extend(np.atleast_1d(v).ravel(order='F').astype(float))
