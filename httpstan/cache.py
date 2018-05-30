@@ -11,7 +11,7 @@ import sqlite3
 import appdirs
 
 
-logger = logging.getLogger('httpstan')
+logger = logging.getLogger("httpstan")
 
 
 async def init_cache(app):
@@ -29,16 +29,18 @@ async def init_cache(app):
         app (aiohttp.web.Application): The current application.
 
     """
-    cache_path = appdirs.user_cache_dir('httpstan')
+    cache_path = appdirs.user_cache_dir("httpstan")
     os.makedirs(cache_path, exist_ok=True)
-    logging.info(f'Opening cache in `{cache_path}`.')
-    conn = sqlite3.connect(os.path.join(cache_path, 'cache.sqlite3'), check_same_thread=False)
+    logging.info(f"Opening cache in `{cache_path}`.")
+    conn = sqlite3.connect(os.path.join(cache_path, "cache.sqlite3"), check_same_thread=False)
     # create tables if they do not exist
-    conn.execute("""PRAGMA journal_mode=WAL;""")  # use write-ahead-log, available since sqlite 3.7.0
+    conn.execute(
+        """PRAGMA journal_mode=WAL;"""
+    )  # use write-ahead-log, available since sqlite 3.7.0
     with conn:
         conn.execute("""CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB);""")
         conn.execute("""CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB);""")
-    app['db'] = conn
+    app["db"] = conn
 
 
 async def close_cache(app):
@@ -53,8 +55,8 @@ async def close_cache(app):
         app (aiohttp.web.Application): The current application.
 
     """
-    logging.info('Closing cache.')
-    app['db'].close()
+    logging.info("Closing cache.")
+    app["db"].close()
 
 
 async def dump_model_extension_module(model_id: str, module_bytes: bytes, db: sqlite3.Connection):
@@ -98,6 +100,6 @@ async def load_model_extension_module(model_id: str, db: sqlite3.Connection) -> 
     """
     row = db.execute("""SELECT value FROM models WHERE key=?""", (model_id.encode(),)).fetchone()
     if not row:
-        raise KeyError(f'Extension module for id `{model_id}` not found.')
+        raise KeyError(f"Extension module for id `{model_id}` not found.")
     compressed = row[0]
     return await asyncio.get_event_loop().run_in_executor(None, lzma.decompress, compressed)

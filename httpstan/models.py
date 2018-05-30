@@ -63,7 +63,7 @@ def calculate_module_name(model_id: str) -> str:
     """
     # NOTE: must add prefix because a module name, like any variable name in
     # Python, must not begin with a number.
-    return 'model_{}'.format(model_id)
+    return "model_{}".format(model_id)
 
 
 async def compile_model_extension_module(program_code: str) -> bytes:
@@ -81,10 +81,13 @@ async def compile_model_extension_module(program_code: str) -> bytes:
 
     """
     model_id = calculate_model_id(program_code)
-    model_name = f'_{model_id}'  # C++ identifiers cannot start with digits
-    cpp_code = await asyncio.get_event_loop().run_in_executor(None, httpstan.compile.compile,
-                                                              program_code, model_name)
-    pyx_code_template = pkg_resources.resource_string(__name__, 'anonymous_stan_model_services.pyx.template').decode()
+    model_name = f"_{model_id}"  # C++ identifiers cannot start with digits
+    cpp_code = await asyncio.get_event_loop().run_in_executor(
+        None, httpstan.compile.compile, program_code, model_name
+    )
+    pyx_code_template = pkg_resources.resource_string(
+        __name__, "anonymous_stan_model_services.pyx.template"
+    ).decode()
     module_bytes = _build_extension_module(model_id, cpp_code, pyx_code_template)
     return module_bytes
 
@@ -130,9 +133,9 @@ def load_model_extension_module(model_id: str, module_bytes: bytes):
     # module name, e.g., PyInit_mymodule.  Filenames which do not match the name
     # of this function will not load.
     module_name = calculate_module_name(model_id)
-    module_filename = f'{module_name}.so'
+    module_filename = f"{module_name}.so"
     with tempfile.TemporaryDirectory() as temporary_directory:
-        with open(os.path.join(temporary_directory, module_filename), 'wb') as fh:
+        with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
         assert module_name == os.path.splitext(module_filename)[0]
@@ -140,8 +143,12 @@ def load_model_extension_module(model_id: str, module_bytes: bytes):
 
 
 @functools.lru_cache()
-def _build_extension_module(model_id: str, cpp_code: str, pyx_code_template: str,
-                            extra_compile_args: Optional[List[str]] = None) -> bytes:
+def _build_extension_module(
+    model_id: str,
+    cpp_code: str,
+    pyx_code_template: str,
+    extra_compile_args: Optional[List[str]] = None,
+) -> bytes:
     """Build extension module and return its name and binary representation.
 
     This returns the module name and bytes (!) of a Python extension module. The
@@ -170,56 +177,58 @@ def _build_extension_module(model_id: str, cpp_code: str, pyx_code_template: str
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
     with tempfile.TemporaryDirectory() as temporary_dir:
-        cpp_filepath = os.path.join(temporary_dir, '{}.hpp'.format(module_name))
-        pyx_filepath = os.path.join(temporary_dir, '{}.pyx'.format(module_name))
+        cpp_filepath = os.path.join(temporary_dir, "{}.hpp".format(module_name))
+        pyx_filepath = os.path.join(temporary_dir, "{}.pyx".format(module_name))
         pyx_code = string.Template(pyx_code_template).substitute(cpp_filename=cpp_filepath)
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
-            with open(filepath, 'w') as fh:
+            with open(filepath, "w") as fh:
                 fh.write(code)
 
         httpstan_dir = os.path.dirname(__file__)
         include_dirs = [
             httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
             temporary_dir,
-            os.path.join(httpstan_dir, 'lib', 'stan', 'src'),
-            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math'),
-            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math', 'lib', 'eigen_3.3.3'),
-            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math', 'lib', 'boost_1.64.0'),
-            os.path.join(httpstan_dir, 'lib', 'stan', 'lib', 'stan_math', 'lib', 'cvodes_2.9.0', 'include'),
+            os.path.join(httpstan_dir, "lib", "stan", "src"),
+            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
+            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
+            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "boost_1.64.0"),
+            os.path.join(
+                httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "cvodes_2.9.0", "include"
+            ),
         ]
 
         stan_macros: List[Tuple[str, Optional[str]]] = [
-            ('BOOST_DISABLE_ASSERTS', None),
-            ('BOOST_NO_DECLTYPE', None),
-            ('BOOST_PHOENIX_NO_VARIADIC_EXPRESSION', None),
-            ('BOOST_RESULT_OF_USE_TR1', None),
+            ("BOOST_DISABLE_ASSERTS", None),
+            ("BOOST_NO_DECLTYPE", None),
+            ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
+            ("BOOST_RESULT_OF_USE_TR1", None),
         ]
 
         if extra_compile_args is None:
-            if sys.platform.startswith('win'):
-                extra_compile_args = ['/EHsc', '-DBOOST_DATE_TIME_NO_LIB']
+            if sys.platform.startswith("win"):
+                extra_compile_args = ["/EHsc", "-DBOOST_DATE_TIME_NO_LIB"]
             else:
-                extra_compile_args = [
-                    '-O3',
-                    '-std=c++11',
-                ]
+                extra_compile_args = ["-O3", "-std=c++11"]
 
         cython_include_path = [os.path.dirname(httpstan_dir)]
-        extension = setuptools.Extension(module_name,
-                                         language='c++',
-                                         sources=[pyx_filepath],
-                                         define_macros=stan_macros,
-                                         include_dirs=include_dirs,
-                                         extra_compile_args=extra_compile_args)
+        extension = setuptools.Extension(
+            module_name,
+            language="c++",
+            sources=[pyx_filepath],
+            define_macros=stan_macros,
+            include_dirs=include_dirs,
+            extra_compile_args=extra_compile_args,
+        )
         build_extension = Cython.Build.Inline._get_build_extension()
-        build_extension.extensions = Cython.Build.cythonize([extension],
-                                                            include_path=cython_include_path)
+        build_extension.extensions = Cython.Build.cythonize(
+            [extension], include_path=cython_include_path
+        )
         build_extension.build_temp = build_extension.build_lib = temporary_dir
 
         # TODO(AR): wrap stderr, return it as well
         build_extension.run()
 
         module = _load_module(module_name, build_extension.build_lib)
-        with open(module.__file__, 'rb') as fh:  # type: ignore  # pending fix, see mypy#3062
+        with open(module.__file__, "rb") as fh:  # type: ignore  # pending fix, see mypy#3062
             assert module.__name__ == module_name, (module.__name__, module_name)
             return fh.read()  # type: ignore  # pending fix, see mypy#3062

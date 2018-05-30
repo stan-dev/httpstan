@@ -5,7 +5,9 @@ from typing import Tuple  # noqa: flake8 bug, #118
 import numpy as np
 
 
-def _split_data(data: dict) -> Tuple[List[str], List[float], List[List[int]], List[str], List[int], List[List[int]]]:
+def _split_data(
+    data: dict
+) -> Tuple[List[str], List[float], List[List[int]], List[str], List[int], List[List[int]]]:
     """Prepare data for use in an array_var_context constructor.
 
     array_var_context is a C++ class defined in Stan. See
@@ -38,15 +40,15 @@ def _split_data(data: dict) -> Tuple[List[str], List[float], List[List[int]], Li
 
     for k, v in data.items():
         if np.issubdtype(np.asarray(v).dtype, np.floating):
-            names_r.append(k.encode('utf-8'))
+            names_r.append(k.encode("utf-8"))
             # unravel multi-dimensional arrays using column-major ('F') order
-            values_r.extend(np.atleast_1d(v).ravel(order='F').astype(float))
+            values_r.extend(np.atleast_1d(v).ravel(order="F").astype(float))
             dim_r.append(np.asarray(v).shape)
         elif np.issubdtype(np.asarray(v).dtype, np.integer):
-            names_i.append(k.encode('utf-8'))
+            names_i.append(k.encode("utf-8"))
             # unravel multi-dimensional arrays using column-major ('F') order
-            values_i.extend(np.atleast_1d(v).ravel(order='F').astype(int))
+            values_i.extend(np.atleast_1d(v).ravel(order="F").astype(int))
             dim_i.append(np.asarray(v).shape)
         else:
-            raise ValueError(f'Variable `{k}` must be int or float.')
+            raise ValueError(f"Variable `{k}` must be int or float.")
     return names_r, values_r, dim_r, names_i, values_i, dim_i

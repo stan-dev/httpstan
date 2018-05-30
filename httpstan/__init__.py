@@ -9,5 +9,5 @@ import logging
 import pbr.version
 
 
-logging.getLogger('httpstan').addHandler(logging.NullHandler())
-__version__ = pbr.version.VersionInfo('httpstan').version_string()
+logging.getLogger("httpstan").addHandler(logging.NullHandler())
+__version__ = pbr.version.VersionInfo("httpstan").version_string()

@@ -19,17 +19,16 @@ import httpstan.models
 import httpstan.services_stub as services_stub
 
 
-logger = logging.getLogger('httpstan')
+logger = logging.getLogger("httpstan")
 
 
 def json_error(message):  # noqa
-    return aiohttp.web.Response(body=json.dumps({'error': message}).encode('utf-8'),
-                                content_type='application/json')
+    return aiohttp.web.Response(
+        body=json.dumps({"error": message}).encode("utf-8"), content_type="application/json"
+    )
 
 
-models_args = {
-    'program_code': fields.Str(required=True),
-}
+models_args = {"program_code": fields.Str(required=True)}
 
 
 class ModelSchema(marshmallow.Schema):  # noqa
@@ -66,24 +65,26 @@ async def handle_models(request):
                  $ref: '#/definitions/Model'
     """
     args = await webargs.aiohttpparser.parser.parse(models_args, request)
-    program_code = args['program_code']
+    program_code = args["program_code"]
     model_id = httpstan.models.calculate_model_id(program_code)
     try:
-        module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app['db'])
+        module_bytes = await httpstan.cache.load_model_extension_module(
+            model_id, request.app["db"]
+        )
     except KeyError:
-        logger.info('Compiling Stan model. Model id is {}.'.format(model_id))
+        logger.info("Compiling Stan model. Model id is {}.".format(model_id))
         module_bytes = await httpstan.models.compile_model_extension_module(program_code)
-        await httpstan.cache.dump_model_extension_module(model_id, module_bytes, request.app['db'])
+        await httpstan.cache.dump_model_extension_module(model_id, module_bytes, request.app["db"])
     else:
-        logger.info('Found Stan model in cache. Model id is {}.'.format(model_id))
-    return aiohttp.web.json_response(ModelSchema().dump({'id': model_id}).data)
+        logger.info("Found Stan model in cache. Model id is {}.".format(model_id))
+    return aiohttp.web.json_response(ModelSchema().dump({"id": model_id}).data)
 
 
 # TODO(AR): supported functions can be fetched from stub Python files
-FUNCTION_NAMES = frozenset({
-    'stan::services::sample::hmc_nuts_diag_e',
-    'stan::services::sample::hmc_nuts_diag_e_adapt',
-})
+FUNCTION_NAMES = frozenset(
+    {"stan::services::sample::hmc_nuts_diag_e", "stan::services::sample::hmc_nuts_diag_e_adapt"}
+)
+
 
 class ModelsActionSchema(marshmallow.Schema):  # noqa
     # action `type` is full name of function in stan::services (e.g.,
@@ -127,42 +128,43 @@ async def handle_models_actions(request):
             200:
                 description: Stream of newline-delimited JSON.
     """
-    model_id = request.match_info['model_id']
+    model_id = request.match_info["model_id"]
     # use webargs to make sure `type` is present and data is a mapping (or
     # absent). Do not discard any other information in the request body.
     kwargs_schema = await webargs.aiohttpparser.parser.parse(ModelsActionSchema(), request)
     kwargs = await request.json()
     kwargs.update(kwargs_schema)
 
-    module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app['db'])
+    module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app["db"])
     if module_bytes is None:
-        return json_error('Stan model with id `{}` not found.'.format(model_id))
+        return json_error("Stan model with id `{}` not found.".format(model_id))
     model_module = httpstan.models.load_model_extension_module(model_id, module_bytes)
 
     # setup streaming response
     stream = aiohttp.web.StreamResponse()
-    stream.content_type = 'application/json'
-    stream.charset = 'utf-8'
+    stream.content_type = "application/json"
+    stream.charset = "utf-8"
     stream.enable_chunked_encoding()
     await stream.prepare(request)
     # exclusive lock needed until thread_local option available for autodiff.
     # See https://github.com/stan-dev/math/issues/551
-    with await request.app['sample_lock']:
-        type, data = kwargs.pop('type'), kwargs.pop('data')
+    with await request.app["sample_lock"]:
+        type, data = kwargs.pop("type"), kwargs.pop("data")
         async for message in services_stub.call(type, model_module, data, **kwargs):
             assert message is not None, message
-            stream.write(google.protobuf.json_format.MessageToJson(message).encode().replace(b'\n', b''))
-            stream.write(b'\n')
+            stream.write(
+                google.protobuf.json_format.MessageToJson(message).encode().replace(b"\n", b"")
+            )
+            stream.write(b"\n")
     return stream
 
 
-models_params_args = {
-    'data': fields.Dict(required=True),
-}
+models_params_args = {"data": fields.Dict(required=True)}
 
 
 class ParamSchema(marshmallow.Schema):  # noqa
     """Schema for single parameter."""
+
     name = fields.String(required=True)
     dims = fields.List(fields.Integer(), required=True)
     constrained_names = fields.List(fields.String(), required=True)
@@ -217,12 +219,12 @@ async def handle_models_params(request):
                               $ref: '#/definitions/ParamSchema'
     """
     args = await webargs.aiohttpparser.parser.parse(models_params_args, request)
-    model_id = request.match_info['model_id']
-    data = args['data']
+    model_id = request.match_info["model_id"]
+    data = args["data"]
 
-    module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app['db'])
+    module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app["db"])
     if module_bytes is None:
-        return json_error('Stan model with id `{}` not found.'.format(model_id))
+        return json_error("Stan model with id `{}` not found.".format(model_id))
     model_module = httpstan.models.load_model_extension_module(model_id, module_bytes)
 
     array_var_context_capsule = httpstan.stan.make_array_var_context(data)
@@ -236,8 +238,14 @@ async def handle_models_params(request):
     constrained_param_names = [name.decode() for name in constrained_param_names_bytes]
     params = []
     for name, dims_ in zip(param_names, dims):
-        constrained_names = tuple(filter(lambda s: re.match(fr'{name}\.?', s), constrained_param_names))
+        constrained_names = tuple(
+            filter(lambda s: re.match(fr"{name}\.?", s), constrained_param_names)
+        )
         assert isinstance(dims_, list)
         assert constrained_names, constrained_names
-        params.append(ParamSchema().dump({'name': name, 'dims': dims_, 'constrained_names': constrained_names}).data)
-    return aiohttp.web.json_response({'id': model_id, 'params': params})
+        params.append(
+            ParamSchema()
+            .dump({"name": name, "dims": dims_, "constrained_names": constrained_names})
+            .data
+        )
+    return aiohttp.web.json_response({"id": model_id, "params": params})

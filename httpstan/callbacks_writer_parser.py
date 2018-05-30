@@ -64,7 +64,7 @@ class WriterParser:
         This function delegates further parsing to message-specific parser.
 
         """
-        writer_name, body = (val.strip() for val in message.split(':', 1))
+        writer_name, body = (val.strip() for val in message.split(":", 1))
         if not body:
             return None  # ignore blank lines
 
@@ -76,7 +76,7 @@ class WriterParser:
         if not isinstance(values, list):
             values = [values]
 
-        handler = getattr(self, f'parse_{writer_name}')
+        handler = getattr(self, f"parse_{writer_name}")
         result = handler(values)
         self.previous_message = message
         return result
@@ -88,25 +88,26 @@ class WriterParser:
             return None
 
         if self.processing_adaptation is None:
-            self.processing_adaptation = bool(re.match(r'^Adaptation terminated', str(values[0])))
+            self.processing_adaptation = bool(re.match(r"^Adaptation terminated", str(values[0])))
 
-        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value('SAMPLE'))
+        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("SAMPLE"))
         if self.processing_adaptation:
             # detect if we are on last adaptation message
-            is_last_adaptation_message = re.match(r'sample_writer:Diagonal elements of inverse mass matrix:',
-                                                  self.previous_message)
+            is_last_adaptation_message = re.match(
+                r"sample_writer:Diagonal elements of inverse mass matrix:", self.previous_message
+            )
             if is_last_adaptation_message:
                 self.processing_adaptation = False
             for value in values:
                 if isinstance(values[0], str):
-                    message.feature[''].string_list.value.append(value)
+                    message.feature[""].string_list.value.append(value)
                 else:
-                    message.feature[''].double_list.value.append(value)
+                    message.feature[""].double_list.value.append(value)
         else:
             if isinstance(values[0], str):
                 # after sampling, we get messages such as "Elapsed Time: ..."
                 for value in values:
-                    message.feature[''].string_list.value.append(value)
+                    message.feature[""].string_list.value.append(value)
                 return message
             # typical case: draws
             for key, value in zip(self.sample_fields, values):
@@ -118,11 +119,11 @@ class WriterParser:
         if self.diagnostic_fields is None:
             self.diagnostic_fields = values
             return
-        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value('DIAGNOSTIC'))
+        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("DIAGNOSTIC"))
         if isinstance(values[0], str):
             # after sampling, we get messages such as "Elapsed Time: ..."
             for value in values:
-                message.feature[''].string_list.value.append(value)
+                message.feature[""].string_list.value.append(value)
             return message
         for key, value in zip(self.diagnostic_fields, values):
             message.feature[key].double_list.value.append(value)
@@ -130,14 +131,14 @@ class WriterParser:
 
     def parse_logger(self, values) -> callbacks_writer_pb2.WriterMessage:
         """Convert raw writer message into protobuf message."""
-        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value('LOGGER'))
+        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("LOGGER"))
         for value in values:
-            message.feature[''].string_list.value.append(value)
+            message.feature[""].string_list.value.append(value)
         return message
 
     def parse_init_writer(self, values) -> callbacks_writer_pb2.WriterMessage:
         """Convert raw writer message into protobuf message."""
-        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value('INITIALIZATION'))
+        message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("INITIALIZATION"))
         for value in values:
-            message.feature[''].double_list.value.append(value)
+            message.feature[""].double_list.value.append(value)
         return message

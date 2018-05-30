@@ -30,10 +30,10 @@ async def call(function_name: str, model_module, data: dict, **kwargs):
         data: dictionary with data with which to populate array_var_context
         kwargs: named stan::services function arguments, see CmdStan documentation.
     """
-    method, function_basename = function_name.replace('stan::services::', '').split('::', 1)
+    method, function_basename = function_name.replace("stan::services::", "").split("::", 1)
     queue_wrapper = httpstan.spsc_queue.SPSCQueue(capacity=10000)
     array_var_context_capsule = httpstan.stan.make_array_var_context(data)
-    function_wrapper = getattr(model_module, function_basename + '_wrapper')
+    function_wrapper = getattr(model_module, function_basename + "_wrapper")
 
     # fetch defaults for missing arguments
     function_arguments = arguments.function_arguments(function_basename, model_module)
@@ -45,15 +45,14 @@ async def call(function_name: str, model_module, data: dict, **kwargs):
         if arg not in kwargs:
             kwargs[arg] = arguments.lookup_default(arguments.Method[method.upper()], arg)
     function_wrapper_partial = functools.partial(
-        function_wrapper,
-        array_var_context_capsule,
-        queue_wrapper.to_capsule(),
-        **kwargs
+        function_wrapper, array_var_context_capsule, queue_wrapper.to_capsule(), **kwargs
     )
 
     # WISHLIST: can one use ProcessPoolExecutor somehow on Linux and OSX?
     loop = asyncio.get_event_loop()
-    future = asyncio.ensure_future(loop.run_in_executor(None, function_wrapper_partial))  # type: ignore
+    future = asyncio.ensure_future(
+        loop.run_in_executor(None, function_wrapper_partial)
+    )  # type: ignore
     parser = httpstan.callbacks_writer_parser.WriterParser()
     while True:
         try:
