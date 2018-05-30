@@ -7,19 +7,19 @@ import pytest
 import httpstan.main
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def host():
     """Host for server to listen on."""
-    return '127.0.0.1'
+    return "127.0.0.1"
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def port():
     """Port for server to listen on."""
     return 8080
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def loop_with_server(request, host, port):
     """Return event loop with httpstan server already running.
 
@@ -32,7 +32,7 @@ def loop_with_server(request, host, port):
     app = httpstan.main.make_app(l)
     runner = aiohttp.web.AppRunner(app)
     l.run_until_complete(runner.setup())
-    site = aiohttp.web.TCPSite(runner, 'localhost', 8080)
+    site = aiohttp.web.TCPSite(runner, "localhost", 8080)
     l.run_until_complete(site.start())
 
     yield l  # yield control, test proper would start here

@@ -4,7 +4,7 @@ import json
 import aiohttp
 
 
-headers = {'content-type': 'application/json'}
+headers = {"content-type": "application/json"}
 program_code = """
     data {
         int<lower=0> N;
@@ -19,7 +19,7 @@ program_code = """
         y[n] ~ bernoulli(theta);
     }
     """
-data = {'N': 10, 'y': (0, 1, 0, 0, 0, 0, 0, 0, 0, 1)}
+data = {"N": 10, "y": (0, 1, 0, 0, 0, 0, 0, 0, 0, 1)}
 
 
 async def validate_samples(resp):
@@ -36,17 +36,20 @@ async def validate_samples(resp):
 
 def test_bernoulli(loop_with_server, host, port):
     """Test sampling from Bernoulli model with defaults."""
+
     async def main():
         async with aiohttp.ClientSession() as session:
-            models_url = 'http://{}:{}/v1/models'.format(host, port)
-            payload = {'program_code': program_code}
+            models_url = "http://{}:{}/v1/models".format(host, port)
+            payload = {"program_code": program_code}
             async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200
-                model_id = (await resp.json())['id']
+                model_id = (await resp.json())["id"]
 
-            models_actions_url = 'http://{}:{}/v1/models/{}/actions'.format(host, port, model_id)
-            payload = {'type': 'stan::services::sample::hmc_nuts_diag_e_adapt', 'data': data}
-            async with session.post(models_actions_url, data=json.dumps(payload), headers=headers) as resp:
+            models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
+            payload = {"type": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data}
+            async with session.post(
+                models_actions_url, data=json.dumps(payload), headers=headers
+            ) as resp:
                 await validate_samples(resp)
 
     loop_with_server.run_until_complete(main())
@@ -54,25 +57,28 @@ def test_bernoulli(loop_with_server, host, port):
 
 def test_bernoulli_params(loop_with_server, host, port):
     """Test getting parameters from Bernoulli model."""
+
     async def main():
         async with aiohttp.ClientSession() as session:
-            models_url = 'http://{}:{}/v1/models'.format(host, port)
-            payload = {'program_code': program_code}
+            models_url = "http://{}:{}/v1/models".format(host, port)
+            payload = {"program_code": program_code}
             async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200
-                model_id = (await resp.json())['id']
+                model_id = (await resp.json())["id"]
 
-            models_params_url = 'http://{}:{}/v1/models/{}/params'.format(host, port, model_id)
-            payload = {'data': data}
-            async with session.post(models_params_url, data=json.dumps(payload), headers=headers) as resp:
+            models_params_url = "http://{}:{}/v1/models/{}/params".format(host, port, model_id)
+            payload = {"data": data}
+            async with session.post(
+                models_params_url, data=json.dumps(payload), headers=headers
+            ) as resp:
                 assert resp.status == 200
                 response_payload = await resp.json()
-                assert 'id' in response_payload and response_payload['id'] == model_id
-                assert 'params' in response_payload and len(response_payload['params'])
-                params = response_payload['params']
+                assert "id" in response_payload and response_payload["id"] == model_id
+                assert "params" in response_payload and len(response_payload["params"])
+                params = response_payload["params"]
                 param = params[0]
-                assert param['name'] == 'theta'
-                assert param['dims'] == []
-                assert param['constrained_names'] == ['theta']
+                assert param["name"] == "theta"
+                assert param["dims"] == []
+                assert param["constrained_names"] == ["theta"]
 
     loop_with_server.run_until_complete(main())

@@ -26,15 +26,15 @@ async def extract_draws(response, param_name):
         assert len(chunk)
         payload = json.loads(chunk)
         assert len(payload) > 0
-        assert 'topic' in payload
-        assert 'LOGGER' in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
-        assert 'SAMPLE' in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
-        if payload['topic'] == 'SAMPLE':
-            assert isinstance(payload['feature'], dict)
-            if param_name in payload['feature']:
-                value_wrapped = payload['feature'][param_name]
-                kind = 'doubleList' if 'doubleList' in value_wrapped else 'intList'
-                draws.append(value_wrapped[kind]['value'].pop())
+        assert "topic" in payload
+        assert "LOGGER" in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
+        assert "SAMPLE" in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
+        if payload["topic"] == "SAMPLE":
+            assert isinstance(payload["feature"], dict)
+            if param_name in payload["feature"]:
+                value_wrapped = payload["feature"][param_name]
+                kind = "doubleList" if "doubleList" in value_wrapped else "intList"
+                draws.append(value_wrapped[kind]["value"].pop())
     if len(draws) == 0:
-        raise KeyError(f'No draws found for parameter `{param_name}`.')
+        raise KeyError(f"No draws found for parameter `{param_name}`.")
     return draws
