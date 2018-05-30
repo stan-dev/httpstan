@@ -18,7 +18,6 @@ import httpstan.cache
 import httpstan.models
 import httpstan.services_stub as services_stub
 
-
 logger = logging.getLogger("httpstan")
 
 
@@ -152,10 +151,10 @@ async def handle_models_actions(request):
         type, data = kwargs.pop("type"), kwargs.pop("data")
         async for message in services_stub.call(type, model_module, data, **kwargs):
             assert message is not None, message
-            stream.write(
+            await stream.write(
                 google.protobuf.json_format.MessageToJson(message).encode().replace(b"\n", b"")
             )
-            stream.write(b"\n")
+            await stream.write(b"\n")
     return stream
 
 
