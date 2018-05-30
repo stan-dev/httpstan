@@ -1,5 +1,7 @@
 """pytest configuration for all tests."""
 import asyncio
+
+import aiohttp
 import pytest
 
 import httpstan.main
@@ -28,18 +30,12 @@ def loop_with_server(request, host, port):
 
     # setup server
     app = httpstan.main.make_app(l)
-    handler = app.make_handler(loop=l)
-    srv = l.run_until_complete(l.create_server(handler, host, port))
-    l.run_until_complete(app.startup())
+    runner = aiohttp.web.AppRunner(app)
+    l.run_until_complete(runner.setup())
+    site = aiohttp.web.TCPSite(runner, 'localhost', 8080)
+    l.run_until_complete(site.start())
 
     yield l  # yield control, test proper would start here
 
-    # shutdown server
-    srv.close()
-    l.run_until_complete(srv.wait_closed())
-    l.run_until_complete(app.shutdown())
-    l.run_until_complete(handler.shutdown(60.0))
-    l.run_until_complete(app.cleanup())
-
-    # close loop
+    l.run_until_complete(runner.cleanup())
     l.close()
