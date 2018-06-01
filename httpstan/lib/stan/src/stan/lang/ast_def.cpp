@@ -74,6 +74,8 @@
 #include <stan/lang/ast/node/expression_def.hpp>
 #include <stan/lang/ast/node/expression_type_vis_def.hpp>
 #include <stan/lang/ast/node/for_statement_def.hpp>
+#include <stan/lang/ast/node/for_array_statement_def.hpp>
+#include <stan/lang/ast/node/for_matrix_statement_def.hpp>
 #include <stan/lang/ast/node/function_decl_def_def.hpp>
 #include <stan/lang/ast/node/function_decl_defs_def.hpp>
 #include <stan/lang/ast/node/fun_def.hpp>
@@ -87,6 +89,7 @@
 #include <stan/lang/ast/node/integrate_ode_control_def.hpp>
 #include <stan/lang/ast/node/lb_idx_def.hpp>
 #include <stan/lang/ast/node/lub_idx_def.hpp>
+#include <stan/lang/ast/node/map_rect_def.hpp>
 #include <stan/lang/ast/node/matrix_var_decl_def.hpp>
 #include <stan/lang/ast/node/multi_idx_def.hpp>
 #include <stan/lang/ast/node/omni_idx_def.hpp>
