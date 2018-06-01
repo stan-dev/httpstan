@@ -488,6 +488,36 @@ namespace stan {
     extern boost::phoenix::function<add_loop_identifier> add_loop_identifier_f;
 
     // called from: statement_grammar
+    struct add_array_loop_identifier : public phoenix_functor_senary {
+      void operator()(const stan::lang::expression& expr,
+                      std::string& name,
+                      const scope& var_scope,
+                      bool& pass, variable_map& vm,
+                      std::stringstream& error_msgs) const;
+    };
+    extern boost::phoenix::function<add_array_loop_identifier>
+      add_array_loop_identifier_f;
+
+    // called from: statement_grammar
+    struct add_matrix_loop_identifier : public phoenix_functor_senary {
+      void operator()(const stan::lang::expression& expr,
+                      std::string& name,
+                      const scope& var_scope,
+                      bool& pass, variable_map& vm,
+                      std::stringstream& error_msgs) const;
+    };
+    extern boost::phoenix::function<add_matrix_loop_identifier>
+      add_matrix_loop_identifier_f;
+
+    // called from: statement_grammar
+    struct store_loop_identifier : public phoenix_functor_binary {
+      void operator()(const std::string& name,
+                      std::string& name_local) const;
+    };
+    extern boost::phoenix::function<store_loop_identifier>
+      store_loop_identifier_f;
+
+    // called from: statement_grammar
     struct remove_loop_identifier : public phoenix_functor_binary {
       void operator()(const std::string& name, variable_map& vm) const;
     };
@@ -590,6 +620,33 @@ namespace stan {
     };
     extern boost::phoenix::function<validate_algebra_solver_control>
     validate_algebra_solver_control_f;
+
+    // called from: term_grammar
+    /**
+     * Functor for validating the arguments to map_rect.
+     */
+    struct validate_map_rect : public phoenix_functor_quaternary {
+      /**
+       * Validate that the specified rectangular map object has
+       * appropriately typed arguments and assign it a unique
+       * identifier, setting the pass flag to false and writing an
+       * error message to the output stream if they don't.
+       *
+       * @param[in,out] mr structure to validate
+       * @param[in] var_map mapping for variables
+       * @param[in,out] pass reference to set to false upon failure
+       * @param[in,out] error_msgs reference to error message stream
+       * @throws std::illegal_argument_exception if the arguments are
+       * not of the appropriate shapes.
+       */
+      void operator()(map_rect& mr,
+                      const variable_map& var_map, bool& pass,
+                      std::ostream& error_msgs) const;
+    };
+    /**
+     * Phoenix wrapper for the rectangular map structure validator.
+     */
+    extern boost::phoenix::function<validate_map_rect> validate_map_rect_f;
 
     // called from: term_grammar
     struct set_fun_type_named : public phoenix_functor_senary {
@@ -759,6 +816,7 @@ namespace stan {
       bool operator()(const integrate_ode_control& x) const;
       bool operator()(const algebra_solver& x) const;
       bool operator()(const algebra_solver_control& x) const;
+      bool operator()(const map_rect& x) const;
       bool operator()(const fun& x) const;
       bool operator()(const index_op& x) const;
       bool operator()(const index_op_sliced& x) const;
@@ -825,6 +883,13 @@ namespace stan {
                       std::stringstream& error_msgs) const;
     };
     extern boost::phoenix::function<validate_int_expr> validate_int_expr_f;
+
+    struct validate_int_expr_no_error_msgs : public phoenix_functor_ternary {
+      void operator()(const expression& expr, bool& pass,
+                      std::stringstream& error_msgs) const;
+    };
+    extern boost::phoenix::function<validate_int_expr_no_error_msgs>
+      validate_int_expr_no_error_msgs_f;
 
     struct set_int_range_lower : public phoenix_functor_quaternary {
       void operator()(range& range, const expression& expr, bool& pass,

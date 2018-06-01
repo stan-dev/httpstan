@@ -94,6 +94,7 @@
 #include <stan/math/prim/scal/fun/grad_inc_beta.hpp>
 #include <stan/math/prim/scal/fun/grad_reg_inc_beta.hpp>
 #include <stan/math/prim/scal/fun/grad_reg_inc_gamma.hpp>
+#include <stan/math/prim/scal/fun/grad_reg_lower_inc_gamma.hpp>
 #include <stan/math/prim/scal/fun/hypot.hpp>
 #include <stan/math/prim/scal/fun/ibeta.hpp>
 #include <stan/math/prim/scal/fun/identity_constrain.hpp>
@@ -127,6 +128,7 @@
 #include <stan/math/prim/scal/fun/log_falling_factorial.hpp>
 #include <stan/math/prim/scal/fun/log_inv_logit.hpp>
 #include <stan/math/prim/scal/fun/log_mix.hpp>
+#include <stan/math/prim/scal/fun/log_modified_bessel_first_kind.hpp>
 #include <stan/math/prim/scal/fun/log_rising_factorial.hpp>
 #include <stan/math/prim/scal/fun/log_sum_exp.hpp>
 #include <stan/math/prim/scal/fun/logical_and.hpp>
@@ -159,6 +161,7 @@
 #include <stan/math/prim/scal/fun/rising_factorial.hpp>
 #include <stan/math/prim/scal/fun/round.hpp>
 #include <stan/math/prim/scal/fun/sign.hpp>
+#include <stan/math/prim/scal/fun/size_zero.hpp>
 #include <stan/math/prim/scal/fun/square.hpp>
 #include <stan/math/prim/scal/fun/squared_distance.hpp>
 #include <stan/math/prim/scal/fun/step.hpp>
@@ -386,6 +389,8 @@
 #include <stan/math/prim/scal/prob/skew_normal_log.hpp>
 #include <stan/math/prim/scal/prob/skew_normal_lpdf.hpp>
 #include <stan/math/prim/scal/prob/skew_normal_rng.hpp>
+#include <stan/math/prim/scal/prob/std_normal_lpdf.hpp>
+#include <stan/math/prim/scal/prob/std_normal_log.hpp>
 #include <stan/math/prim/scal/prob/student_t_ccdf_log.hpp>
 #include <stan/math/prim/scal/prob/student_t_cdf.hpp>
 #include <stan/math/prim/scal/prob/student_t_cdf_log.hpp>
