@@ -1,11 +1,16 @@
 #ifndef STAN_MATH_PRIM_MAT_HPP
 #define STAN_MATH_PRIM_MAT_HPP
 
+#ifdef STAN_OPENCL
+#include <stan/math/gpu/opencl_context.hpp>
+#endif
+
 #include <stan/math/prim/arr/meta/get.hpp>
 #include <stan/math/prim/arr/meta/index_type.hpp>
 #include <stan/math/prim/arr/meta/is_vector.hpp>
 #include <stan/math/prim/arr/meta/length.hpp>
 
+#include <stan/math/prim/mat/meta/broadcast_array.hpp>
 #include <stan/math/prim/mat/meta/get.hpp>
 #include <stan/math/prim/mat/meta/index_type.hpp>
 #include <stan/math/prim/mat/meta/is_constant_struct.hpp>
@@ -13,6 +18,7 @@
 #include <stan/math/prim/mat/meta/is_vector_like.hpp>
 #include <stan/math/prim/mat/meta/length.hpp>
 #include <stan/math/prim/mat/meta/length_mvt.hpp>
+#include <stan/math/prim/mat/meta/operands_and_partials.hpp>
 #include <stan/math/prim/mat/meta/seq_view.hpp>
 #include <stan/math/prim/mat/meta/scalar_type.hpp>
 #include <stan/math/prim/mat/meta/value_type.hpp>
@@ -60,6 +66,7 @@
 #include <stan/math/prim/mat/fun/block.hpp>
 #include <stan/math/prim/mat/fun/cbrt.hpp>
 #include <stan/math/prim/mat/fun/ceil.hpp>
+#include <stan/math/prim/mat/fun/chol2inv.hpp>
 #include <stan/math/prim/mat/fun/cholesky_corr_constrain.hpp>
 #include <stan/math/prim/mat/fun/cholesky_corr_free.hpp>
 #include <stan/math/prim/mat/fun/cholesky_decompose.hpp>
@@ -116,6 +123,7 @@
 #include <stan/math/prim/mat/fun/get_base1.hpp>
 #include <stan/math/prim/mat/fun/get_base1_lhs.hpp>
 #include <stan/math/prim/mat/fun/get_lp.hpp>
+#include <stan/math/prim/mat/fun/gp_dot_prod_cov.hpp>
 #include <stan/math/prim/mat/fun/head.hpp>
 #include <stan/math/prim/mat/fun/initialize.hpp>
 #include <stan/math/prim/mat/fun/inv.hpp>
@@ -140,6 +148,7 @@
 #include <stan/math/prim/mat/fun/log_determinant_ldlt.hpp>
 #include <stan/math/prim/mat/fun/log_determinant_spd.hpp>
 #include <stan/math/prim/mat/fun/log_inv_logit.hpp>
+#include <stan/math/prim/mat/fun/log_mix.hpp>
 #include <stan/math/prim/mat/fun/log_softmax.hpp>
 #include <stan/math/prim/mat/fun/log_sum_exp.hpp>
 #include <stan/math/prim/mat/fun/logit.hpp>
@@ -243,7 +252,12 @@
 
 #include <stan/math/prim/mat/functor/finite_diff_gradient.hpp>
 #include <stan/math/prim/mat/functor/finite_diff_hessian.hpp>
+#include <stan/math/prim/mat/functor/map_rect.hpp>
+#include <stan/math/prim/mat/functor/map_rect_concurrent.hpp>
+#include <stan/math/prim/mat/functor/map_rect_reduce.hpp>
+#include <stan/math/prim/mat/functor/map_rect_combine.hpp>
 
+#include <stan/math/prim/mat/prob/bernoulli_logit_glm_lpmf.hpp>
 #include <stan/math/prim/mat/prob/categorical_log.hpp>
 #include <stan/math/prim/mat/prob/categorical_lpmf.hpp>
 #include <stan/math/prim/mat/prob/categorical_logit_log.hpp>
@@ -286,9 +300,15 @@
 #include <stan/math/prim/mat/prob/multinomial_log.hpp>
 #include <stan/math/prim/mat/prob/multinomial_lpmf.hpp>
 #include <stan/math/prim/mat/prob/multinomial_rng.hpp>
+#include <stan/math/prim/mat/prob/neg_binomial_2_log_glm_lpmf.hpp>
+#include <stan/math/prim/mat/prob/normal_id_glm_lpdf.hpp>
 #include <stan/math/prim/mat/prob/ordered_logistic_log.hpp>
 #include <stan/math/prim/mat/prob/ordered_logistic_lpmf.hpp>
 #include <stan/math/prim/mat/prob/ordered_logistic_rng.hpp>
+#include <stan/math/prim/mat/prob/poisson_log_glm_lpmf.hpp>
+#include <stan/math/prim/mat/prob/ordered_probit_log.hpp>
+#include <stan/math/prim/mat/prob/ordered_probit_lpmf.hpp>
+#include <stan/math/prim/mat/prob/ordered_probit_rng.hpp>
 #include <stan/math/prim/mat/prob/wishart_log.hpp>
 #include <stan/math/prim/mat/prob/wishart_lpdf.hpp>
 #include <stan/math/prim/mat/prob/wishart_rng.hpp>
@@ -296,6 +316,5 @@
 #include <stan/math/prim/mat/vectorize/apply_scalar_unary.hpp>
 
 #include <stan/math/prim/arr.hpp>
-
 
 #endif
