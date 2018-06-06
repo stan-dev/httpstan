@@ -32,6 +32,7 @@ async def init_cache(app):
     cache_path = appdirs.user_cache_dir("httpstan")
     os.makedirs(cache_path, exist_ok=True)
     logging.info(f"Opening cache in `{cache_path}`.")
+    # if `check_same_thread` is False, use of `conn` across threads should work
     conn = sqlite3.connect(os.path.join(cache_path, "cache.sqlite3"), check_same_thread=False)
     # create tables if they do not exist
     conn.execute(
