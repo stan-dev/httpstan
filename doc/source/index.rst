@@ -13,6 +13,7 @@ Contents:
    openapi
    contributing
    changelog
+   developers
 
 The generated `httpstan API <api.html>`_ documentation describes the range of requests
 the ``httpstan`` server accepts.
