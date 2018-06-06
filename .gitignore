@@ -60,6 +60,7 @@ releasenotes/build
 # Caches
 .cache
 .mypy_cache
+.pytest_cache
 
 # project-specific
 *.c
