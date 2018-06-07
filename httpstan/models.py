@@ -192,7 +192,9 @@ def _build_extension_module(
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "boost_1.66.0"),
-            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "sundials_3.1.0", "include"),
+            os.path.join(
+                httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "sundials_3.1.0", "include"
+            ),
         ]
 
         stan_macros: List[Tuple[str, Optional[str]]] = [
