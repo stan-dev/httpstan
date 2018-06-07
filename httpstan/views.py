@@ -145,16 +145,14 @@ async def handle_models_actions(request):
     stream.charset = "utf-8"
     stream.enable_chunked_encoding()
     await stream.prepare(request)
-    # exclusive lock needed until thread_local option available for autodiff.
-    # See https://github.com/stan-dev/math/issues/551
-    with await request.app["sample_lock"]:
-        type, data = kwargs.pop("type"), kwargs.pop("data")
-        async for message in services_stub.call(type, model_module, data, **kwargs):
-            assert message is not None, message
-            await stream.write(
-                google.protobuf.json_format.MessageToJson(message).encode().replace(b"\n", b"")
-            )
-            await stream.write(b"\n")
+
+    type, data = kwargs.pop("type"), kwargs.pop("data")
+    async for message in services_stub.call(type, model_module, data, **kwargs):
+        assert message is not None, message
+        await stream.write(
+            google.protobuf.json_format.MessageToJson(message).encode().replace(b"\n", b"")
+        )
+        await stream.write(b"\n")
     return stream
 
 

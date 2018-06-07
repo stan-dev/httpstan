@@ -1,8 +1,8 @@
 """Test sampling from Bernoulli model."""
+import asyncio
 import json
 
 import aiohttp
-
 
 headers = {"content-type": "application/json"}
 program_code = """
@@ -38,15 +38,16 @@ def test_bernoulli(loop_with_server, host, port):
     """Test sampling from Bernoulli model with defaults."""
 
     async def main():
+        models_url = "http://{}:{}/v1/models".format(host, port)
+        payload = {"program_code": program_code}
         async with aiohttp.ClientSession() as session:
-            models_url = "http://{}:{}/v1/models".format(host, port)
-            payload = {"program_code": program_code}
             async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 200
                 model_id = (await resp.json())["id"]
 
-            models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
-            payload = {"type": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data}
+        models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
+        payload = {"type": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data}
+        async with aiohttp.ClientSession() as session:
             async with session.post(
                 models_actions_url, data=json.dumps(payload), headers=headers
             ) as resp:
@@ -80,5 +81,43 @@ def test_bernoulli_params(loop_with_server, host, port):
                 assert param["name"] == "theta"
                 assert param["dims"] == []
                 assert param["constrained_names"] == ["theta"]
+
+    loop_with_server.run_until_complete(main())
+
+
+def test_bernoulli_parallel(loop_with_server, host, port):
+    """Test sampling from Bernoulli model with defaults, in parallel."""
+
+    async def main():
+        models_url = "http://{}:{}/v1/models".format(host, port)
+        payload = {"program_code": program_code}
+        async with aiohttp.ClientSession() as session:
+            async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
+                assert resp.status == 200
+                model_id = (await resp.json())["id"]
+
+        models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
+        payload = {"type": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data}
+
+        # launch many samplers
+        num_samplers = 8
+        try:
+            sessions = [aiohttp.ClientSession() for _ in range(num_samplers)]
+            responses = [
+                await session.post(models_actions_url, data=json.dumps(payload), headers=headers)
+                for session in sessions
+            ]
+            # validate samples in reverse order, making sure that no blocking is happening
+            await asyncio.gather(
+                *[
+                    asyncio.ensure_future(validate_samples(response))
+                    for response in reversed(responses)
+                ]
+            )
+        finally:
+            for response in responses:
+                response.close()  # ClientResponse.close is not a coroutine
+            for session in sessions:
+                await session.close()
 
     loop_with_server.run_until_complete(main())
