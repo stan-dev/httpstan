@@ -7,9 +7,6 @@ flake8-bugbear<19,>=18.2.0
 pytest<4,>=3.0.7
 sphinx>=1.5.1 # BSD
 
-# releasenotes
-reno>=1.8.0 # Apache-2.0
-
 # type checking
 mypy>=0.5
 
