@@ -48,6 +48,9 @@ Install
 Install from Source
 -------------------
 
+A working copy of ``protoc`` is needed to build from source. One way to get this is to install
+``grpcio-tools`` from PyPI with ``python3 -m pip install grpcio-tools``.
+
 ::
 
     make cython  # generate C++ code from Cython .pyx files
