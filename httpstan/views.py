@@ -37,6 +37,16 @@ class ModelSchema(marshmallow.Schema):  # noqa
         strict = True
 
 
+async def handle_health(request):
+    """Return 200 OK.
+
+    ---
+    get:
+        description: Check if service is running.
+    """
+    return aiohttp.web.Response(text="httpstan is running.")
+
+
 async def handle_models(request):
     """Compile Stan model.
 
