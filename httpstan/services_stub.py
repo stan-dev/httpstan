@@ -31,7 +31,9 @@ async def call(function_name: str, model_module, data: dict, **kwargs):
         kwargs: named stan::services function arguments, see CmdStan documentation.
     """
     method, function_basename = function_name.replace("stan::services::", "").split("::", 1)
-    queue_wrapper = httpstan.spsc_queue.SPSCQueue(capacity=10000)
+    queue_wrapper = httpstan.spsc_queue.SPSCQueue(
+        capacity=10_000_000
+    )  # 10_000 is enough for ~4000 draws
     array_var_context_capsule = httpstan.stan.make_array_var_context(data)
     function_wrapper = getattr(model_module, function_basename + "_wrapper")
 
