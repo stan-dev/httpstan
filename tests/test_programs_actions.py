@@ -21,7 +21,7 @@ def test_models_actions(loop_with_server, host, port):
                 model_id = (await resp.json())["id"]
 
             models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
-            num_samples = num_warmup = 500
+            num_samples = num_warmup = 5000
             data = {
                 "type": "stan::services::sample::hmc_nuts_diag_e",
                 "num_samples": num_samples,
@@ -32,6 +32,7 @@ def test_models_actions(loop_with_server, host, port):
             ) as resp:
                 draws = await helpers.extract_draws(resp, "y")
             assert -5 < statistics.mean(draws) < 5
+            assert len(draws) == num_samples, (len(draws), num_samples)
 
     loop_with_server.run_until_complete(main())
 
