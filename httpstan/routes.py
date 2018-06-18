@@ -17,6 +17,7 @@ def setup_routes(app):
         app (aiohttp.Application): Application to which routes should be added.
 
     """
+    app.router.add_get("/v1/health", views.handle_health)
     app.router.add_post("/v1/models", views.handle_models)
     app.router.add_post("/v1/models/{model_id}/actions", views.handle_models_actions)
     app.router.add_post("/v1/models/{model_id}/params", views.handle_models_params)
@@ -27,6 +28,7 @@ def openapi_spec() -> str:
     spec = apispec.APISpec(
         title="httpstan API", version=httpstan.__version__, plugins=["apispec.ext.marshmallow"]
     )
+    spec.add_path(path="/v1/health", view=views.handle_health)
     spec.add_path(path="/v1/models", view=views.handle_models)
     spec.add_path(path="/v1/models/{model_id}/actions", view=views.handle_models_actions)
     spec.add_path(path="/v1/models/{model_id}/params", view=views.handle_models_params)
