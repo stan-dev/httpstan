@@ -1,6 +1,8 @@
 """Test sampling from Bernoulli model."""
 import asyncio
 import json
+import multiprocessing
+import time
 
 import aiohttp
 
@@ -97,27 +99,59 @@ def test_bernoulli_parallel(loop_with_server, host, port):
                 model_id = (await resp.json())["id"]
 
         models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
-        payload = {"type": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data}
+        # draw enough samples that sampling itself takes some time, use a high
+        # warmup count because it will not generate draws which will require CPU
+        # time to serialize and send.
+        num_warmup = 1_000_000
+        num_samples = 200
+        payload = {
+            "type": "stan::services::sample::hmc_nuts_diag_e_adapt",
+            "data": data,
+            "num_warmup": num_warmup,
+            "num_samples": num_samples,
+        }
 
-        # launch many samplers
-        num_samplers = 8
+        t0 = time.time()
+        # draw samples once serially to get a baseline time measurement
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                models_actions_url, data=json.dumps(payload), headers=headers
+            ) as response:
+                await validate_samples(response)
+        elapsed = time.time() - t0
+
+        # launch many samplers in parallel
+        t0 = time.time()
+        num_parallel = 2
         try:
-            sessions = [aiohttp.ClientSession() for _ in range(num_samplers)]
-            responses = [
-                await session.post(models_actions_url, data=json.dumps(payload), headers=headers)
-                for session in sessions
-            ]
-            # validate samples in reverse order, making sure that no blocking is happening
-            await asyncio.gather(
-                *[
-                    asyncio.ensure_future(validate_samples(response))
-                    for response in reversed(responses)
+            sessions = [aiohttp.ClientSession() for _ in range(num_parallel)]
+            try:
+                responses = [
+                    await session.post(
+                        models_actions_url, data=json.dumps(payload), headers=headers
+                    )
+                    for session in sessions
                 ]
-            )
+                # validate samples in reverse order, making sure that no blocking is happening
+                await asyncio.gather(
+                    *[
+                        asyncio.ensure_future(validate_samples(response))
+                        for response in reversed(responses)
+                    ]
+                )
+            finally:
+                for response in responses:
+                    response.close()  # ClientResponse.close is not a coroutine
         finally:
-            for response in responses:
-                response.close()  # ClientResponse.close is not a coroutine
             for session in sessions:
                 await session.close()
+        elapsed_parallel = time.time() - t0
+        # sampling two chains in parallel should not take much longer than sampling
+        # one chain, assuming that the system has at least two cores.
+        overhead = 1.6
+        if multiprocessing.cpu_count() > 1:
+            assert elapsed_parallel < elapsed * overhead
+        else:
+            assert elapsed_parallel < elapsed * num_parallel * overhead
 
     loop_with_server.run_until_complete(main())

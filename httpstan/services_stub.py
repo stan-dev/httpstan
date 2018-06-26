@@ -50,17 +50,14 @@ async def call(function_name: str, model_module, data: dict, **kwargs):
         function_wrapper, array_var_context_capsule, queue_wrapper.to_capsule(), **kwargs
     )
 
-    # WISHLIST: can one use ProcessPoolExecutor somehow on Linux and OSX?
     loop = asyncio.get_event_loop()
-    future = asyncio.ensure_future(
-        loop.run_in_executor(None, function_wrapper_partial)
-    )  # type: ignore
+    future = loop.run_in_executor(None, function_wrapper_partial)  # type: ignore
     parser = httpstan.callbacks_writer_parser.WriterParser()
     while True:
         try:
             message = queue_wrapper.get_nowait()
         except queue.Empty:
-            if future.done():
+            if future.done():  # type: ignore
                 break
             await asyncio.sleep(0.1)
             continue
@@ -68,4 +65,5 @@ async def call(function_name: str, model_module, data: dict, **kwargs):
         # parsed is None if the message was a blank line or a header with param names
         if parsed:
             yield parsed
-    future.result()  # raises exceptions from task, if any
+    # `result()` method will raise exceptions, if any
+    future.result()  # type: ignore
