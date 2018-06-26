@@ -1,0 +1,46 @@
+environment:
+  matrix:
+
+    # Pre-installed Python versions, which Appveyor may upgrade to
+    # a later point release.
+    # See: http://www.appveyor.com/docs/installed-software#python
+
+    - PYTHON: "C:\\Python36"
+      PYTHON_VERSION: "3.6.x"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python36-x64"
+      PYTHON_VERSION: "3.6.x"
+      PYTHON_ARCH: "64"
+
+install:
+  # this installs the appropriate Miniconda (Py2/Py3, 32/64 bit),
+  # as well as pip, conda-build, and the binstar CLI
+  - powershell .\\continuous_integration\\appveyor\\install.ps1
+
+  - ps: "ls \"C:/Program Files/Microsoft SDKs/Windows\""
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "conda create -n httpstan python=3.6 m2w64-toolchain libpython cython numpy pandas xarray matplotlib -c msys2 -c conda-forge"
+  - "conda activate httpstan"
+
+  # Check that we have the expected version and architecture for Python
+  - "python --version"
+  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+
+  # Install the build dependencies of the project. If some dependencies contain
+  # compiled extensions and are not provided as pre-built wheel packages,
+  # pip will build them from source using the MSVC compiler matching the
+  # target Python version and architecture
+  - "pip install -r requirements.txt"
+  - "pip install -r test-requirements.txt"
+  # generate code required for building the wheel
+  - "pip install grpcio-tools"
+  - "C:\\MinGW\\bin\\mingw32-make.exe"
+
+build_script:
+  # Build the compiled extension
+  - "python setup.py build"
+
+test_script:
+  # Run the project tests
+  - "python -m pytest tests"
