@@ -68,7 +68,8 @@ test_script:
   # cache several files to avoid race condition errors
   - echo "safety_checks: disabled" >> ~/.condarc
   - echo "local_repodata_ttl: 1800" >> ~/.condarc
-  #- sleep 60
+  - sleep 1
+  - py.test tests
 
 on_success:
   - echo "Succesfull"
