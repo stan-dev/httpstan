@@ -108,6 +108,21 @@ def _load_module(module_name: str, module_path: str):
     sys.path.pop()
     return module
 
+def _find_module(module_name: str, module_path: str):
+    """Load the module named `module_name` from  `module_path`.
+
+    Arguments:
+        module_name: module name.
+        module_path: module path.
+
+    Returns:
+        path: module.__file__.
+
+    """
+    sys.path.append(module_path)
+    spec = importlib.util.find_spec(module_name)
+    sys.path.pop()
+    return spec.origin
 
 def load_model_extension_module(model_id: str, module_bytes: bytes):
     """Load Stan model extension module from binary representation.
@@ -177,8 +192,8 @@ def _build_extension_module(
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
     with tempfile.TemporaryDirectory() as temporary_dir:
-        cpp_filepath = os.path.join(temporary_dir, "{}.hpp".format(module_name))
-        pyx_filepath = os.path.join(temporary_dir, "{}.pyx".format(module_name))
+        cpp_filepath = os.path.join(temporary_dir, "{}.hpp".format(module_name)).replace(os.path.sep, "/")
+        pyx_filepath = os.path.join(temporary_dir, "{}.pyx".format(module_name)).replace(os.path.sep, "/")
         pyx_code = string.Template(pyx_code_template).substitute(cpp_filename=cpp_filepath)
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
             with open(filepath, "w") as fh:
@@ -206,10 +221,7 @@ def _build_extension_module(
         ]
 
         if extra_compile_args is None:
-            if sys.platform.startswith("win"):
-                extra_compile_args = ["/EHsc", "-DBOOST_DATE_TIME_NO_LIB"]
-            else:
-                extra_compile_args = ["-O3", "-std=c++11"]
+            extra_compile_args = ["-O3", "-std=c++11"]
 
         cython_include_path = [os.path.dirname(httpstan_dir)]
         extension = setuptools.Extension(
@@ -229,7 +241,12 @@ def _build_extension_module(
         # TODO(AR): wrap stderr, return it as well
         build_extension.run()
 
-        module = _load_module(module_name, build_extension.build_lib)
-        with open(module.__file__, "rb") as fh:  # type: ignore  # pending fix, see mypy#3062
-            assert module.__name__ == module_name, (module.__name__, module_name)
-            return fh.read()  # type: ignore  # pending fix, see mypy#3062
+        if sys.platform.startswith("win"):
+            path = _find_module(module_name, build_extension.build_lib)
+            with open(path, "rb") as fh:
+                return fh.read()
+        else:
+            module = _load_module(module_name, build_extension.build_lib)
+            with open(module.__file__, "rb") as fh:
+                assert module.__name__ == module_name, (module.__name__, module_name)
+                return fh.read()  # type: ignore  # pending fix, see mypy#3062
