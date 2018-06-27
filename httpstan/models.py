@@ -109,7 +109,7 @@ def _load_module(module_name: str, module_path: str):
     return module
 
 def _find_module(module_name: str, module_path: str):
-    """Load the module named `module_name` from  `module_path`.
+    """Find the module named `module_name` from  `module_path`.
 
     Arguments:
         module_name: module name.
@@ -221,6 +221,7 @@ def _build_extension_module(
         ]
 
         if extra_compile_args is None:
+            # "-D_hypot=hypot" : bugfix for mingw-w64, does not affect *nix
             extra_compile_args = ["-O3", "-std=c++11", "-D_hypot=hypot"]
 
         cython_include_path = [os.path.dirname(httpstan_dir)]
@@ -242,6 +243,8 @@ def _build_extension_module(
         build_extension.run()
 
         if sys.platform.startswith("win"):
+            # tempfile bug: Windows can't open file that is already open
+            # see related statement in https://docs.python.org/3/library/tempfile.html#tempfile.NamedTemporaryFile
             path = _find_module(module_name, build_extension.build_lib)
             with open(path, "rb") as fh:
                 return fh.read()
