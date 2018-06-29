@@ -1,4 +1,5 @@
 """Test Stan model compilation."""
+import asyncio
 import aiohttp
 import json
 
@@ -7,8 +8,10 @@ headers = {"content-type": "application/json"}
 program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 
 
-def test_models(loop_with_server, host, port):
+def test_models(httpstan_server):
     """Test compilation of an extension module."""
+
+    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
         async with aiohttp.ClientSession() as session:
@@ -19,4 +22,4 @@ def test_models(loop_with_server, host, port):
                 payload = await resp.json()
                 assert "id" in payload
 
-    loop_with_server.run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(main())

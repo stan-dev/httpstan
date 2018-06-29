@@ -1,4 +1,5 @@
 """Test sampling from linear regression model."""
+import asyncio
 import json
 
 import aiohttp
@@ -35,8 +36,10 @@ y = np.dot(X, beta_true) + np.random.normal(size=n)
 data = {"N": n, "p": p, "x": X.tolist(), "y": y.tolist()}
 
 
-def test_linear_regression(loop_with_server, host, port):
+def test_linear_regression(httpstan_server):
     """Test sampling from linear regression posterior with defaults."""
+
+    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
         async with aiohttp.ClientSession() as session:
@@ -60,4 +63,4 @@ def test_linear_regression(loop_with_server, host, port):
                 beta_0 = await helpers.extract_draws(resp, "beta.1")
             assert all(np.abs(beta_0 - np.array(beta_true)[0]) < 0.05)
 
-    loop_with_server.run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(main())

@@ -5,16 +5,16 @@
 As httpstan is intended for use alongside a frontend, the frontend
 will typically do everything in ``main()`` function.
 """
+import sys
 import time
 
 import httpstan.main
 
 
 def main():
-    host = "127.0.0.1"
-    port = 8080
-    server = httpstan.main.Server(host=host, port=port)
+    server = httpstan.main.Server()
     server.start()
+    print(f"httpstan serving on {server.host}:{server.port}", file=sys.stderr)
     try:
         while True:
             time.sleep(0.1)

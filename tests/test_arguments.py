@@ -1,11 +1,11 @@
 """Test services function argument lookups."""
+import asyncio
 import json
 
 import aiohttp
 
 import httpstan.models
 import httpstan.services.arguments as arguments
-
 
 program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 headers = {"content-type": "application/json"}
@@ -19,8 +19,10 @@ def test_lookup_default():
     assert expected == arguments.lookup_default(arguments.Method.SAMPLE, "gamma")
 
 
-def test_function_arguments(loop_with_server, host, port):
+def test_function_arguments(httpstan_server):
     """Test function argument name lookup."""
+    host, port = httpstan_server.host, httpstan_server.port
+
     # function_arguments needs compiled module, so we have to get one
     async def main():
         async with aiohttp.ClientSession() as session:
@@ -53,4 +55,4 @@ def test_function_arguments(loop_with_server, host, port):
 
         assert expected == arguments.function_arguments("hmc_nuts_diag_e", model_module)
 
-    loop_with_server.run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(main())
