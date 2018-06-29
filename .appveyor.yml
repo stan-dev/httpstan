@@ -40,7 +40,7 @@ install:
   - python -c "import sys; print(sys.executable)"
   - python -c "import sys; print(sys.prefix)"
   - conda update -q --all
-  - conda install -q pip m2w64-toolchain libpython cython numpy pandas xarray matplotlib -c msys2 -c conda-forge
+  - conda install -q pip libpython m2w64-toolchain cython numpy pandas xarray matplotlib vs2015_runtime -c msys2 -c conda-forge
   # this is to ensure dependencies
   - python --version
   - python -c "import struct; print(struct.calcsize('P') * 8)"

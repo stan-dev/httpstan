@@ -108,6 +108,7 @@ def _load_module(module_name: str, module_path: str):
     sys.path.pop()
     return module
 
+
 def _find_module(module_name: str, module_path: str):
     """Find the module named `module_name` from  `module_path`.
 
@@ -123,6 +124,7 @@ def _find_module(module_name: str, module_path: str):
     spec = importlib.util.find_spec(module_name)
     sys.path.pop()
     return spec.origin
+
 
 def load_model_extension_module(model_id: str, module_bytes: bytes):
     """Load Stan model extension module from binary representation.
