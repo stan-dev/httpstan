@@ -10,10 +10,10 @@ httpstan
 
 |pypi| |travis|
 
-HTTP interface to Stan, a package for Bayesian inference.
+HTTP-based interface to Stan, a package for Bayesian inference.
 
 An HTTP 1.1 interface to the Stan_ C++ package, **httpstan** is a shim_ that
-allows users to interact with the Stan C++ library using a `Web API`_. The
+allows users to interact with the Stan C++ library using an HTTP API. The
 package is intended for use as a universal backend for frontends which know how
 to make HTTP requests. The primary audience for this package is developers.
 
@@ -28,8 +28,10 @@ Important Disclaimer
 ====================
 **httpstan** is experimental software. This software is not intended for general use.
 
-httpstan currently requires Python 3.6 as it uses asynchronous generators (PEP525). Support for
-Python 3.5 may emerge at some point. No older versions of Python will be supported.
+httpstan currently requires Python version 3.6 or higher. No older versions of
+Python will be supported.
+
+httpstan only works on Linux and macOS. Windows support is planned.
 
 Background
 ==========
@@ -100,7 +102,6 @@ License
 ISC License.
 
 .. _shim: https://en.wikipedia.org/wiki/Shim_%28computing%29
-.. _`Web API`: https://en.wikipedia.org/wiki/Web_API
 .. _CmdStan: http://mc-stan.org/interfaces/cmdstan.html
 .. _PyStan: http://mc-stan.org/interfaces/pystan.html
 .. _Stan: http://mc-stan.org/
