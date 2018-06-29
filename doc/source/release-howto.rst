@@ -24,18 +24,13 @@ Sign and upload source distribution and wheels
 
 Sign source distribution and wheels::
 
-    for tarball in dist/*.tar.gz; do
-        gpg --detach-sign -a -u CB808C34B3BFFD03EFD2751597A78E5BFA431C9A "$tarball"
-    done
-
-    for whl in dist/*.whl; do
-        gpg --detach-sign -a -u CB808C34B3BFFD03EFD2751597A78E5BFA431C9A "$whl"
+    for filename in dist/*{.tar.gz,.whl}; do
+        gpg --detach-sign -a -u CB808C34B3BFFD03EFD2751597A78E5BFA431C9A "$filename"
     done
 
 Upload source distribution and wheels::
 
-    python3 -m twine upload --skip-existing dist/*.tar.gz dist/*.tar.gz.asc
-    python3 -m twine upload --skip-existing dist/*.whl dist/*.whl.asc
+    python3 -m twine upload --skip-existing dist/*.tar.gz dist/*.tar.gz.asc dist/*.whl dist/*.whl.asc
 
 If ``twine`` prompts for a username and password abort the process with
 Control-C and enter your PyPI credentials in ``$HOME/.pypirc``. (For more
