@@ -36,8 +36,9 @@ async def validate_samples(resp):
     return True
 
 
-def test_bernoulli(loop_with_server, host, port):
+def test_bernoulli(httpstan_server):
     """Test sampling from Bernoulli model with defaults."""
+    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
         models_url = "http://{}:{}/v1/models".format(host, port)
@@ -55,11 +56,13 @@ def test_bernoulli(loop_with_server, host, port):
             ) as resp:
                 await validate_samples(resp)
 
-    loop_with_server.run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_bernoulli_params(loop_with_server, host, port):
+def test_bernoulli_params(httpstan_server):
     """Test getting parameters from Bernoulli model."""
+
+    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
         async with aiohttp.ClientSession() as session:
@@ -84,11 +87,13 @@ def test_bernoulli_params(loop_with_server, host, port):
                 assert param["dims"] == []
                 assert param["constrained_names"] == ["theta"]
 
-    loop_with_server.run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_bernoulli_parallel(loop_with_server, host, port):
+def test_bernoulli_parallel(httpstan_server):
     """Test sampling from Bernoulli model with defaults, in parallel."""
+
+    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
         models_url = "http://{}:{}/v1/models".format(host, port)
@@ -102,8 +107,8 @@ def test_bernoulli_parallel(loop_with_server, host, port):
         # draw enough samples that sampling itself takes some time, use a high
         # warmup count because it will not generate draws which will require CPU
         # time to serialize and send.
-        num_warmup = 1_000_000
-        num_samples = 200
+        num_warmup = 500_000
+        num_samples = 100
         payload = {
             "type": "stan::services::sample::hmc_nuts_diag_e_adapt",
             "data": data,
@@ -154,4 +159,4 @@ def test_bernoulli_parallel(loop_with_server, host, port):
         else:
             assert elapsed_parallel < elapsed * num_parallel * overhead
 
-    loop_with_server.run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(main())

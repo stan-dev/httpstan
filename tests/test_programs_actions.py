@@ -1,4 +1,5 @@
 """Test sampling."""
+import asyncio
 import aiohttp
 import json
 import statistics
@@ -9,8 +10,10 @@ headers = {"content-type": "application/json"}
 program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 
 
-def test_models_actions(loop_with_server, host, port):
+def test_models_actions(httpstan_server):
     """Simple test of sampling."""
+
+    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
         async with aiohttp.ClientSession() as session:
@@ -34,11 +37,13 @@ def test_models_actions(loop_with_server, host, port):
             assert -5 < statistics.mean(draws) < 5
             assert len(draws) == num_samples, (len(draws), num_samples)
 
-    loop_with_server.run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_models_actions_bad_args(loop_with_server, host, port):
+def test_models_actions_bad_args(httpstan_server):
     """Test handler argument handling."""
+
+    host, port = httpstan_server.host, httpstan_server.port
 
     async def main(loop):
         async with aiohttp.ClientSession() as session:
@@ -56,4 +61,4 @@ def test_models_actions_bad_args(loop_with_server, host, port):
                 assert resp.status == 422
                 assert await resp.json() == {"type": ["Missing data for required field."]}
 
-    loop_with_server.run_until_complete(main(loop_with_server))
+    asyncio.get_event_loop().run_until_complete(main(asyncio.get_event_loop()))

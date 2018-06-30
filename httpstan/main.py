@@ -5,20 +5,17 @@ Configure the server and schedule startup and shutdown tasks.
 import asyncio
 import logging
 import threading
+from typing import Optional
 
 import aiohttp.web
 
 import httpstan.routes
 
-
 logger = logging.getLogger("httpstan")
 
 
-def make_app(loop: asyncio.AbstractEventLoop) -> aiohttp.web.Application:
+def make_app() -> aiohttp.web.Application:
     """Assemble aiohttp Application.
-
-    Arguments:
-        loop: event loop.
 
     Returns:
         aiohttp.web.Application: assembled aiohttp application.
@@ -43,31 +40,45 @@ class Server(threading.Thread):
 
     """
 
-    def __init__(
-        self, host: str = "127.0.0.1", port: int = 8080, loop: asyncio.AbstractEventLoop = None
-    ) -> None:
+    def __init__(self, host: str = "127.0.0.1", port: Optional[int] = None) -> None:
         super().__init__()
         self.host, self.port = host, port
-        self.loop = asyncio.get_event_loop() if loop is None else loop
-        self.runner = None
+        self.loop = asyncio.new_event_loop()  # control will be passed to thread
+        self.app = make_app()
+        self.runner = aiohttp.web.AppRunner(self.app)
+        self.loop.run_until_complete(self.runner.setup())
+
+        # if `port` is None, search for an available port
+        if self.port is None:
+            for port in range(8080, 9000):
+                try:
+                    site = aiohttp.web.TCPSite(self.runner, self.host, port)
+                    self.loop.run_until_complete(site.start())
+                except OSError:
+                    continue
+                else:
+                    self.port = port
+                    break
+            else:
+                raise RuntimeError(f"Unable to find an available port with host `{self.host}`.")
+        else:
+            site = aiohttp.web.TCPSite(self.runner, self.host, self.port)
+            self.loop.run_until_complete(site.start())
 
     def run(self):
         """Runs in a separate thread when ``start`` is called."""
         # This thread takes over control of the event loop.
         asyncio.set_event_loop(self.loop)
-        app = make_app(self.loop)
-
-        self.runner = aiohttp.web.AppRunner(app)
-        self.loop.run_until_complete(self.runner.setup())
-        site = aiohttp.web.TCPSite(self.runner, self.host, self.port)
-        self.loop.run_until_complete(site.start())
-
         self.loop.run_forever()  # will stop when ``stop`` is called
 
     def stop(self):
         """Arrange for the server to gracefully exit."""
+        # reminder: these functions are called from the original context
         if not self.is_alive():
             raise RuntimeError("httpstan Server thread is not alive.")
-        asyncio.run_coroutine_threadsafe(self.runner.cleanup(), self.loop)
+        # self.loop is controlled by another thread
+        # future is a concurrent.futures.Future
+        future = asyncio.run_coroutine_threadsafe(self.runner.cleanup(), self.loop)
+        future.result(1)
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.join()

@@ -1,4 +1,5 @@
 """Test sampling from Eight Schools model."""
+import asyncio
 import json
 
 import aiohttp
@@ -45,8 +46,10 @@ async def validate_samples(resp):
     return True
 
 
-def test_eight_schools(loop_with_server, host, port):
+def test_eight_schools(httpstan_server):
     """Test sampling from Eight Schools model with defaults."""
+
+    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
         async with aiohttp.ClientSession() as session:
@@ -66,11 +69,13 @@ def test_eight_schools(loop_with_server, host, port):
             ) as resp:
                 await validate_samples(resp)
 
-    loop_with_server.run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_eight_schools_params(loop_with_server, host, port):
+def test_eight_schools_params(httpstan_server):
     """Test getting parameters from Eight Schools model."""
+
+    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
         async with aiohttp.ClientSession() as session:
@@ -105,4 +110,4 @@ def test_eight_schools_params(loop_with_server, host, port):
                     f"eta.{i}" for i in range(1, schools_data["J"] + 1)
                 ]
 
-    loop_with_server.run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(main())
