@@ -151,7 +151,7 @@ def load_model_extension_module(model_id: str, module_bytes: bytes):
     # of this function will not load.
     module_name = calculate_module_name(model_id)
     if sys.platform.startswith("win"):
-        module_filename = f"{module_name}.dll"
+        module_filename = f"{module_name}.pyd"
     else:
         module_filename = f"{module_name}.so"
     with tempfile.TemporaryDirectory() as temporary_directory:
