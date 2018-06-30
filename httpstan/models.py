@@ -150,7 +150,10 @@ def load_model_extension_module(model_id: str, module_bytes: bytes):
     # module name, e.g., PyInit_mymodule.  Filenames which do not match the name
     # of this function will not load.
     module_name = calculate_module_name(model_id)
-    module_filename = f"{module_name}.so"
+    if sys.platform.startswith("win"):
+        module_filename = f"{module_name}.dll"
+    else
+        module_filename = f"{module_name}.so"
     with tempfile.TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
