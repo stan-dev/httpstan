@@ -108,7 +108,7 @@ def test_bernoulli_parallel(httpstan_server):
         # warmup count because it will not generate draws which will require CPU
         # time to serialize and send.
         num_warmup = 500_000
-        num_samples = 100
+        num_samples = 50
         payload = {
             "type": "stan::services::sample::hmc_nuts_diag_e_adapt",
             "data": data,
@@ -151,12 +151,9 @@ def test_bernoulli_parallel(httpstan_server):
             for session in sessions:
                 await session.close()
         elapsed_parallel = time.time() - t0
-        # sampling two chains in parallel should not take much longer than sampling
+        # sampling two chains in parallel should not take longer than sampling
         # one chain, assuming that the system has at least two cores.
-        overhead = 1.6
         if multiprocessing.cpu_count() > 1:
-            assert elapsed_parallel < elapsed * overhead
-        else:
-            assert elapsed_parallel < elapsed * num_parallel * overhead
+            assert elapsed_parallel < elapsed * num_parallel
 
     asyncio.get_event_loop().run_until_complete(main())
