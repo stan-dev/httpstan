@@ -197,8 +197,12 @@ def _build_extension_module(
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
     with tempfile.TemporaryDirectory() as temporary_dir:
-        cpp_filepath = os.path.join(temporary_dir, "{}.hpp".format(module_name)).replace(os.path.sep, "/")
-        pyx_filepath = os.path.join(temporary_dir, "{}.pyx".format(module_name)).replace(os.path.sep, "/")
+        cpp_filepath = os.path.join(temporary_dir, "{}.hpp".format(module_name)).replace(
+            os.path.sep, "/"
+        )
+        pyx_filepath = os.path.join(temporary_dir, "{}.pyx".format(module_name)).replace(
+            os.path.sep, "/"
+        )
         pyx_code = string.Template(pyx_code_template).substitute(cpp_filename=cpp_filepath)
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
             with open(filepath, "w") as fh:
