@@ -8,9 +8,12 @@ import functools
 import hashlib
 import importlib
 import os
+import shutil as _shutil
+import stat
 import string
 import sys
 import tempfile
+import warnings as _warnings
 from typing import List
 from typing import Optional
 from typing import Tuple  # noqa: flake8 bug, #118
@@ -23,6 +26,32 @@ import pkg_resources
 
 import httpstan.compile
 import httpstan.stan
+
+
+# TemporaryDirectory problem with Windows
+# see https://docs.python.org/3/library/shutil.html?highlight=shutil#rmtree-example
+class TemporaryDirectory(tempfile.TemporaryDirectory):
+
+    def __init__(self, suffix=None, prefix=None, dir=None):
+        super(TemporaryDirectory, self).__init__(suffix, prefix, dir)
+
+    def _remove_readonly(self, func, path, _):
+        "Clear the readonly bit and reattempt the removal"
+        os.chmod(path, stat.S_IWUSR|stat.S_IREAD)
+        try:
+            func(path)
+        except (PermissionError, OSError):
+            # WIP
+            pass
+
+    @classmethod
+    def _cleanup(self, name, warn_message):
+        _shutil.rmtree(name, onerror=self._remove_readonly)
+        _warnings.warn(warn_message, ResourceWarning)
+
+    def cleanup(self):
+        if self._finalizer.detach():
+            _shutil.rmtree(self.name, onerror=self._remove_readonly)
 
 
 def calculate_model_id(program_code: str) -> str:
@@ -151,14 +180,17 @@ def load_model_extension_module(model_id: str, module_bytes: bytes):
     # of this function will not load.
     module_name = calculate_module_name(model_id)
     if sys.platform.startswith("win"):
-        module_filename = f"{module_name}.pyd"
+        module_filename = f"{module_name}.cp36-win_amd64.pyd"
     else:
         module_filename = f"{module_name}.so"
     with tempfile.TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
-        assert module_name == os.path.splitext(module_filename)[0]
+        if sys.platform.startswith("win"):
+            assert module_name + '.cp36-win_amd64' == os.path.splitext(module_filename)[0]
+        else:
+            assert module_name == os.path.splitext(module_filename)[0]
         return _load_module(module_name, module_path)
 
 
