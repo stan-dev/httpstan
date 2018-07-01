@@ -37,22 +37,21 @@ class TemporaryDirectory(tempfile.TemporaryDirectory):
 
     def _remove_readonly(self, func, path, _):
         "Clear the readonly bit and reattempt the removal"
-        os.chmod(path, stat.S_IWUSR | stat.S_IREAD)
+        os.chmod(path, stat.S_IWUSR|stat.S_IREAD)
         try:
             func(path)
         except (PermissionError, OSError):
             # WIP
-            del sys.modules[os.path.basename(path).replace(".cp36-win_amd64", "")]
-            func(path)
+            pass
 
     @classmethod
     def _cleanup(self, name, warn_message):
-        _shutil.rmtree(name, onerror=self._remove_readonly)
+        _shutil.rmtree(name, ignore_errors=True) # , onerror=self._remove_readonly
         _warnings.warn(warn_message, ResourceWarning)
 
     def cleanup(self):
         if self._finalizer.detach():
-            _shutil.rmtree(self.name, onerror=self._remove_readonly)
+            _shutil.rmtree(self.name, ignore_errors=True) #, onerror=self._remove_readonly
 
 
 def calculate_model_id(program_code: str) -> str:
@@ -184,7 +183,7 @@ def load_model_extension_module(model_id: str, module_bytes: bytes):
         module_filename = f"{module_name}.cp36-win_amd64.pyd"
     else:
         module_filename = f"{module_name}.so"
-    with tempfile.TemporaryDirectory() as temporary_directory:
+    with TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
@@ -229,7 +228,7 @@ def _build_extension_module(
 
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
-    with tempfile.TemporaryDirectory() as temporary_dir:
+    with TemporaryDirectory() as temporary_dir:
         cpp_filepath = os.path.join(temporary_dir, "{}.hpp".format(module_name)).replace(
             os.path.sep, "/"
         )
