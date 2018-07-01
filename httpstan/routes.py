@@ -33,6 +33,7 @@ def openapi_spec() -> str:
     spec.add_path(path="/v1/models/{model_id}/actions", view=views.handle_models_actions)
     spec.add_path(path="/v1/models/{model_id}/params", view=views.handle_models_params)
     spec.definition("Model", schema=views.ModelSchema)
+    spec.definition("Error", schema=views.ErrorSchema)
     spec.definition("ModelsAction", schema=views.ModelsActionSchema)
     spec.definition("Param", schema=views.ParamSchema)
     return json.dumps(spec.to_dict())

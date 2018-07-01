@@ -21,7 +21,7 @@ import httpstan.services_stub as services_stub
 logger = logging.getLogger("httpstan")
 
 
-def json_error(message):  # noqa
+def json_error(message: str) -> aiohttp.web.Response:  # noqa
     return aiohttp.web.Response(
         body=json.dumps({"error": message}).encode("utf-8"), content_type="application/json"
     )
@@ -32,6 +32,16 @@ models_args = {"program_code": fields.Str(required=True)}
 
 class ModelSchema(marshmallow.Schema):  # noqa
     id = fields.String(required=True)
+
+    class Meta:  # noqa
+        strict = True
+
+
+class ErrorSchema(marshmallow.Schema):  # noqa
+    """Serialize a Python Exception into JSON."""
+
+    type = fields.String(required=True)
+    message = fields.String(required=True)
 
     class Meta:  # noqa
         strict = True
@@ -72,6 +82,11 @@ async def handle_models(request):
               description: Identifier for compiled Stan model
               schema:
                  $ref: '#/definitions/Model'
+            400:
+              description: Error associated with compile request.
+              schema:
+                 $ref: '#/definitions/Error'
+
     """
     args = await webargs.aiohttpparser.parser.parse(models_args, request)
     program_code = args["program_code"]
@@ -82,7 +97,13 @@ async def handle_models(request):
         )
     except KeyError:
         logger.info("Compiling Stan model. Model id is {}.".format(model_id))
-        module_bytes = await httpstan.models.compile_model_extension_module(program_code)
+        try:
+            module_bytes = await httpstan.models.compile_model_extension_module(program_code)
+        except Exception as exc:
+            return aiohttp.web.json_response(
+                ErrorSchema().dump({"type": type(exc).__name__, "message": str(exc)}).data,
+                status=400,
+            )
         await httpstan.cache.dump_model_extension_module(model_id, module_bytes, request.app["db"])
     else:
         logger.info("Found Stan model in cache. Model id is {}.".format(model_id))
