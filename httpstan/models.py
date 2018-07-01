@@ -42,7 +42,7 @@ class TemporaryDirectory(tempfile.TemporaryDirectory):
             func(path)
         except (PermissionError, OSError):
             # WIP
-            del os.path.basename(path).replace(".cp36-win_amd64", "")
+            del sys.modules[os.path.basename(path).replace(".cp36-win_amd64", "")]
             func(path)
 
     @classmethod
