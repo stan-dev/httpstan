@@ -37,12 +37,13 @@ class TemporaryDirectory(tempfile.TemporaryDirectory):
 
     def _remove_readonly(self, func, path, _):
         "Clear the readonly bit and reattempt the removal"
-        os.chmod(path, stat.S_IWUSR|stat.S_IREAD)
+        os.chmod(path, stat.S_IWUSR | stat.S_IREAD)
         try:
             func(path)
         except (PermissionError, OSError):
             # WIP
-            pass
+            del os.path.basename(path).replace(".cp36-win_amd64", "")
+            func(path)
 
     @classmethod
     def _cleanup(self, name, warn_message):
