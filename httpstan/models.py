@@ -262,8 +262,11 @@ def _build_extension_module(
         ]
 
         if extra_compile_args is None:
-            # "-D_hypot=hypot" : bugfix for mingw-w64, does not affect *nix
-            extra_compile_args = ["-O3", "-std=c++11", "-D_hypot=hypot"]
+            if sys.platform.startswith("win"):
+                # "-D_hypot=hypot" : bugfix for mingw-w64, does not affect *nix
+                extra_compile_args = ["-O3", "-std=c++11", "-D_hypot=hypot", "-pthread"]
+            else:
+                extra_compile_args = ["-O3", "-std=c++11"]
 
         cython_include_path = [os.path.dirname(httpstan_dir)]
         extension = setuptools.Extension(
