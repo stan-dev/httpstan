@@ -3,6 +3,7 @@ import enum
 import functools
 import inspect
 import json
+import time
 import typing
 
 import pkg_resources
@@ -48,7 +49,8 @@ def lookup_default(method: Method, arg: str) -> typing.Union[float, int]:
         )
     # special handling for random_seed, argument name differs from CmdStan name
     if arg == "random_seed":
-        return -1  # if negative seed is generated from time by Stan
+        # CmdStan generates an unsigned integer using boost::posix_time (line 80 of command.hpp)
+        return int(time.time())
     # special handling for chain, argument name differs from CmdStan name
     if arg == "chain":
         return 1

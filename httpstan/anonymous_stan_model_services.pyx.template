@@ -35,6 +35,7 @@ cimport httpstan.stan as stan
 cdef extern from "${cpp_filename}" nogil:
     cdef cppclass stan_model:
         stan_model(stan.var_context& var_context) except +
+        stan_model(stan.var_context& var_context, unsigned int random_seed) except +
         void get_param_names(vector[string]&)
         void get_dims(vector[vector[size_t]]&)
         void constrained_param_names(vector[string]&)
@@ -90,7 +91,7 @@ def hmc_nuts_diag_e_wrapper(object array_var_context_capsule, object queue_capsu
     cdef stan.array_var_context * var_context_ptr = <stan.array_var_context*> cpython.PyCapsule_GetPointer(array_var_context_capsule, b'array_var_context')
     cdef boost.spsc_queue[string] * queue_ptr = <boost.spsc_queue[string] *> cpython.PyCapsule_GetPointer(queue_capsule, b'spsc_queue')
     cdef stan.var_context * init_var_context = new stan.empty_var_context()
-    cdef stan_model * model = new stan_model(deref(var_context_ptr))
+    cdef stan_model * model = new stan_model(deref(var_context_ptr), <unsigned int> random_seed)
     cdef stan.interrupt interrupt
     cdef stan.logger * logger = new stan.queue_logger(queue_ptr, b'logger:')
     cdef stan.writer * init_writer = new stan.queue_writer(queue_ptr, b'init_writer:')
