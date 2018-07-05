@@ -35,9 +35,12 @@ async def call(function_name: str, model_module, data: dict, **kwargs):
         capacity=10_000_000
     )  # 10_000 is enough for ~4000 draws
     array_var_context_capsule = httpstan.stan.make_array_var_context(data)
+    # function_basename will be something like "hmc_nuts_diag_e"
+    # function_wrapper will refer to a function like "hmc_nuts_diag_e_wrapper"
     function_wrapper = getattr(model_module, function_basename + "_wrapper")
 
-    # fetch defaults for missing arguments
+    # Fetch defaults for missing arguments. This is an important piece!
+    # For example, `random_seed`, if not in `kwargs`, will be set.
     function_arguments = arguments.function_arguments(function_basename, model_module)
     # This is clumsy due to the way default values are available. There is no
     # way to directly lookup the default value for an argument (e.g., `delta`)
