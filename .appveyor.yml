@@ -68,7 +68,7 @@ test_script:
   # cache several files to avoid race condition errors
   - echo "safety_checks: disabled" >> ~/.condarc
   - echo "local_repodata_ttl: 1800" >> ~/.condarc
-  - py.test tests -v -s
+  - python scripts/run_tests.py
 
 on_success:
   - echo "Succesfull"
