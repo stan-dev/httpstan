@@ -24,7 +24,7 @@ argv = sys.argv[1:]
 if len(argv):
     testfiles = glob(argv[0])
 else:
-    testfiles = glob("httpstan/tests/test_*.py")
+    testfiles = glob("tests/test_*.py")
 print("\n".join(testfiles))
 # gather results
 passed = []
