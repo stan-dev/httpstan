@@ -11,7 +11,7 @@ def test_callbacks_writer_parser_message_writer():
     """Test that callback writer messages are parsed correctly."""
     message = """logger:Gradient evaluation took 4.7e-05 seconds"""
     message_pb = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("LOGGER"))
-    message_pb.feature[""].string_list.value.append(message.split(":", 1).pop())
+    message_pb.feature.add().string_list.value.append(message.split(":", 1).pop())
     parser = httpstan.callbacks_writer_parser.WriterParser()
     observed = parser.parse(message)
     assert observed == message_pb
@@ -29,7 +29,7 @@ def test_callbacks_writer_parser_sample_writer_adapt():
     expected = [None]
     for message in messages[1:]:
         message_pb = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("SAMPLE"))
-        message_pb.feature[""].string_list.value.append(message.split(":", 1).pop())
+        message_pb.feature.add().string_list.value.append(message.split(":", 1).pop())
         expected.append(message_pb)
     assert observed == expected
 
@@ -47,6 +47,8 @@ def test_callbacks_writer_parser_sample_writer():
     observed = [parser.parse(message) for message in messages]
     message_pb = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("SAMPLE"))
     for key, value in zip(sample_fields, values):
-        message_pb.feature[key].double_list.value.append(value)
+        feature = message_pb.feature.add()
+        feature.name = key
+        feature.double_list.value.append(value)
     expected = [None, message_pb]
     assert observed == expected

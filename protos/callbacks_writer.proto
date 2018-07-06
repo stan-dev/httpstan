@@ -94,10 +94,11 @@ message WriterMessage {
   }
 
   message Feature {
+    string name = 1;
     oneof kind {
-      StringList string_list = 1;
-      DoubleList double_list = 2;
-      IntList int_list = 3;
+      StringList string_list = 2;
+      DoubleList double_list = 3;
+      IntList int_list = 4;
     }
   };
 
@@ -110,5 +111,6 @@ message WriterMessage {
   }
 
   Topic topic = 1;
-  map<string, Feature> feature = 2;
+
+  repeated Feature feature = 2;
 };

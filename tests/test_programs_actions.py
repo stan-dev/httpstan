@@ -1,13 +1,14 @@
 """Test sampling."""
 import asyncio
-import aiohttp
 import json
 import statistics
+
+import aiohttp
 
 import helpers
 
 headers = {"content-type": "application/json"}
-program_code = "parameters {real y;} model {y ~ normal(0,1);}"
+program_code = "parameters {real y;} model {y ~ normal(0, 0.0001);}"
 
 
 def test_models_actions(httpstan_server):
@@ -26,7 +27,7 @@ def test_models_actions(httpstan_server):
             models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
             num_samples = num_warmup = 5000
             data = {
-                "type": "stan::services::sample::hmc_nuts_diag_e",
+                "type": "stan::services::sample::hmc_nuts_diag_e_adapt",
                 "num_samples": num_samples,
                 "num_warmup": num_warmup,
             }
@@ -34,8 +35,8 @@ def test_models_actions(httpstan_server):
                 models_actions_url, data=json.dumps(data), headers=headers
             ) as resp:
                 draws = await helpers.extract_draws(resp, "y")
-            assert -5 < statistics.mean(draws) < 5
             assert len(draws) == num_samples, (len(draws), num_samples)
+            assert -0.01 < statistics.mean(draws) < 0.01
 
     asyncio.get_event_loop().run_until_complete(main())
 

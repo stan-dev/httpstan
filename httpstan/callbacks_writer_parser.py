@@ -37,7 +37,6 @@ from typing import Optional
 
 import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 
-
 TopicEnum = callbacks_writer_pb2.WriterMessage.Topic
 
 
@@ -100,18 +99,20 @@ class WriterParser:
                 self.processing_adaptation = False
             for value in values:
                 if isinstance(values[0], str):
-                    message.feature[""].string_list.value.append(value)
+                    message.feature.add().string_list.value.append(value)
                 else:
-                    message.feature[""].double_list.value.append(value)
+                    message.feature.add().double_list.value.append(value)
         else:
             if isinstance(values[0], str):
                 # after sampling, we get messages such as "Elapsed Time: ..."
                 for value in values:
-                    message.feature[""].string_list.value.append(value)
+                    message.feature.add().string_list.value.append(value)
                 return message
             # typical case: draws
             for key, value in zip(self.sample_fields, values):
-                message.feature[key].double_list.value.append(value)
+                feature = message.feature.add()
+                feature.name = key
+                feature.double_list.value.append(value)
         return message
 
     def parse_diagnostic_writer(self, values):
@@ -123,22 +124,24 @@ class WriterParser:
         if isinstance(values[0], str):
             # after sampling, we get messages such as "Elapsed Time: ..."
             for value in values:
-                message.feature[""].string_list.value.append(value)
+                message.feature.add().string_list.value.append(value)
             return message
         for key, value in zip(self.diagnostic_fields, values):
-            message.feature[key].double_list.value.append(value)
+            feature = message.feature.add()
+            feature.name = key
+            feature.double_list.value.append(value)
         return message
 
     def parse_logger(self, values) -> callbacks_writer_pb2.WriterMessage:
         """Convert raw writer message into protobuf message."""
         message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("LOGGER"))
         for value in values:
-            message.feature[""].string_list.value.append(value)
+            message.feature.add().string_list.value.append(value)
         return message
 
     def parse_init_writer(self, values) -> callbacks_writer_pb2.WriterMessage:
         """Convert raw writer message into protobuf message."""
         message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("INITIALIZATION"))
         for value in values:
-            message.feature[""].double_list.value.append(value)
+            message.feature.add().double_list.value.append(value)
         return message
