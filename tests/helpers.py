@@ -33,11 +33,11 @@ async def extract_draws(response, param_name):
         assert "LOGGER" in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
         assert "SAMPLE" in httpstan.callbacks_writer_pb2.WriterMessage.Topic.keys()
         if payload["topic"] == "SAMPLE":
-            assert isinstance(payload["feature"], dict)
-            if param_name in payload["feature"]:
-                value_wrapped = payload["feature"][param_name]
-                kind = "doubleList" if "doubleList" in value_wrapped else "intList"
-                draws.append(value_wrapped[kind]["value"].pop())
+            assert isinstance(payload["feature"], list)
+            for value_wrapped in payload["feature"]:
+                if param_name == value_wrapped.get("name", ""):
+                    kind = "doubleList" if "doubleList" in value_wrapped else "intList"
+                    draws.append(value_wrapped[kind]["value"].pop())
     if len(draws) == 0:
         raise KeyError(f"No draws found for parameter `{param_name}`.")
     return draws
