@@ -20,9 +20,12 @@ if sys.platform.startswith("win"):
 else:
     subprocess_flags = 0
 
-# gather all test files
-testfiles = glob(os.path.join(__file__, "..", "httpstan/tests/test_*.py"))
-
+argv = sys.argv[1:]
+if len(argv):
+    testfiles = glob(argv[0])
+else:
+    testfiles = glob("httpstan/tests/test_*.py")
+print("\n".join(testfiles))
 # gather results
 passed = []
 failures = []
