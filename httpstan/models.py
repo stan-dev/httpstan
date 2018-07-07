@@ -9,7 +9,6 @@ import hashlib
 import importlib
 import os
 import shutil as _shutil
-import stat
 import string
 import sys
 import tempfile
