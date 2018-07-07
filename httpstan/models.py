@@ -8,11 +8,11 @@ import functools
 import hashlib
 import importlib
 import os
-import shutil as _shutil
+import shutil
 import string
 import sys
 import tempfile
-import warnings as _warnings
+import warnings
 from typing import List
 from typing import Optional
 from typing import Tuple  # noqa: flake8 bug, #118
@@ -35,12 +35,12 @@ class TemporaryDirectory(tempfile.TemporaryDirectory):
 
     @classmethod
     def _cleanup(self, name, warn_message):
-        _shutil.rmtree(name, ignore_errors=True)
-        _warnings.warn(warn_message, ResourceWarning)
+        shutil.rmtree(name, ignore_errors=True)
+        warnings.warn(warn_message, ResourceWarning)
 
     def cleanup(self):
         if self._finalizer.detach():
-            _shutil.rmtree(self.name, ignore_errors=True)
+            shutil.rmtree(self.name, ignore_errors=True)
 
 
 def calculate_model_id(program_code: str) -> str:
