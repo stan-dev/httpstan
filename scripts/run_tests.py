@@ -38,6 +38,7 @@ for testfile in testfiles:
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        timeout=600,
         creationflags=subprocess_flags,
     )
 
