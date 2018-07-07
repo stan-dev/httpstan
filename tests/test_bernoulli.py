@@ -107,7 +107,7 @@ def test_bernoulli_parallel(httpstan_server):
         # draw enough samples that sampling itself takes some time, use a high
         # warmup count because it will not generate draws which will require CPU
         # time to serialize and send.
-        num_warmup = 500_000
+        num_warmup = 2_000_000
         num_samples = 50
         payload = {
             "type": "stan::services::sample::hmc_nuts_diag_e_adapt",
