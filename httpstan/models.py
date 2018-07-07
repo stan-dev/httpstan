@@ -127,7 +127,7 @@ def _load_module(module_name: str, module_path: str):
     return module
 
 
-def _find_module(module_name: str, module_path: str):
+def _find_module_path(module_name: str, module_path: str):
     """Find the module named `module_name` from  `module_path`.
 
     Arguments:
@@ -275,14 +275,6 @@ def _build_extension_module(
         # TODO(AR): wrap stderr, return it as well
         build_extension.run()
 
-        if sys.platform.startswith("win"):
-            # tempfile bug: Windows can't open file that is already open
-            # see related statement in https://docs.python.org/3/library/tempfile.html#tempfile.NamedTemporaryFile
-            path = _find_module(module_name, build_extension.build_lib)
-            with open(path, "rb") as fh:  # type: ignore  # pending fix, see mypy#3062
-                return fh.read()  # type: ignore  # pending fix, see mypy#3062
-        else:
-            module = _load_module(module_name, build_extension.build_lib)
-            assert module.__name__ == module_name, (module.__name__, module_name)
-            with open(module.__file__, "rb") as fh:  # type: ignore  # pending fix, see mypy#3062
-                return fh.read()  # type: ignore  # pending fix, see mypy#3062
+        path = _find_module_path(module_name, build_extension.build_lib)
+        with open(path, "rb") as fh:  # type: ignore  # pending fix, see mypy#3062
+            return fh.read()  # type: ignore  # pending fix, see mypy#3062
