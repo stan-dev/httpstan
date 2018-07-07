@@ -283,6 +283,6 @@ def _build_extension_module(
                 return fh.read()
         else:
             module = _load_module(module_name, build_extension.build_lib)
-            with open(module.__file__, "rb") as fh:
-                assert module.__name__ == module_name, (module.__name__, module_name)
+            assert module.__name__ == module_name, (module.__name__, module_name)
+            with open(module.__file__, "rb") as fh: 
                 return fh.read()  # type: ignore  # pending fix, see mypy#3062
