@@ -1,8 +1,10 @@
-from glob import glob
-import subprocess
 import os
 import re
+import subprocess
 import sys
+from datetime import datetime
+from glob import glob
+
 
 # see https://stackoverflow.com/a/24131590
 if sys.platform.startswith("win"):
@@ -32,13 +34,12 @@ failures = []
 failing_names = []
 for testfile in testfiles:
     command = ["py.test", os.path.abspath(testfile)]
-    print(" ".join(command), flush=True)
+    print(datetime.now(), " ".join(command), flush=True)
     process = subprocess.run(
         command,
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        timeout=180,
         creationflags=subprocess_flags,
     )
 
