@@ -284,5 +284,5 @@ def _build_extension_module(
         else:
             module = _load_module(module_name, build_extension.build_lib)
             assert module.__name__ == module_name, (module.__name__, module_name)
-            with open(module.__file__, "rb") as fh: 
+            with open(module.__file__, "rb") as fh:
                 return fh.read()  # type: ignore  # pending fix, see mypy#3062
