@@ -31,27 +31,17 @@ import httpstan.stan
 # TemporaryDirectory problem with Windows
 # see https://docs.python.org/3/library/shutil.html?highlight=shutil#rmtree-example
 class TemporaryDirectory(tempfile.TemporaryDirectory):
-
     def __init__(self, suffix=None, prefix=None, dir=None):
         super(TemporaryDirectory, self).__init__(suffix, prefix, dir)
 
-    def _remove_readonly(self, func, path, _):
-        "Clear the readonly bit and reattempt the removal"
-        os.chmod(path, stat.S_IWUSR|stat.S_IREAD)
-        try:
-            func(path)
-        except (PermissionError, OSError):
-            # WIP
-            pass
-
     @classmethod
     def _cleanup(self, name, warn_message):
-        _shutil.rmtree(name, ignore_errors=True) # , onerror=self._remove_readonly
+        _shutil.rmtree(name, ignore_errors=True)
         _warnings.warn(warn_message, ResourceWarning)
 
     def cleanup(self):
         if self._finalizer.detach():
-            _shutil.rmtree(self.name, ignore_errors=True) #, onerror=self._remove_readonly
+            _shutil.rmtree(self.name, ignore_errors=True)
 
 
 def calculate_model_id(program_code: str) -> str:
@@ -188,7 +178,7 @@ def load_model_extension_module(model_id: str, module_bytes: bytes):
             fh.write(module_bytes)
         module_path = temporary_directory
         if sys.platform.startswith("win"):
-            assert module_name + '.cp36-win_amd64' == os.path.splitext(module_filename)[0]
+            assert module_name + ".cp36-win_amd64" == os.path.splitext(module_filename)[0]
         else:
             assert module_name == os.path.splitext(module_filename)[0]
         return _load_module(module_name, module_path)

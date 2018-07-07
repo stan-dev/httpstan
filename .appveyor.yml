@@ -71,4 +71,4 @@ test_script:
   - python scripts/run_tests.py
 
 on_success:
-  - echo "Succesfull"
+  - echo "Successful"
