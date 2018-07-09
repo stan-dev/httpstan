@@ -4,6 +4,7 @@ These functions manage the process of compiling a Python extension module
 from C++ code generated and loading the resulting module.
 """
 import asyncio
+import atexit
 import functools
 import hashlib
 import importlib
@@ -11,13 +12,13 @@ import os
 import shutil
 import string
 import sys
-import tempfile
-import warnings
+from tempfile import TemporaryDirectory
 from typing import List
 from typing import Optional
 from typing import Tuple  # noqa: flake8 bug, #118
 
 import setuptools  # noqa: see bugs.python.org/issue23114, must come before any module imports distutils
+from distutils.sysconfig import get_config_var
 import Cython
 import Cython.Build
 import Cython.Build.Inline
@@ -27,20 +28,16 @@ import httpstan.compile
 import httpstan.stan
 
 
-# TemporaryDirectory problem with Windows
-# see https://docs.python.org/3/library/shutil.html?highlight=shutil#rmtree-example
-class TemporaryDirectory(tempfile.TemporaryDirectory):
-    def __init__(self, suffix=None, prefix=None, dir=None):
-        super(TemporaryDirectory, self).__init__(suffix, prefix, dir)
+if sys.platform.startswith("win"):
+    # TemporaryDirectory problem with Windows
+    # see https://docs.python.org/3/library/shutil.html?highlight=shutil#rmtree-example
+    class TemporaryDirectory(TemporaryDirectory):
+        def __init__(self, suffix=None, prefix=None, dir=None):
+            super(TemporaryDirectory, self).__init__(suffix, prefix, dir)
 
-    @classmethod
-    def _cleanup(self, name, warn_message):
-        shutil.rmtree(name, ignore_errors=True)
-        warnings.warn(warn_message, ResourceWarning)
-
-    def cleanup(self):
-        if self._finalizer.detach():
-            shutil.rmtree(self.name, ignore_errors=True)
+        def cleanup(self):
+            if self._finalizer.detach():
+                shutil.rmtree(self.name, ignore_errors=True)
 
 
 def calculate_model_id(program_code: str) -> str:
@@ -168,19 +165,15 @@ def load_model_extension_module(model_id: str, module_bytes: bytes):
     # module name, e.g., PyInit_mymodule.  Filenames which do not match the name
     # of this function will not load.
     module_name = calculate_module_name(model_id)
-    if sys.platform.startswith("win"):
-        module_filename = f"{module_name}.cp36-win_amd64.pyd"
-    else:
-        module_filename = f"{module_name}.so"
+
+    module_filename = f"{module_name}{get_config_var('EXT_SUFFIX')}"
     with TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
-        if sys.platform.startswith("win"):
-            assert module_name + ".cp36-win_amd64" == os.path.splitext(module_filename)[0]
-        else:
-            assert module_name == os.path.splitext(module_filename)[0]
-        return _load_module(module_name, module_path)
+        assert module_name + get_config_var("EXT_SUFFIX") == module_filename
+        module = _load_module(module_name, module_path)
+    return module
 
 
 @functools.lru_cache()
@@ -274,7 +267,7 @@ def _build_extension_module(
 
         # TODO(AR): wrap stderr, return it as well
         build_extension.run()
-
         path = _find_module_path(module_name, build_extension.build_lib)
         with open(path, "rb") as fh:  # type: ignore  # pending fix, see mypy#3062
-            return fh.read()  # type: ignore  # pending fix, see mypy#3062
+            module_bytes = fh.read()  # type: ignore  # pending fix, see mypy#3062
+        return module_bytes
