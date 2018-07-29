@@ -41,7 +41,10 @@ install:
   - python -c "import sys; print(sys.executable)"
   - python -c "import sys; print(sys.prefix)"
   - conda update -q --all
-  - conda install -q pip libpython m2w64-toolchain cython numpy pandas xarray matplotlib vs2015_runtime -c msys2 -c conda-forge
+  - conda install -q pip clang-dev cython numpy pandas xarray matplotlib vs2015_runtime make -c msys2 -c conda-forge
+  - clang.exe --version
+  - python scripts/copy_clang_win.py
+  - which cl.exe
   # this is to ensure dependencies
   - python --version
   - python -c "import struct; print(struct.calcsize('P') * 8)"
@@ -49,8 +52,8 @@ install:
   - pip install grpcio-tools tox
   - pip install -r requirements.txt
   - pip install -r test-requirements.txt
-  - mingw32-make.exe protos
-  - mingw32-make.exe cython
+  - gnumake.exe protos
+  - gnumake.exe cython
   - pip install .
   - set PATH
 
