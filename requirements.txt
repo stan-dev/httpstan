@@ -2,12 +2,12 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
-pbr>=2.0 # Apache-2.0
+pbr<5,>=4.0 # Apache-2.0
 aiohttp<4,>=3.2.1
 appdirs<2,>=1.4.3
 webargs<4,>=3
 numpy<2,>=1.7
 Cython<1,>=0.25.2
-apispec>=0.21.0
+apispec<1,>=0.21
 protobuf<4,>=3.3.0
 setuptools>=28.8
