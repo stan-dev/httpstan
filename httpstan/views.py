@@ -92,9 +92,7 @@ async def handle_models(request):
     program_code = args["program_code"]
     model_id = httpstan.models.calculate_model_id(program_code)
     try:
-        module_bytes = await httpstan.cache.load_model_extension_module(
-            model_id, request.app["db"]
-        )
+        module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app["db"])
     except KeyError:
         logger.info("Compiling Stan model. Model id is {}.".format(model_id))
         try:
