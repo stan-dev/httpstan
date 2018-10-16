@@ -1,13 +1,15 @@
-dist: trusty
-sudo: false
+dist: xenial
 language: python
-python:
-  - "3.6"
-env:
-  - TOXENV=flake8
-  - TOXENV=format
-  - TOXENV=mypy
-  - TOXENV=py36
+python: 3.6
+matrix:
+  include:
+    - python: 3.6
+      env: TOXENV=py36
+    - python: 3.7
+      env: TOXENV=py37
+    - env: TOXENV=flake8
+    - env: TOXENV=format
+    - env: TOXENV=mypy
 before_install:
   - python --version
 install:
