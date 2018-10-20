@@ -46,7 +46,7 @@ def test_linear_regression(httpstan_server):
             models_url = "http://{}:{}/v1/models".format(host, port)
             payload = {"program_code": program_code}
             async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
-                assert resp.status == 200
+                assert resp.status == 201
                 model_id = (await resp.json())["id"]
 
             models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)

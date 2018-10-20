@@ -65,7 +65,7 @@ async def sample_then_extract(
         async with session.post(
             models_url, data=json.dumps({"program_code": program_code}), headers=headers
         ) as resp:
-            assert resp.status == 200
+            assert resp.status == 201
             model_id = (await resp.json())["id"]
 
         models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)

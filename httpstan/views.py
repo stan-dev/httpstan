@@ -78,7 +78,7 @@ async def handle_models(request):
                       program_code:
                           type: string
         responses:
-            200:
+            201:
               description: Identifier for compiled Stan model
               schema:
                  $ref: '#/definitions/Model'
@@ -105,7 +105,7 @@ async def handle_models(request):
         await httpstan.cache.dump_model_extension_module(model_id, module_bytes, request.app["db"])
     else:
         logger.info("Found Stan model in cache. Model id is {}.".format(model_id))
-    return aiohttp.web.json_response(ModelSchema().dump({"id": model_id}).data)
+    return aiohttp.web.json_response(ModelSchema().dump({"id": model_id}).data, status=201)
 
 
 # TODO(AR): supported functions can be fetched from stub Python files

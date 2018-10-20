@@ -18,7 +18,7 @@ def test_models(httpstan_server):
             data = {"program_code": program_code}
             models_url = "http://{}:{}/v1/models".format(host, port)
             async with session.post(models_url, data=json.dumps(data), headers=headers) as resp:
-                assert resp.status == 200
+                assert resp.status == 201
                 payload = await resp.json()
                 assert "id" in payload
 
