@@ -30,9 +30,10 @@ def calculate_model_id(program_code: str) -> str:
 
     Identifier is a hash of the concatenation of the following:
 
-    - UTF-8 encoded Stan program code.
-    - UTF-8 encoded string recording the current Stan version.
-    - UTF-8 encoded string identifying the current system platform.
+    - UTF-8 encoded Stan program code
+    - UTF-8 encoded string recording the current Stan version
+    - UTF-8 encoded string recording the current httpstan version
+    - UTF-8 encoded string identifying the current system platform
 
     Arguments:
         program_code: Stan program code.
@@ -41,8 +42,12 @@ def calculate_model_id(program_code: str) -> str:
         str: hex-encoded unique identifier.
 
     """
-    hash = hashlib.sha256(program_code.encode())
-    hash.update(str(httpstan.stan.version()).encode())
+    # digest_size of 8 means we expect a collision after 10 ** 8 models
+    digest_size = 8
+    hash = hashlib.blake2b(digest_size=digest_size)
+    hash.update(program_code.encode())
+    hash.update(httpstan.stan.version().encode())
+    hash.update(httpstan.__version__.encode())
     hash.update(sys.platform.encode())
     return hash.hexdigest()
 
