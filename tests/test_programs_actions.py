@@ -21,7 +21,7 @@ def test_models_actions(httpstan_server):
             models_url = "http://{}:{}/v1/models".format(host, port)
             data = {"program_code": program_code}
             async with session.post(models_url, data=json.dumps(data), headers=headers) as resp:
-                assert resp.status == 200
+                assert resp.status == 201
                 model_id = (await resp.json())["id"]
 
             models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
@@ -51,7 +51,7 @@ def test_models_actions_bad_args(httpstan_server):
             data = {"program_code": program_code}
             models_url = "http://{}:{}/v1/models".format(host, port)
             async with session.post(models_url, data=json.dumps(data), headers=headers) as resp:
-                assert resp.status == 200
+                assert resp.status == 201
                 model_id = (await resp.json())["id"]
 
             models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
