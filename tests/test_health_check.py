@@ -1,4 +1,4 @@
-"""Test services function argument lookups."""
+"""Test health check route."""
 import asyncio
 import aiohttp
 
