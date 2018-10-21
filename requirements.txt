@@ -6,6 +6,7 @@ pbr<5,>=4.0 # Apache-2.0
 aiohttp<4,>=3.2.1
 appdirs<2,>=1.4.3
 webargs<5,>=4
+marshmallow<4,>=3.0.0b18
 numpy<2,>=1.7
 Cython<1,>=0.25.2
 apispec<1,>=0.21

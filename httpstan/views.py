@@ -33,18 +33,12 @@ models_args = {"program_code": fields.Str(required=True)}
 class ModelSchema(marshmallow.Schema):  # noqa
     id = fields.String(required=True)
 
-    class Meta:  # noqa
-        strict = True
-
 
 class ErrorSchema(marshmallow.Schema):  # noqa
     """Serialize a Python Exception into JSON."""
 
     type = fields.String(required=True)
     message = fields.String(required=True)
-
-    class Meta:  # noqa
-        strict = True
 
 
 async def handle_health(request):
@@ -99,13 +93,12 @@ async def handle_models(request):
             module_bytes = await httpstan.models.compile_model_extension_module(program_code)
         except Exception as exc:
             return aiohttp.web.json_response(
-                ErrorSchema().dump({"type": type(exc).__name__, "message": str(exc)}).data,
-                status=400,
+                ErrorSchema().dump({"type": type(exc).__name__, "message": str(exc)}), status=400
             )
         await httpstan.cache.dump_model_extension_module(model_id, module_bytes, request.app["db"])
     else:
         logger.info("Found Stan model in cache. Model id is {}.".format(model_id))
-    return aiohttp.web.json_response(ModelSchema().dump({"id": model_id}).data, status=201)
+    return aiohttp.web.json_response(ModelSchema().dump({"id": model_id}), status=201)
 
 
 # TODO(AR): supported functions can be fetched from stub Python files
@@ -270,8 +263,8 @@ async def handle_models_params(request):
         assert isinstance(dims_, list)
         assert constrained_names, constrained_names
         params.append(
-            ParamSchema()
-            .dump({"name": name, "dims": dims_, "constrained_names": constrained_names})
-            .data
+            ParamSchema().dump(
+                {"name": name, "dims": dims_, "constrained_names": constrained_names}
+            )
         )
     return aiohttp.web.json_response({"id": model_id, "params": params})
