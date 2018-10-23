@@ -97,7 +97,7 @@ async def compile_model_extension_module(program_code: str) -> bytes:
     return module_bytes
 
 
-def _load_module(module_name: str, module_path: str):
+def _import_module(module_name: str, module_path: str):
     """Load the module named `module_name` from  `module_path`.
 
     Arguments:
@@ -114,7 +114,7 @@ def _load_module(module_name: str, module_path: str):
     return module
 
 
-def load_model_extension_module(model_id: str, module_bytes: bytes):
+def import_model_extension_module(model_id: str, module_bytes: bytes):
     """Load Stan model extension module from binary representation.
 
     This function presents a security risk! It will load a Python module which
@@ -131,7 +131,6 @@ def load_model_extension_module(model_id: str, module_bytes: bytes):
     # TODO(AR): This function is a security risk! Bytes should be authenticated.
     # In principle this should be easy to do because httpstan will only ever
     # load modules that it has itself produced.
-
     # NOTE: module suffix can be '.so'; does not need to be, say,
     # '.cpython-36m-x86_64-linux-gnu.so'.  The module's filename (minus any
     # suffix) does matter: Python calls an initialization function using the
@@ -139,12 +138,13 @@ def load_model_extension_module(model_id: str, module_bytes: bytes):
     # of this function will not load.
     module_name = calculate_module_name(model_id)
     module_filename = f"{module_name}.so"
+
     with tempfile.TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
         assert module_name == os.path.splitext(module_filename)[0]
-        return _load_module(module_name, module_path)
+        return _import_module(module_name, module_path)
 
 
 @functools.lru_cache()
@@ -234,7 +234,7 @@ def _build_extension_module(
         # TODO(AR): wrap stderr, return it as well
         build_extension.run()
 
-        module = _load_module(module_name, build_extension.build_lib)
+        module = _import_module(module_name, build_extension.build_lib)
         with open(module.__file__, "rb") as fh:  # type: ignore  # pending fix, see mypy#3062
             assert module.__name__ == module_name, (module.__name__, module_name)
             return fh.read()  # type: ignore  # pending fix, see mypy#3062
