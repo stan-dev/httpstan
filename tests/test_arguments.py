@@ -37,7 +37,7 @@ def test_function_arguments(httpstan_server):
         await httpstan.cache.init_cache(app)  # setup database, populates app['db']
         module_bytes = await httpstan.cache.load_model_extension_module(model_id, app["db"])
         assert module_bytes is not None
-        model_module = httpstan.models.load_model_extension_module(model_id, module_bytes)
+        model_module = httpstan.models.import_model_extension_module(model_id, module_bytes)
 
         expected = [
             "random_seed",

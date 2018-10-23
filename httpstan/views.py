@@ -159,7 +159,7 @@ async def handle_models_actions(request):
     module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app["db"])
     if module_bytes is None:
         return json_error("Stan model with id `{}` not found.".format(model_id))
-    model_module = httpstan.models.load_model_extension_module(model_id, module_bytes)
+    model_module = httpstan.models.import_model_extension_module(model_id, module_bytes)
 
     # setup streaming response
     stream = aiohttp.web.StreamResponse()
@@ -244,7 +244,7 @@ async def handle_models_params(request):
     module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app["db"])
     if module_bytes is None:
         return json_error("Stan model with id `{}` not found.".format(model_id))
-    model_module = httpstan.models.load_model_extension_module(model_id, module_bytes)
+    model_module = httpstan.models.import_model_extension_module(model_id, module_bytes)
 
     array_var_context_capsule = httpstan.stan.make_array_var_context(data)
     # ``param_names`` and ``dims`` are defined in ``anonymous_stan_model_services.pyx.template``.
