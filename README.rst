@@ -24,6 +24,8 @@ to Stan (CmdStan_) over HTTP 1.1, **httpstan** provides:
 * Automatic caching of samples from Stan models
 * Parallel sampling
 
+Documentation lives at `https://httpstan.readthedocs.org <https://httpstan.readthedocs.org>`_.
+
 Important Disclaimer
 ====================
 **httpstan** is experimental software. This software is not intended for general use.
@@ -75,21 +77,53 @@ program::
         -d '{"program_code":"parameters {real y;} model {y ~ normal(0,1);}"}' \
         http://localhost:8080/v1/models
 
-This request will return a model id similar to the following::
+This request will return a model name similar to the following::
 
-    {"model": {"id": "8137474d19926b0aa8efd4f1d3944131d59269d97a7bd8dab8e79d667eb314df"}}
+    {"name": "models/89c4e75a2c"}
 
-(The model ``id`` will be different on different platforms and with different versions of Stan.)
+(The model ``name`` depends on the platform and the version of Stan.)
 
-To draw samples from this model using default settings, we make the following request::
+To draw samples from this model using default settings, we first make the
+following request::
 
     curl -X POST -H "Content-Type: application/json" \
-        -d '{"type":"stan::services::sample::hmc_nuts_diag_e_adapt"}' \
-        http://localhost:8080/v1/models/8137474d19926b0aa8efd4f1d3944131d59269d97a7bd8dab8e79d667eb314df/actions
+        -d '{"function":"stan::services::sample::hmc_nuts_diag_e_adapt"}' \
+        http://localhost:8080/v1/models/89c4e75a2c/fits
 
-This request will return samples from the normal distribution. The output is
-taken directly from the output of the relevant function defined in the Stan C++
-package. Consult the Stan C++ documentation for details.
+This request instructs ``httpstan`` to draw samples from the normal
+distribution. The function name picks out a specific function in the Stan C++
+library (see the Stan C++ documentation for details).  This request will return
+a fit name similar to the following::
+
+    {"name": "models/89c4e75a2c/fits/8c10a044b6"}
+
+The "fit" is saved as sequence of Protocol Buffer messages. These messages are strung together
+using `length-prefix encoding
+<https://eli.thegreenplace.net/2011/08/02/length-prefix-framing-for-protocol-buffers>`_.  To
+retrieve these messages, saving them in the file ``myfit.bin``, make the following request::
+
+    curl http://localhost:8080/v1/models/89c4e75a2c/fits/8c10a044b6 > myfit.bin
+
+To read the messages you will need a library for reading the encoding that
+Protocol Buffer messages use.  In this example we will read the first message
+in the stream using the Protocol Buffer compiler tool ``protoc``. (On
+Debian-based Linux you can find this tool in the ``protobuf-compiler``
+package.) The following command skips the message length (one byte)
+and then decodes the message (which is 48 bytes in length)::
+
+    dd bs=1 skip=1 if=myfit.bin 2>/dev/null | head -c 48 | \
+      protoc --decode stan.WriterMessage protos/callbacks_writer.proto
+
+Running the command above decodes the first message in the stream. The
+decoded message should resemble the following::
+
+    topic: LOGGER
+    feature {
+      string_list {
+        value: "Gradient evaluation took 1.3e-05 seconds"
+      }
+    }
+
 
 Contribute
 ==========
@@ -106,7 +140,6 @@ ISC License.
 .. _PyStan: http://mc-stan.org/interfaces/pystan.html
 .. _Stan: http://mc-stan.org/
 .. _`OpenAPI documentation for httpstan`: api.html
-.. _bash: https://en.wikipedia.org/wiki/Bash_%28Unix_shell%29
 
 .. |pypi| image:: https://badge.fury.io/py/httpstan.png
     :target: https://badge.fury.io/py/httpstan
