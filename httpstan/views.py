@@ -3,11 +3,13 @@
 Handlers are separated from the endpoint names. Endpoints are defined in
 `httpstan.routes`.
 """
+import io
 import json
 import logging
 import re
 
 import aiohttp.web
+import google.protobuf.internal.encoder
 import google.protobuf.json_format
 import marshmallow
 import marshmallow.fields as fields
@@ -15,23 +17,21 @@ import marshmallow.validate as validate
 import webargs.aiohttpparser
 
 import httpstan.cache
+import httpstan.fits
 import httpstan.models
+import httpstan.schemas as schemas
 import httpstan.services_stub as services_stub
 
 logger = logging.getLogger("httpstan")
 
 
-def json_error(message: str) -> aiohttp.web.Response:  # noqa
+def json_error(message: str, status: int) -> aiohttp.web.Response:  # noqa
     return aiohttp.web.Response(
         body=json.dumps({"error": message}).encode("utf-8"), content_type="application/json"
     )
 
 
 models_args = {"program_code": fields.Str(required=True)}
-
-
-class ModelSchema(marshmallow.Schema):  # noqa
-    id = fields.String(required=True)
 
 
 class ErrorSchema(marshmallow.Schema):  # noqa
@@ -84,98 +84,26 @@ async def handle_models(request):
     """
     args = await webargs.aiohttpparser.parser.parse(models_args, request)
     program_code = args["program_code"]
-    model_id = httpstan.models.calculate_model_id(program_code)
+    model_name = httpstan.models.calculate_model_name(program_code)
     try:
-        module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app["db"])
+        module_bytes = await httpstan.cache.load_model_extension_module(
+            model_name, request.app["db"]
+        )
     except KeyError:
-        logger.info("Compiling Stan model. Model id is {}.".format(model_id))
+        logger.info("Compiling Stan model, `{model_name}`.")
         try:
             module_bytes = await httpstan.models.compile_model_extension_module(program_code)
         except Exception as exc:
+            logger.critical(f"Failed to compile module. Exception: {exc}")
             return aiohttp.web.json_response(
                 ErrorSchema().dump({"type": type(exc).__name__, "message": str(exc)}), status=400
             )
-        await httpstan.cache.dump_model_extension_module(model_id, module_bytes, request.app["db"])
-    else:
-        logger.info("Found Stan model in cache. Model id is {}.".format(model_id))
-    return aiohttp.web.json_response(ModelSchema().dump({"id": model_id}), status=201)
-
-
-# TODO(AR): supported functions can be fetched from stub Python files
-FUNCTION_NAMES = frozenset(
-    {"stan::services::sample::hmc_nuts_diag_e", "stan::services::sample::hmc_nuts_diag_e_adapt"}
-)
-
-
-class ModelsActionSchema(marshmallow.Schema):  # noqa
-    # action `type` is full name of function in stan::services (e.g.,
-    # `stan::services::sample::hmc_nuts_diag_e_adapt`)
-    type = fields.String(required=True, validate=validate.OneOf(FUNCTION_NAMES))
-    data = fields.Dict(missing={})
-
-    class Meta:  # noqa
-        strict = True
-
-
-async def handle_models_actions(request):
-    """Call function defined in stan::services.
-
-    ---
-    post:
-        summary: Call function defined in stan::services.
-        description: >
-            The action `type` indicates the name of the stan::services function
-            which should be called given the Stan model associated with the id
-            `model_id`.  For example, if sampling using
-            ``stan::services::sample::hmc_nuts_diag_e`` the action `type` is the
-            full function name ``stan::services::sample::hmc_nuts_diag_e``.
-        consumes:
-            - application/json
-        produces:
-            - application/x-ndjson
-        parameters:
-            - name: model_id
-              in: path
-              description: ID of Stan model to use
-              required: true
-              type: string
-            - name: body
-              in: body
-              description: "'Action' specifying full stan::services function name to call with Stan model."
-              required: true
-              schema:
-                 $ref: '#/definitions/ModelsAction'
-        responses:
-            200:
-                description: Stream of newline-delimited JSON.
-    """
-    model_id = request.match_info["model_id"]
-    # use webargs to make sure `type` is present and data is a mapping (or
-    # absent). Do not discard any other information in the request body.
-    kwargs_schema = await webargs.aiohttpparser.parser.parse(ModelsActionSchema(), request)
-    kwargs = await request.json()
-    kwargs.update(kwargs_schema)
-
-    module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app["db"])
-    if module_bytes is None:
-        return json_error("Stan model with id `{}` not found.".format(model_id))
-    model_module = httpstan.models.import_model_extension_module(model_id, module_bytes)
-
-    # setup streaming response
-    stream = aiohttp.web.StreamResponse()
-    stream.content_type = "application/json"
-    stream.charset = "utf-8"
-    stream.enable_chunked_encoding()
-    await stream.prepare(request)
-
-    type, data = kwargs.pop("type"), kwargs.pop("data")
-    async for message in services_stub.call(type, model_module, data, **kwargs):
-        assert message is not None, message
-        await stream.write(
-            google.protobuf.json_format.MessageToJson(message).encode().replace(b"\n", b"")
+        await httpstan.cache.dump_model_extension_module(
+            model_name, module_bytes, request.app["db"]
         )
-        await stream.write(b"\n")
-    return stream
+    else:
+        logger.info(f"Found Stan model in cache (`{model_name}`).")
+    return aiohttp.web.json_response(schemas.Model().dump({"name": model_name}), status=201)
 
 
 models_params_args = {"data": fields.Dict(required=True)}
@@ -238,13 +166,13 @@ async def handle_models_params(request):
                               $ref: '#/definitions/ParamSchema'
     """
     args = await webargs.aiohttpparser.parser.parse(models_params_args, request)
-    model_id = request.match_info["model_id"]
+    model_name = f'models/{request.match_info["model_id"]}'
     data = args["data"]
 
-    module_bytes = await httpstan.cache.load_model_extension_module(model_id, request.app["db"])
+    module_bytes = await httpstan.cache.load_model_extension_module(model_name, request.app["db"])
     if module_bytes is None:
-        return json_error("Stan model with id `{}` not found.".format(model_id))
-    model_module = httpstan.models.import_model_extension_module(model_id, module_bytes)
+        return json_error(f"Model `{model_name}` not found.", status=404)
+    model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
     array_var_context_capsule = httpstan.stan.make_array_var_context(data)
     # ``param_names`` and ``dims`` are defined in ``anonymous_stan_model_services.pyx.template``.
@@ -267,4 +195,120 @@ async def handle_models_params(request):
                 {"name": name, "dims": dims_, "constrained_names": constrained_names}
             )
         )
-    return aiohttp.web.json_response({"id": model_id, "params": params})
+    return aiohttp.web.json_response({"name": model_name, "params": params})
+
+
+async def handle_create_fit(request):
+    """Call function defined in stan::services.
+
+    ---
+    post:
+        summary: Call function defined in stan::services.
+        description: >
+            `function` indicates the name of the stan::services function
+            which should be called given the Stan model associated with the id
+            `model_id`.  For example, if sampling using
+            ``stan::services::sample::hmc_nuts_diag_e`` then `function` is the
+            full function name ``stan::services::sample::hmc_nuts_diag_e``.
+        consumes:
+            - application/json
+        produces:
+            - application/json
+        parameters:
+            - name: model_id
+              in: path
+              description: ID of Stan model to use
+              required: true
+              type: string
+            - name: body
+              in: body
+              description: "Full stan::services function name to call with Stan model."
+              required: true
+              schema:
+                 $ref: '#/definitions/CreateFitRequest'
+        responses:
+            201:
+              description: Identifier for completed Stan fit
+              schema:
+                 $ref: '#/definitions/Fit'
+            400:
+              description: Error associated with request.
+              schema:
+                 $ref: '#/definitions/Error'
+    """
+    model_name = f'models/{request.match_info["model_id"]}'
+    # use webargs to make sure `function` is present and data is a mapping (or
+    # absent). Do not discard any other information in the request body.
+    kwargs_schema = await webargs.aiohttpparser.parser.parse(schemas.CreateFitRequest(), request)
+    kwargs = await request.json()
+    kwargs.update(kwargs_schema)
+
+    module_bytes = await httpstan.cache.load_model_extension_module(model_name, request.app["db"])
+    if module_bytes is None:
+        return json_error(f"Model `{model_name}` not found.", status=404)
+    model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
+
+    function, data = kwargs.pop("function"), kwargs.pop("data")
+    name = httpstan.fits.calculate_fit_name(function, model_name, data, kwargs)
+    try:
+        await httpstan.cache.load_fit(name, model_name, request.app["db"])
+    except KeyError:
+        pass
+    else:
+        return aiohttp.web.json_response(schemas.Fit().dump({"name": name}), status=201)
+
+    messages_fh = io.BytesIO()
+
+    # `varint_encoder` is used here as part of a simple strategy for storing
+    # a sequence of protocol buffer messages. Each message is prefixed by the
+    # length of a message. This works and is Google's recommended approach.
+    varint_encoder = google.protobuf.internal.encoder._EncodeVarint
+    async for message in services_stub.call(function, model_module, data, **kwargs):
+        assert message is not None, message
+        message_bytes = message.SerializeToString()
+        varint_encoder(messages_fh.write, len(message_bytes))
+        messages_fh.write(message_bytes)
+    await httpstan.cache.dump_fit(
+        name, messages_fh.getvalue(), model_name, request.app["db"]
+    )
+    return aiohttp.web.json_response(schemas.Fit().dump({"name": name}), status=201)
+
+
+async def handle_get_fit(request):
+    """Get result of a call to a function defined in stan::services.
+
+    ---
+    get:
+        description: Result (e.g., draws) from calling a function defined in stan::services.
+        consumes:
+            - application/json
+        produces:
+            - application/octet-stream
+        parameters:
+            - name: model_id
+              in: path
+              description: ID of Stan model associated with the result
+              required: true
+              type: string
+            - name: fit_id
+              in: path
+              description: ID of Stan result ("fit") desired
+              required: true
+              type: string
+        responses:
+            200:
+              description: Result as a stream of Protocol Buffer messages.
+            404:
+              description: Error associated with request.
+              schema:
+                 $ref: '#/definitions/Error'
+    """
+    model_name = f"models/{request.match_info['model_id']}"
+    fit_name = f"{model_name}/fits/{request.match_info['fit_id']}"
+
+    try:
+        fit_bytes = await httpstan.cache.load_fit(fit_name, model_name, request.app["db"])
+    except KeyError:
+        return json_error(f"Fit `{fit_name}` not found.", status=404)
+    assert isinstance(fit_bytes, bytes)
+    return aiohttp.web.Response(body=fit_bytes)

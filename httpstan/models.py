@@ -7,15 +7,15 @@ import asyncio
 import functools
 import hashlib
 import importlib
+import logging
 import os
 import string
 import sys
 import tempfile
-from typing import List
-from typing import Optional
 from typing import Tuple  # noqa: flake8 bug, #118
+from typing import List, Optional
 
-import setuptools  # noqa: see bugs.python.org/issue23114, must come before any module imports distutils
+import setuptools  # noqa: IMPORTANT, import setuptools MUST come before any module imports distutils, see bugs.python.org/issue23114
 import Cython
 import Cython.Build
 import Cython.Build.Inline
@@ -24,11 +24,14 @@ import pkg_resources
 import httpstan.compile
 import httpstan.stan
 
+logger = logging.getLogger("httpstan")
 
-def calculate_model_id(program_code: str) -> str:
-    """Calculate model identifier from Stan program code.
 
-    Identifier is a hash of the concatenation of the following:
+def calculate_model_name(program_code: str) -> str:
+    """Calculate model name from Stan program code.
+
+    Names look like this: ``models/cb6777c3543ebf18``. Name uses a hash of the
+    concatenation of the following:
 
     - UTF-8 encoded Stan program code
     - UTF-8 encoded string recording the current Stan version
@@ -39,7 +42,7 @@ def calculate_model_id(program_code: str) -> str:
         program_code: Stan program code.
 
     Returns:
-        str: hex-encoded unique identifier.
+        str: model name
 
     """
     # digest_size of 8 means we expect a collision after 10 ** 8 models
@@ -49,26 +52,25 @@ def calculate_model_id(program_code: str) -> str:
     hash.update(httpstan.stan.version().encode())
     hash.update(httpstan.__version__.encode())
     hash.update(sys.platform.encode())
-    return hash.hexdigest()
+    return f"models/{hash.hexdigest()}"
 
 
-def calculate_module_name(model_id: str) -> str:
-    """Calculate module name from `model_id`.
+def calculate_module_name(model_name: str) -> str:
+    """Calculate module name from `model_name`.
 
-    Python module names may not begin with digits. Since unique identifiers are
-    often integers or hex-encoded strings, using identifiers as module names is
-    not possible.
+    The module name must be a valid Python identifier. This means it must obey
+    rules which `model_name` does not follow. For example, it cannot contain a
+    forward slash.
 
     Arguments:
-        model_id
+        model_name
 
     Returns:
-        str: module name derived from `model_id`.
+        str: module name derived from `model_name`.
 
     """
-    # NOTE: must add prefix because a module name, like any variable name in
-    # Python, must not begin with a number.
-    return "model_{}".format(model_id)
+    model_id = model_name.split("/")[-1]
+    return f"model_{model_id}"
 
 
 async def compile_model_extension_module(program_code: str) -> bytes:
@@ -85,15 +87,18 @@ async def compile_model_extension_module(program_code: str) -> bytes:
         bytes: binary representation of module.
 
     """
-    model_id = calculate_model_id(program_code)
-    model_name = f"_{model_id}"  # C++ identifiers cannot start with digits
+    model_name = calculate_model_name(program_code)
+    # use the module name as the Stan model name
+    stan_model_name = calculate_module_name(model_name)
+    logger.info(f"compiling cpp for `{model_name}`.")
     cpp_code = await asyncio.get_event_loop().run_in_executor(
-        None, httpstan.compile.compile, program_code, model_name
+        None, httpstan.compile.compile, program_code, stan_model_name
     )
     pyx_code_template = pkg_resources.resource_string(
         __name__, "anonymous_stan_model_services.pyx.template"
     ).decode()
-    module_bytes = _build_extension_module(model_id, cpp_code, pyx_code_template)
+    logger.info(f"building extension module with stan model name `{stan_model_name}`.")
+    module_bytes = _build_extension_module(stan_model_name, cpp_code, pyx_code_template)
     return module_bytes
 
 
@@ -114,14 +119,14 @@ def _import_module(module_name: str, module_path: str):
     return module
 
 
-def import_model_extension_module(model_id: str, module_bytes: bytes):
+def import_model_extension_module(model_name: str, module_bytes: bytes):
     """Load Stan model extension module from binary representation.
 
     This function presents a security risk! It will load a Python module which
     can execute arbitrary Python code.
 
     Arguments:
-        model_id
+        model_name
         module_bytes
 
     Returns:
@@ -136,7 +141,7 @@ def import_model_extension_module(model_id: str, module_bytes: bytes):
     # suffix) does matter: Python calls an initialization function using the
     # module name, e.g., PyInit_mymodule.  Filenames which do not match the name
     # of this function will not load.
-    module_name = calculate_module_name(model_id)
+    module_name = calculate_module_name(model_name)
     module_filename = f"{module_name}.so"
 
     with tempfile.TemporaryDirectory() as temporary_directory:
@@ -149,7 +154,7 @@ def import_model_extension_module(model_id: str, module_bytes: bytes):
 
 @functools.lru_cache()
 def _build_extension_module(
-    model_id: str,
+    module_name: str,
     cpp_code: str,
     pyx_code_template: str,
     extra_compile_args: Optional[List[str]] = None,
@@ -165,10 +170,10 @@ def _build_extension_module(
     The string `pyx_code_template` must contain the string ``${cpp_filename}``
     which will be replaced by ``model_{model_id}.hpp``.
 
-    The module name is a deterministic function of its `model_id`.
+    The module name is a deterministic function of the `model_name`.
 
     Arguments:
-        model_id
+        model_name
         cpp_code
         pyx_code_template: string passed to ``string.Template``.
         extra_compile_args
@@ -177,13 +182,11 @@ def _build_extension_module(
         bytes: binary representation of module.
 
     """
-    module_name = calculate_module_name(model_id)
-
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
     with tempfile.TemporaryDirectory() as temporary_dir:
-        cpp_filepath = os.path.join(temporary_dir, "{}.hpp".format(module_name))
-        pyx_filepath = os.path.join(temporary_dir, "{}.pyx".format(module_name))
+        cpp_filepath = os.path.join(temporary_dir, f"{module_name}.hpp")
+        pyx_filepath = os.path.join(temporary_dir, f"{module_name}.pyx")
         pyx_code = string.Template(pyx_code_template).substitute(cpp_filename=cpp_filepath)
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
             with open(filepath, "w") as fh:

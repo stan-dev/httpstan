@@ -12,20 +12,21 @@ cimport httpstan.lang as lang
 from httpstan.libcpp cimport stringstream
 
 
-def compile(program_code: str, model_name: str) -> str:
+def compile(program_code: str, stan_model_name: str) -> str:
     """Return C++ code for Stan model specified by `program_code`.
 
-    Wraps stan::lang::compile.
+    Wraps stan::lang::compile. `stan_model_name` must be a valid C++
+    identifier.
 
     Arguments:
         program_code
-        model_name
+        stan_model_name
 
     Returns:
         str: C++ code
 
     Raises:
-        RuntimeError: C++ exception from Stan (Cython-propagated).
+        RuntimeError: C++ exception from Stan.
         ValueError: Syntax error in program code.
 
     """
@@ -35,7 +36,7 @@ def compile(program_code: str, model_name: str) -> str:
     cdef stringstream program_code_stringstream
     program_code_stringstream.str(program_code.encode())
     # compile may raise C++ exception. Cython will raise it as Python exception.
-    valid_program_code = lang.compile(&err, program_code_stringstream, out, model_name.encode())
+    valid_program_code = lang.compile(&err, program_code_stringstream, out, stan_model_name.encode())
     if not valid_program_code:
         error_message = err.str().encode()
         raise ValueError(f'Syntax error in program code: {error_message}')
