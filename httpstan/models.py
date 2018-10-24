@@ -45,8 +45,8 @@ def calculate_model_name(program_code: str) -> str:
         str: model name
 
     """
-    # digest_size of 8 means we expect a collision after 10 ** 8 models
-    digest_size = 8
+    # digest_size of 5 means we expect a collision after a million models
+    digest_size = 5
     hash = hashlib.blake2b(digest_size=digest_size)
     hash.update(program_code.encode())
     hash.update(httpstan.stan.version().encode())
