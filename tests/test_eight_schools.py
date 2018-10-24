@@ -4,6 +4,8 @@ import json
 
 import aiohttp
 
+import helpers
+
 
 headers = {"content-type": "application/json"}
 program_code = """
@@ -34,18 +36,6 @@ schools_data = {
 }
 
 
-async def validate_samples(resp):
-    """Superficially validate samples from a Stan model."""
-    assert resp.status == 200
-    while True:
-        chunk = await resp.content.readline()
-        if not chunk:
-            break
-        assert len(chunk)
-        assert len(json.loads(chunk)) > 0
-    return True
-
-
 def test_eight_schools(httpstan_server):
     """Test sampling from Eight Schools model with defaults."""
 
@@ -57,17 +47,28 @@ def test_eight_schools(httpstan_server):
             payload = {"program_code": program_code}
             async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 201
-                model_id = (await resp.json())["id"]
+                model_name = (await resp.json())["name"]
 
-            models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
-            payload = {
-                "type": "stan::services::sample::hmc_nuts_diag_e_adapt",
-                "data": schools_data,
-            }
-            async with session.post(
-                models_actions_url, data=json.dumps(payload), headers=headers
-            ) as resp:
-                await validate_samples(resp)
+        fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
+        payload = {
+            "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
+            "data": schools_data,
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(fits_url, data=json.dumps(payload), headers=headers) as resp:
+                assert resp.status == 201, await resp.text()
+                fit_name = (await resp.json())["name"]
+                assert fit_name is not None
+                assert fit_name.startswith("models/") and "fits" in fit_name
+                assert resp.content_type == "application/json"
+
+        async with aiohttp.ClientSession() as session:
+            fit_url = f"http://{host}:{port}/v1/{fit_name}"
+            async with session.get(fit_url, headers=headers) as resp:
+                assert resp.status == 200, await resp.text()
+                assert resp.content_type == "application/octet-stream"
+                fit_bytes = await resp.read()
+                helpers.validate_protobuf_messages(fit_bytes)
 
     asyncio.get_event_loop().run_until_complete(main())
 
@@ -83,16 +84,16 @@ def test_eight_schools_params(httpstan_server):
             payload = {"program_code": program_code}
             async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 201
-                model_id = (await resp.json())["id"]
+                model_name = (await resp.json())["name"]
 
-            models_params_url = "http://{}:{}/v1/models/{}/params".format(host, port, model_id)
+            models_params_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/params"
             payload = {"data": schools_data}
             async with session.post(
                 models_params_url, data=json.dumps(payload), headers=headers
             ) as resp:
                 assert resp.status == 200
                 response_payload = await resp.json()
-                assert "id" in response_payload and response_payload["id"] == model_id
+                assert "name" in response_payload and response_payload["name"] == model_name
                 assert "params" in response_payload and len(response_payload["params"])
                 params = response_payload["params"]
                 param = params[0]
