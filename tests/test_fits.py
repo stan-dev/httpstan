@@ -61,9 +61,7 @@ def test_models_actions_bad_args(httpstan_server):
 
             fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
             data = {"wrong_key": "wrong_value"}
-            async with session.post(
-                fits_url, data=json.dumps(data), headers=headers
-            ) as resp:
+            async with session.post(fits_url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 422
                 assert await resp.json() == {"function": ["Missing data for required field."]}
 
