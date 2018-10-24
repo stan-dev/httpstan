@@ -5,6 +5,7 @@ Handlers are separated from the endpoint names. Endpoints are defined in
 """
 import io
 import json
+import http
 import logging
 import re
 
@@ -15,6 +16,7 @@ import marshmallow
 import marshmallow.fields as fields
 import marshmallow.validate as validate
 import webargs.aiohttpparser
+from typing import Optional, Sequence
 
 import httpstan.cache
 import httpstan.fits
@@ -24,21 +26,19 @@ import httpstan.services_stub as services_stub
 
 logger = logging.getLogger("httpstan")
 
-
-def json_error(message: str, status: int) -> aiohttp.web.Response:  # noqa
-    return aiohttp.web.Response(
-        body=json.dumps({"error": message}).encode("utf-8"), content_type="application/json"
-    )
+def _make_error(message:str, status: int, details: Optional[Sequence] = None) -> dict:
+    status_dict = {
+        "code": status,
+        "status": http.HTTPStatus(status).phrase,
+        "message": message,
+    }
+    if details is not None:
+        status_dict["details"] = details
+    status = schemas.Status().load(status_dict)
+    return schemas.Error().load({"error": status})
 
 
 models_args = {"program_code": fields.Str(required=True)}
-
-
-class ErrorSchema(marshmallow.Schema):  # noqa
-    """Serialize a Python Exception into JSON."""
-
-    type = fields.String(required=True)
-    message = fields.String(required=True)
 
 
 async def handle_health(request):
@@ -94,10 +94,9 @@ async def handle_models(request):
         try:
             module_bytes = await httpstan.models.compile_model_extension_module(program_code)
         except Exception as exc:
-            logger.critical(f"Failed to compile module. Exception: {exc}")
-            return aiohttp.web.json_response(
-                ErrorSchema().dump({"type": type(exc).__name__, "message": str(exc)}), status=400
-            )
+            message, status = f"Failed to compile module. Exception: {exc}", 400
+            logger.critical(message)
+            return aiohttp.web.json_response(_make_error(message, status=status), status=status)
         await httpstan.cache.dump_model_extension_module(
             model_name, module_bytes, request.app["db"]
         )
@@ -171,7 +170,9 @@ async def handle_models_params(request):
 
     module_bytes = await httpstan.cache.load_model_extension_module(model_name, request.app["db"])
     if module_bytes is None:
-        return json_error(f"Model `{model_name}` not found.", status=404)
+        message, status = f"Model `{model_name}` not found.", 404
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+
     model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
     array_var_context_capsule = httpstan.stan.make_array_var_context(data)
@@ -245,7 +246,8 @@ async def handle_create_fit(request):
 
     module_bytes = await httpstan.cache.load_model_extension_module(model_name, request.app["db"])
     if module_bytes is None:
-        return json_error(f"Model `{model_name}` not found.", status=404)
+        message, status = f"Model `{model_name}` not found.", 404
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
     function, data = kwargs.pop("function"), kwargs.pop("data")
@@ -309,6 +311,7 @@ async def handle_get_fit(request):
     try:
         fit_bytes = await httpstan.cache.load_fit(fit_name, model_name, request.app["db"])
     except KeyError:
-        return json_error(f"Fit `{fit_name}` not found.", status=404)
+        message, status = f"Fit `{fit_name}` not found.", 404
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     assert isinstance(fit_bytes, bytes)
     return aiohttp.web.Response(body=fit_bytes)

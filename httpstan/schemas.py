@@ -3,6 +3,22 @@ import marshmallow.fields as fields
 import marshmallow.validate as validate
 
 
+class Status(marshmallow.Schema):
+    """Part of Error schema."""
+    code = fields.Integer(required=True)
+    status = fields.String(required=True)
+    message = fields.String(required=True)
+    details = fields.Dict(many=True)
+
+
+class Error(marshmallow.Schema):
+    """Error schema.
+
+    Follows Google's API Design.
+    """
+    error = fields.Nested(Status, required=True)
+
+
 class Model(marshmallow.Schema):
     name = fields.String(required=True)
 

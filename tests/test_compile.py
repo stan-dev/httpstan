@@ -20,7 +20,7 @@ def test_compile_invalid_distribution(httpstan_server):
             async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 400
                 payload = await resp.json()
-                assert payload["type"] == "ValueError"
-                assert "Probability function must end in _lpdf or _lpmf" in payload["message"]
+                assert "error" in payload and "message" in payload["error"]
+                assert "Probability function must end in _lpdf or _lpmf" in payload["error"]["message"]
 
     asyncio.get_event_loop().run_until_complete(main())
