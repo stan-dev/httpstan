@@ -36,6 +36,7 @@ y = np.dot(X, beta_true) + np.random.normal(size=n)
 data = {"N": n, "p": p, "x": X.tolist(), "y": y.tolist()}
 
 
+
 def test_linear_regression(httpstan_server):
     """Test sampling from linear regression posterior with defaults."""
 
@@ -47,20 +48,29 @@ def test_linear_regression(httpstan_server):
             payload = {"program_code": program_code}
             async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 201
-                model_id = (await resp.json())["id"]
+                model_name = (await resp.json())["name"]
 
-            models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
+            fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
             payload = {
-                "type": "stan::services::sample::hmc_nuts_diag_e_adapt",
+                "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
                 "data": data,
                 "num_samples": 500,
                 "num_warmup": 500,
             }
-
-            async with session.post(
-                models_actions_url, data=json.dumps(payload), headers=headers
-            ) as resp:
-                beta_0 = await helpers.extract_draws(resp, "beta.1")
+        async with aiohttp.ClientSession() as session:
+            async with session.post(fits_url, data=json.dumps(payload), headers=headers) as resp:
+                assert resp.status == 201, await resp.text()
+                fit_name = (await resp.json())["name"]
+                assert fit_name is not None
+                assert fit_name.startswith("models/") and "fits" in fit_name
+                assert resp.content_type == "application/json"
+        async with aiohttp.ClientSession() as session:
+            fit_url = f"http://{host}:{port}/v1/{fit_name}"
+            async with session.get(fit_url, headers=headers) as resp:
+                assert resp.status == 200
+                assert resp.content_type == "application/octet-stream"
+                fit_bytes = await resp.read()
+            beta_0 = helpers.extract_draws(fit_bytes, "beta.1")
             assert all(np.abs(beta_0 - np.array(beta_true)[0]) < 0.05)
 
     asyncio.get_event_loop().run_until_complete(main())

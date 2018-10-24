@@ -35,7 +35,7 @@ def test_transformed_data_rng(httpstan_server):
 
     num_samples = num_warmup = 2000
     actions_payload = {
-        "type": "stan::services::sample::hmc_nuts_diag_e",
+        "function": "stan::services::sample::hmc_nuts_diag_e",
         "num_samples": num_samples,
         "num_warmup": num_warmup,
         "random_seed": 123,

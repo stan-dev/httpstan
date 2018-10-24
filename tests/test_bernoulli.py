@@ -1,10 +1,13 @@
 """Test sampling from Bernoulli model."""
 import asyncio
 import json
-import multiprocessing
-import time
 
+import google.protobuf.internal.decoder
+import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 import aiohttp
+
+import helpers
+
 
 headers = {"content-type": "application/json"}
 program_code = """
@@ -24,18 +27,6 @@ program_code = """
 data = {"N": 10, "y": (0, 1, 0, 0, 0, 0, 0, 0, 0, 1)}
 
 
-async def validate_samples(resp):
-    """Superficially validate samples from a Stan model."""
-    assert resp.status == 200
-    while True:
-        chunk = await resp.content.readline()
-        if not chunk:
-            break
-        assert len(chunk)
-        assert len(json.loads(chunk)) > 0
-    return True
-
-
 def test_bernoulli(httpstan_server):
     """Test sampling from Bernoulli model with defaults."""
     host, port = httpstan_server.host, httpstan_server.port
@@ -46,15 +37,24 @@ def test_bernoulli(httpstan_server):
         async with aiohttp.ClientSession() as session:
             async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 201
-                model_id = (await resp.json())["id"]
+                model_name = (await resp.json())["name"]
 
-        models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
-        payload = {"type": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data}
+        fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
+        payload = {"function": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data}
         async with aiohttp.ClientSession() as session:
-            async with session.post(
-                models_actions_url, data=json.dumps(payload), headers=headers
-            ) as resp:
-                await validate_samples(resp)
+            async with session.post(fits_url, data=json.dumps(payload), headers=headers) as resp:
+                assert resp.status == 201, await resp.text()
+                fit_name = (await resp.json())["name"]
+                assert fit_name is not None
+                assert fit_name.startswith("models/") and "fits" in fit_name
+                assert resp.content_type == "application/json"
+        async with aiohttp.ClientSession() as session:
+            fit_url = f"http://{host}:{port}/v1/{fit_name}"
+            async with session.get(fit_url, headers=headers) as resp:
+                assert resp.status == 200
+                assert resp.content_type == "application/octet-stream"
+                fit_bytes = await resp.read()
+                helpers.validate_protobuf_messages(fit_bytes)
 
     asyncio.get_event_loop().run_until_complete(main())
 
@@ -70,90 +70,21 @@ def test_bernoulli_params(httpstan_server):
             payload = {"program_code": program_code}
             async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
                 assert resp.status == 201
-                model_id = (await resp.json())["id"]
+                model_name = (await resp.json())["name"]
 
-            models_params_url = "http://{}:{}/v1/models/{}/params".format(host, port, model_id)
+            models_params_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/params"
             payload = {"data": data}
             async with session.post(
                 models_params_url, data=json.dumps(payload), headers=headers
             ) as resp:
                 assert resp.status == 200
                 response_payload = await resp.json()
-                assert "id" in response_payload and response_payload["id"] == model_id
+                assert "name" in response_payload and response_payload["name"] == model_name
                 assert "params" in response_payload and len(response_payload["params"])
                 params = response_payload["params"]
                 param = params[0]
                 assert param["name"] == "theta"
                 assert param["dims"] == []
                 assert param["constrained_names"] == ["theta"]
-
-    asyncio.get_event_loop().run_until_complete(main())
-
-
-def test_bernoulli_parallel(httpstan_server):
-    """Test sampling from Bernoulli model with defaults, in parallel."""
-
-    host, port = httpstan_server.host, httpstan_server.port
-
-    async def main():
-        models_url = "http://{}:{}/v1/models".format(host, port)
-        payload = {"program_code": program_code}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
-                assert resp.status == 201
-                model_id = (await resp.json())["id"]
-
-        models_actions_url = "http://{}:{}/v1/models/{}/actions".format(host, port, model_id)
-        # draw enough samples that sampling itself takes some time, use a high
-        # warmup count because it will not generate draws which will require CPU
-        # time to serialize and send.
-        num_warmup = 2_000_000
-        num_samples = 50
-        payload = {
-            "type": "stan::services::sample::hmc_nuts_diag_e_adapt",
-            "data": data,
-            "num_warmup": num_warmup,
-            "num_samples": num_samples,
-        }
-
-        t0 = time.time()
-        # draw samples once serially to get a baseline time measurement
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                models_actions_url, data=json.dumps(payload), headers=headers
-            ) as response:
-                await validate_samples(response)
-        elapsed = time.time() - t0
-
-        # launch many samplers in parallel
-        t0 = time.time()
-        num_parallel = 2
-        try:
-            sessions = [aiohttp.ClientSession() for _ in range(num_parallel)]
-            try:
-                responses = [
-                    await session.post(
-                        models_actions_url, data=json.dumps(payload), headers=headers
-                    )
-                    for session in sessions
-                ]
-                # validate samples in reverse order, making sure that no blocking is happening
-                await asyncio.gather(
-                    *[
-                        asyncio.ensure_future(validate_samples(response))
-                        for response in reversed(responses)
-                    ]
-                )
-            finally:
-                for response in responses:
-                    response.close()  # ClientResponse.close is not a coroutine
-        finally:
-            for session in sessions:
-                await session.close()
-        elapsed_parallel = time.time() - t0
-        # sampling two chains in parallel should not take longer than sampling
-        # one chain, assuming that the system has at least two cores.
-        if multiprocessing.cpu_count() > 1:
-            assert elapsed_parallel < elapsed * num_parallel
 
     asyncio.get_event_loop().run_until_complete(main())

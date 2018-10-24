@@ -22,13 +22,13 @@ def test_models(httpstan_server):
             async with session.post(models_url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 201
                 payload = await resp.json()
-                assert "id" in payload
+                assert "name" in payload
 
     asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_calculate_model_id(httpstan_server):
-    """Test model id calculation."""
+def test_calculate_model_name(httpstan_server):
+    """Test model name calculation."""
 
     host, port = httpstan_server.host, httpstan_server.port
 
@@ -39,8 +39,8 @@ def test_calculate_model_id(httpstan_server):
             async with session.post(models_url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 201
                 payload = await resp.json()
-                model_id = payload["id"]
-            assert len(model_id) == 16
-            assert model_id == httpstan.models.calculate_model_id(program_code)
+                model_name = payload["name"]
+            assert len(model_name.split("/")[-1]) == 16
+            assert model_name == httpstan.models.calculate_model_name(program_code)
 
     asyncio.get_event_loop().run_until_complete(main())

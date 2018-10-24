@@ -30,14 +30,14 @@ def test_function_arguments(httpstan_server):
             data = {"program_code": program_code}
             async with session.post(models_url, data=json.dumps(data), headers=headers) as resp:
                 assert resp.status == 201
-                model_id = (await resp.json())["id"]
+                model_name = (await resp.json())["name"]
 
         # get a reference to the model_module
         app = {}  # mock aiohttp.web.Application
         await httpstan.cache.init_cache(app)  # setup database, populates app['db']
-        module_bytes = await httpstan.cache.load_model_extension_module(model_id, app["db"])
+        module_bytes = await httpstan.cache.load_model_extension_module(model_name, app["db"])
         assert module_bytes is not None
-        model_module = httpstan.models.import_model_extension_module(model_id, module_bytes)
+        model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
         expected = [
             "random_seed",
