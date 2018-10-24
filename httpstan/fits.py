@@ -37,8 +37,8 @@ def calculate_fit_name(function: str, model_name: str, data: dict, kwargs: dict)
         str: fit name
 
     """
-    # digest_size of 8 means we expect a collision after 10 ** 8 fits
-    digest_size = 8
+    # digest_size of 5 means we expect a collision after a million fits
+    digest_size = 5
     if "random_seed" not in kwargs:
         random_bytes = random.getrandbits(digest_size * 8).to_bytes(digest_size, sys.byteorder)
         return f"{model_name}/fits/{random_bytes.hex()}"

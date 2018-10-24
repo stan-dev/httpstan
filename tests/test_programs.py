@@ -40,7 +40,7 @@ def test_calculate_model_name(httpstan_server):
                 assert resp.status == 201
                 payload = await resp.json()
                 model_name = payload["name"]
-            assert len(model_name.split("/")[-1]) == 16
+            assert len(model_name.split("/")[-1]) == 10
             assert model_name == httpstan.models.calculate_model_name(program_code)
 
     asyncio.get_event_loop().run_until_complete(main())
