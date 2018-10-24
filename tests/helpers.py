@@ -39,12 +39,14 @@ def extract_draws(fit_bytes, param_name):
     while pos < len(fit_bytes):
         msg = callbacks_writer_pb2.WriterMessage()
         next_pos, pos = varint_decoder(fit_bytes, pos)
-        msg.ParseFromString(fit_bytes[pos:pos + next_pos])
+        msg.ParseFromString(fit_bytes[pos : pos + next_pos])
         pos += next_pos
         if msg.topic == callbacks_writer_pb2.WriterMessage.Topic.Value("SAMPLE"):
             for value_wrapped in msg.feature:
                 if param_name == value_wrapped.name:
-                    fea = getattr(value_wrapped, "double_list") or getattr(value_wrapped, "int_list")
+                    fea = getattr(value_wrapped, "double_list") or getattr(
+                        value_wrapped, "int_list"
+                    )
                     draws.append(fea.value.pop())
     if len(draws) == 0:
         raise KeyError(f"No draws found for parameter `{param_name}`.")
@@ -77,9 +79,7 @@ async def sample_then_extract(
             model_name = (await resp.json())["name"]
 
         fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
-        async with session.post(
-            fits_url, data=json.dumps(fit_payload), headers=headers
-        ) as resp:
+        async with session.post(fits_url, data=json.dumps(fit_payload), headers=headers) as resp:
             assert resp.status == 201, await resp.json()
             name = (await resp.json())["name"]
         async with aiohttp.ClientSession() as session:

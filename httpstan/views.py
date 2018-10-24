@@ -4,7 +4,6 @@ Handlers are separated from the endpoint names. Endpoints are defined in
 `httpstan.routes`.
 """
 import io
-import json
 import http
 import logging
 import re
@@ -12,9 +11,6 @@ import re
 import aiohttp.web
 import google.protobuf.internal.encoder
 import google.protobuf.json_format
-import marshmallow
-import marshmallow.fields as fields
-import marshmallow.validate as validate
 import webargs.aiohttpparser
 from typing import Optional, Sequence
 
@@ -26,19 +22,13 @@ import httpstan.services_stub as services_stub
 
 logger = logging.getLogger("httpstan")
 
-def _make_error(message:str, status: int, details: Optional[Sequence] = None) -> dict:
-    status_dict = {
-        "code": status,
-        "status": http.HTTPStatus(status).phrase,
-        "message": message,
-    }
+
+def _make_error(message: str, status: int, details: Optional[Sequence] = None) -> dict:
+    status_dict = {"code": status, "status": http.HTTPStatus(status).phrase, "message": message}
     if details is not None:
         status_dict["details"] = details
     status = schemas.Status().load(status_dict)
     return schemas.Error().load({"error": status})
-
-
-models_args = {"program_code": fields.Str(required=True)}
 
 
 async def handle_health(request):
@@ -82,7 +72,7 @@ async def handle_models(request):
                  $ref: '#/definitions/Error'
 
     """
-    args = await webargs.aiohttpparser.parser.parse(models_args, request)
+    args = await webargs.aiohttpparser.parser.parse(schemas.CreateModelRequest(), request)
     program_code = args["program_code"]
     model_name = httpstan.models.calculate_model_name(program_code)
     try:
@@ -102,25 +92,11 @@ async def handle_models(request):
         )
     else:
         logger.info(f"Found Stan model in cache (`{model_name}`).")
-    return aiohttp.web.json_response(schemas.Model().dump({"name": model_name}), status=201)
+    return aiohttp.web.json_response(schemas.Model().load({"name": model_name}), status=201)
 
 
-models_params_args = {"data": fields.Dict(required=True)}
-
-
-class ParamSchema(marshmallow.Schema):  # noqa
-    """Schema for single parameter."""
-
-    name = fields.String(required=True)
-    dims = fields.List(fields.Integer(), required=True)
-    constrained_names = fields.List(fields.String(), required=True)
-
-    class Meta:  # noqa
-        strict = True
-
-
-async def handle_models_params(request):
-    """Get parameter names and dimensions.
+async def handle_show_params(request):
+    """Show parameter names and dimensions.
 
     Data must be provided as model parameters can and frequently do
     depend on the data.
@@ -162,9 +138,9 @@ async def handle_models_params(request):
                       params:
                           type: array
                           items:
-                              $ref: '#/definitions/ParamSchema'
+                              $ref: '#/definitions/Parameter'
     """
-    args = await webargs.aiohttpparser.parser.parse(models_params_args, request)
+    args = await webargs.aiohttpparser.parser.parse(schemas.ShowParamsRequest(), request)
     model_name = f'models/{request.match_info["model_id"]}'
     data = args["data"]
 
@@ -192,7 +168,7 @@ async def handle_models_params(request):
         assert isinstance(dims_, list)
         assert constrained_names, constrained_names
         params.append(
-            ParamSchema().dump(
+            schemas.Parameter().load(
                 {"name": name, "dims": dims_, "constrained_names": constrained_names}
             )
         )
@@ -257,7 +233,7 @@ async def handle_create_fit(request):
     except KeyError:
         pass
     else:
-        return aiohttp.web.json_response(schemas.Fit().dump({"name": name}), status=201)
+        return aiohttp.web.json_response(schemas.Fit().load({"name": name}), status=201)
 
     messages_fh = io.BytesIO()
 
@@ -270,10 +246,8 @@ async def handle_create_fit(request):
         message_bytes = message.SerializeToString()
         varint_encoder(messages_fh.write, len(message_bytes))
         messages_fh.write(message_bytes)
-    await httpstan.cache.dump_fit(
-        name, messages_fh.getvalue(), model_name, request.app["db"]
-    )
-    return aiohttp.web.json_response(schemas.Fit().dump({"name": name}), status=201)
+    await httpstan.cache.dump_fit(name, messages_fh.getvalue(), model_name, request.app["db"])
+    return aiohttp.web.json_response(schemas.Fit().load({"name": name}), status=201)
 
 
 async def handle_get_fit(request):

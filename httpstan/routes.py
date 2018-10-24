@@ -20,7 +20,7 @@ def setup_routes(app):
     """
     app.router.add_get("/v1/health", views.handle_health)
     app.router.add_post("/v1/models", views.handle_models)
-    app.router.add_post("/v1/models/{model_id}/params", views.handle_models_params)
+    app.router.add_post("/v1/models/{model_id}/params", views.handle_show_params)
     app.router.add_post("/v1/models/{model_id}/fits", views.handle_create_fit)
     app.router.add_get("/v1/models/{model_id}/fits/{fit_id}", views.handle_get_fit)
 
@@ -32,12 +32,12 @@ def openapi_spec() -> str:
     )
     spec.add_path(path="/v1/health", view=views.handle_health)
     spec.add_path(path="/v1/models", view=views.handle_models)
-    spec.add_path(path="/v1/models/{model_id}/params", view=views.handle_models_params)
+    spec.add_path(path="/v1/models/{model_id}/params", view=views.handle_show_params)
     spec.add_path(path="/v1/models/{model_id}/fits", view=views.handle_create_fit)
     spec.add_path(path="/v1/models/{model_id}/fits/{fit_id}", view=views.handle_get_fit)
     spec.definition("CreateFitRequest", schema=schemas.CreateFitRequest)
     spec.definition("Error", schema=schemas.Error)
     spec.definition("Fit", schema=schemas.Fit)
     spec.definition("Model", schema=schemas.Model)
-    spec.definition("Param", schema=views.ParamSchema)
+    spec.definition("Parameter", schema=schemas.Parameter)
     return json.dumps(spec.to_dict())

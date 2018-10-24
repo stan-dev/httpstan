@@ -36,7 +36,6 @@ y = np.dot(X, beta_true) + np.random.normal(size=n)
 data = {"N": n, "p": p, "x": X.tolist(), "y": y.tolist()}
 
 
-
 def test_linear_regression(httpstan_server):
     """Test sampling from linear regression posterior with defaults."""
 
