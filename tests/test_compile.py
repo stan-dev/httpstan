@@ -1,10 +1,7 @@
 """Test compiling functions."""
 import asyncio
-import json
 
-import aiohttp
-
-headers = {"content-type": "application/json"}
+import requests
 
 
 def test_compile_invalid_distribution(httpstan_server):
@@ -14,15 +11,12 @@ def test_compile_invalid_distribution(httpstan_server):
     program_code = "parameters {real z;} model {z ~ no_such_distribution();}"
 
     async def main():
-        models_url = "http://{}:{}/v1/models".format(host, port)
+        models_url = f"http://{host}:{port}/v1/models"
         payload = {"program_code": program_code}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(models_url, data=json.dumps(payload), headers=headers) as resp:
-                assert resp.status == 400
-                payload = await resp.json()
-                assert "error" in payload and "message" in payload["error"]
-                assert (
-                    "Probability function must end in _lpdf or _lpmf" in payload["error"]["message"]
-                )
+        resp = requests.post(models_url, json=payload)
+        assert resp.status_code == 400
+        resp_dict = resp.json()
+        assert "error" in resp_dict and "message" in resp_dict["error"]
+        assert "Probability function must end in _lpdf" in resp_dict["error"]["message"]
 
     asyncio.get_event_loop().run_until_complete(main())
