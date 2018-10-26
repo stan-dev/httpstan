@@ -1,8 +1,7 @@
 """Helper functions for tests."""
-import json
 import typing
 
-import aiohttp
+import requests
 import google.protobuf.internal.decoder
 import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 
@@ -69,22 +68,18 @@ async def sample_then_extract(
         Draws of `param_name`.
 
     """
-    async with aiohttp.ClientSession() as session:
-        models_url = "http://{}:{}/v1/models".format(host, port)
-        headers = {"content-type": "application/json"}
-        async with session.post(
-            models_url, data=json.dumps({"program_code": program_code}), headers=headers
-        ) as resp:
-            assert resp.status == 201
-            model_name = (await resp.json())["name"]
+    models_url = f"http://{host}:{port}/v1/models"
+    resp = requests.post(models_url, json={"program_code": program_code})
+    assert resp.status_code == 201
+    model_name = resp.json()["name"]
 
-        fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
-        async with session.post(fits_url, data=json.dumps(fit_payload), headers=headers) as resp:
-            assert resp.status == 201, await resp.json()
-            name = (await resp.json())["name"]
-        async with aiohttp.ClientSession() as session:
-            fit_url = f"http://{host}:{port}/v1/{name}"
-            async with session.get(fit_url, headers=headers) as resp:
-                assert resp.status == 200, await resp.json()
-                fit_bytes = await resp.read()
-                return extract_draws(fit_bytes, param_name)
+    fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
+    resp = requests.post(fits_url, json=fit_payload)
+    assert resp.status_code == 201
+    name = resp.json()["name"]
+
+    fit_url = f"http://{host}:{port}/v1/{name}"
+    resp = requests.get(fit_url)
+    assert resp.status_code == 200, resp.json()
+    fit_bytes = resp.content
+    return extract_draws(fit_bytes, param_name)
