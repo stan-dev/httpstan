@@ -10,7 +10,6 @@ import re
 
 import aiohttp.web
 import google.protobuf.internal.encoder
-import google.protobuf.json_format
 import webargs.aiohttpparser
 from typing import Optional, Sequence
 
