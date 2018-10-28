@@ -31,7 +31,7 @@ of the model on the unconstrained scale.
 ``error_writer`` receives error messages.
 
 """
-import json
+import ujson as json
 import re
 from typing import Optional
 
@@ -70,7 +70,7 @@ class WriterParser:
         # `body` is either a list or a single value
         try:
             values = json.loads(body)
-        except json.decoder.JSONDecodeError:
+        except ValueError:
             values = [body]
         if not isinstance(values, list):
             values = [values]
