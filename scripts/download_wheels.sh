@@ -18,7 +18,7 @@ mkdir -p "$DIR/../dist"
 pushd "$DIR/../dist" > /dev/null
 rm -rf *.whl
 
-for py_tag in cp36; do
+for py_tag in cp36 cp37; do
   wheel_name="$WHEEL_HEAD-$py_tag-${py_tag}m-$MACOS_TAIL64"
   wheel_url="${RACKSPACE_URL}/${wheel_name}"
   echo "downloading: $wheel_name"
@@ -31,7 +31,7 @@ for py_tag in cp36; do
 done
 
 # windows only
-for py_tag in cp36; do
+for py_tag in cp36 cp37; do
   wheel_name="$WHEEL_HEAD-$py_tag-${py_tag}m-$WIN_TAIL32"
   wheel_url="${RACKSPACE_URL}/${wheel_name}"
   echo "downloading: $wheel_name"
