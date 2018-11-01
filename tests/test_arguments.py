@@ -31,8 +31,11 @@ def test_function_arguments(httpstan_server):
         # get a reference to the model_module
         app = {}  # mock aiohttp.web.Application
         await httpstan.cache.init_cache(app)  # setup database, populates app['db']
-        module_bytes = await httpstan.cache.load_model_extension_module(model_name, app["db"])
+        module_bytes, compiler_output = await httpstan.cache.load_model_extension_module(
+            model_name, app["db"]
+        )
         assert module_bytes is not None
+        assert compiler_output is not None
         model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
         expected = [

@@ -7,6 +7,7 @@ import gzip
 import logging
 import os
 import sqlite3
+from typing import Tuple
 
 import appdirs
 
@@ -37,9 +38,11 @@ async def init_cache(app):
     conn.execute("""PRAGMA journal_mode=WAL;""")
     with conn:
         conn.execute(
-            """CREATE TABLE IF NOT EXISTS fits (name BLOB PRIMARY KEY, model_name BOB, value BLOB);"""
+            """CREATE TABLE IF NOT EXISTS fits (name BLOB PRIMARY KEY, model_name BLOB, value BLOB);"""
         )
-        conn.execute("""CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB);""")
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB, compiler_output TEXT);"""
+        )
     app["db"] = conn
 
 
@@ -59,7 +62,9 @@ async def close_cache(app):
     app["db"].close()
 
 
-async def dump_model_extension_module(model_name: str, module_bytes: bytes, db: sqlite3.Connection):
+async def dump_model_extension_module(
+    model_name: str, module_bytes: bytes, compiler_output: str, db: sqlite3.Connection
+):
     """Store Stan model extension module the cache.
 
     The Stan model extension module is passed via ``module_bytes``. The bytes
@@ -71,8 +76,9 @@ async def dump_model_extension_module(model_name: str, module_bytes: bytes, db: 
     This function is a coroutine.
 
     Arguments:
-        model_name: Model name
+        model_name: Model name.
         module_bytes: Bytes of the compile Stan model extension module.
+        compiler_output: Output (standard error) from compiler.
         db: Cache database handle.
 
     """
@@ -81,10 +87,13 @@ async def dump_model_extension_module(model_name: str, module_bytes: bytes, db: 
         None, gzip.compress, module_bytes, compress_level
     )
     with db:
-        db.execute("""INSERT INTO models VALUES (?, ?)""", (model_name.encode(), compressed))
+        db.execute(
+            """INSERT INTO models VALUES (?, ?, ?)""",
+            (model_name.encode(), compressed, compiler_output.encode()),
+        )
 
 
-async def load_model_extension_module(model_name: str, db: sqlite3.Connection) -> bytes:
+async def load_model_extension_module(model_name: str, db: sqlite3.Connection) -> Tuple[bytes, str]:
     """Load Stan model extension module the cache.
 
     The extension module is stored in compressed form. Since decompressing the
@@ -99,13 +108,17 @@ async def load_model_extension_module(model_name: str, db: sqlite3.Connection) -
 
     Returns
         bytes: Bytes of compiled extension module.
+        str: Output (standard error) from compiler.
 
     """
-    row = db.execute("""SELECT value FROM models WHERE key=?""", (model_name.encode(),)).fetchone()
+    row = db.execute(
+        """SELECT value, compiler_output FROM models WHERE key=?""", (model_name.encode(),)
+    ).fetchone()
     if not row:
         raise KeyError(f"Extension module for `{model_name}` not found.")
-    compressed = row[0]
-    return await asyncio.get_event_loop().run_in_executor(None, gzip.decompress, compressed)
+    compressed, compiler_output = row
+    module_bytes = await asyncio.get_event_loop().run_in_executor(None, gzip.decompress, compressed)
+    return module_bytes, compiler_output
 
 
 async def dump_fit(name: str, fit_bytes: bytes, model_name: str, db: sqlite3.Connection):

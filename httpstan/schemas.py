@@ -27,6 +27,7 @@ class CreateModelRequest(marshmallow.Schema):
 
 class Model(marshmallow.Schema):
     name = fields.String(required=True)
+    compiler_output = fields.String(required=True)
 
 
 # TODO(AR): supported functions can be fetched from stub Python files

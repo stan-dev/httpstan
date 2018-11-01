@@ -31,6 +31,7 @@ def test_bernoulli(httpstan_server):
         resp = requests.post(models_url, json={"program_code": program_code})
         assert resp.status_code == 201
         model_name = resp.json()["name"]
+        assert "compiler_output" in resp.json()
 
         fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
         payload = {"function": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data}
