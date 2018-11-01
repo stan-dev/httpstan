@@ -72,23 +72,26 @@ async def handle_models(request):
     program_code = args["program_code"]
     model_name = httpstan.models.calculate_model_name(program_code)
     try:
-        module_bytes = await httpstan.cache.load_model_extension_module(
+        module_bytes, compiler_output = await httpstan.cache.load_model_extension_module(
             model_name, request.app["db"]
         )
     except KeyError:
         logger.info("Compiling Stan model, `{model_name}`.")
         try:
-            module_bytes = await httpstan.models.compile_model_extension_module(program_code)
+            module_bytes, compiler_output = await httpstan.models.compile_model_extension_module(
+                program_code
+            )
         except Exception as exc:
             message, status = f"Failed to compile module. Exception: {exc}", 400
             logger.critical(message)
             return aiohttp.web.json_response(_make_error(message, status=status), status=status)
         await httpstan.cache.dump_model_extension_module(
-            model_name, module_bytes, request.app["db"]
+            model_name, module_bytes, compiler_output, request.app["db"]
         )
     else:
         logger.info(f"Found Stan model in cache (`{model_name}`).")
-    return aiohttp.web.json_response(schemas.Model().load({"name": model_name}), status=201)
+    response_dict = schemas.Model().load({"name": model_name, "compiler_output": compiler_output})
+    return aiohttp.web.json_response(response_dict, status=201)
 
 
 async def handle_show_params(request):
@@ -140,7 +143,9 @@ async def handle_show_params(request):
     model_name = f'models/{request.match_info["model_id"]}'
     data = args["data"]
 
-    module_bytes = await httpstan.cache.load_model_extension_module(model_name, request.app["db"])
+    module_bytes, _ = await httpstan.cache.load_model_extension_module(
+        model_name, request.app["db"]
+    )
     if module_bytes is None:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
@@ -216,7 +221,9 @@ async def handle_create_fit(request):
     kwargs = await request.json()
     kwargs.update(kwargs_schema)
 
-    module_bytes = await httpstan.cache.load_model_extension_module(model_name, request.app["db"])
+    module_bytes, _ = await httpstan.cache.load_model_extension_module(
+        model_name, request.app["db"]
+    )
     if module_bytes is None:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)

@@ -13,8 +13,7 @@ import os
 import string
 import sys
 import tempfile
-from typing import Tuple  # noqa: flake8 bug, #118
-from typing import List, Optional
+from typing import Any, Tuple, List, Optional, IO
 
 # IMPORTANT: import setuptools MUST come before any module imports distutils
 # background: bugs.python.org/issue23114
@@ -76,7 +75,7 @@ def calculate_module_name(model_name: str) -> str:
     return f"model_{model_id}"
 
 
-async def compile_model_extension_module(program_code: str) -> bytes:
+async def compile_model_extension_module(program_code: str) -> Tuple[bytes, str]:
     """Compile extension module for a Stan model.
 
     Returns bytes of the compiled module.
@@ -88,6 +87,7 @@ async def compile_model_extension_module(program_code: str) -> bytes:
 
     Returns:
         bytes: binary representation of module.
+        str: Output (standard error) from compiler.
 
     """
     model_name = calculate_model_name(program_code)
@@ -101,8 +101,10 @@ async def compile_model_extension_module(program_code: str) -> bytes:
         __name__, "anonymous_stan_model_services.pyx.template"
     ).decode()
     logger.info(f"building extension module with stan model name `{stan_model_name}`.")
-    module_bytes = _build_extension_module(stan_model_name, cpp_code, pyx_code_template)
-    return module_bytes
+    module_bytes, compiler_output = _build_extension_module(
+        stan_model_name, cpp_code, pyx_code_template
+    )
+    return module_bytes, compiler_output
 
 
 def _import_module(module_name: str, module_path: str):
@@ -146,6 +148,7 @@ def import_model_extension_module(model_name: str, module_bytes: bytes):
     # of this function will not load.
     module_name = calculate_module_name(model_name)
     module_filename = f"{module_name}.so"
+    assert isinstance(module_bytes, bytes)
 
     with tempfile.TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
@@ -161,8 +164,7 @@ def _build_extension_module(
     cpp_code: str,
     pyx_code_template: str,
     extra_compile_args: Optional[List[str]] = None,
-    verbose: bool = False,
-) -> bytes:
+) -> Tuple[bytes, str]:
     """Build extension module and return its name and binary representation.
 
     This returns the module name and bytes (!) of a Python extension module. The
@@ -181,10 +183,10 @@ def _build_extension_module(
         cpp_code
         pyx_code_template: string passed to ``string.Template``.
         extra_compile_args
-        verbose
 
     Returns:
         bytes: binary representation of module.
+        str: Output (standard error) from compiler.
 
     """
     # write files need for compilation in a temporary directory which will be
@@ -261,7 +263,7 @@ def _build_extension_module(
             os.close(devnull)
             return orig_stdout
 
-        def _redirect_stderr() -> int:
+        def _redirect_stderr_to(stream: IO[Any]) -> int:
             """Redirect stderr for subprocesses to /dev/null.
 
             Returns
@@ -271,16 +273,17 @@ def _build_extension_module(
             sys.stderr.flush()
             stderr_fileno = sys.stderr.fileno()
             orig_stderr = os.dup(stderr_fileno)
-            devnull = os.open(os.devnull, os.O_WRONLY)
-            os.dup2(devnull, stderr_fileno)
-            os.close(devnull)
+            os.dup2(stream.fileno(), stderr_fileno)
             return orig_stderr
 
-        # silence stderr for compilation
-        redirect_stderr = not verbose or _has_fileno(sys.stderr)
+        # silence stdout and stderr for compilation, if stderr is silenceable
+        # silence stdout too as cythonizing prints a couple of lines to stdout
+        stream = tempfile.TemporaryFile()
+        redirect_stderr = _has_fileno(sys.stderr)
+        compiler_output = ""
         if redirect_stderr:
             orig_stdout = _redirect_stdout()
-            orig_stderr = _redirect_stderr()
+            orig_stderr = _redirect_stderr_to(stream)
 
         try:
             build_extension.extensions = Cython.Build.cythonize(
@@ -290,11 +293,14 @@ def _build_extension_module(
             build_extension.run()
         finally:
             if redirect_stderr:
+                stream.seek(0)
+                compiler_output = stream.read().decode()
+                stream.close()
                 # restore
                 os.dup2(orig_stderr, sys.stderr.fileno())
                 os.dup2(orig_stdout, sys.stdout.fileno())
 
         module = _import_module(module_name, build_extension.build_lib)
-        with open(module.__file__, "rb") as fh:  # type: ignore  # pending fix, see mypy#3062
+        with open(module.__file__, "rb") as fh:  # type: ignore  # see mypy#3062
             assert module.__name__ == module_name, (module.__name__, module_name)
-            return fh.read()  # type: ignore  # pending fix, see mypy#3062
+            return fh.read(), compiler_output  # type: ignore  # see mypy#3062

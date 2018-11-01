@@ -79,7 +79,7 @@ program::
 
 This request will return a model name similar to the following::
 
-    {"name": "models/89c4e75a2c"}
+    {"name": "models/89c4e75a2c", "compiler_output": "..."}
 
 (The model ``name`` depends on the platform and the version of Stan.)
 
