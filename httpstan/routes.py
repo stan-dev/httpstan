@@ -35,6 +35,7 @@ def openapi_spec() -> str:
     spec.add_path(path="/v1/models/{model_id}/params", view=views.handle_show_params)
     spec.add_path(path="/v1/models/{model_id}/fits", view=views.handle_create_fit)
     spec.add_path(path="/v1/models/{model_id}/fits/{fit_id}", view=views.handle_get_fit)
+    spec.definition("CreateModelRequest", schema=schemas.CreateModelRequest)
     spec.definition("CreateFitRequest", schema=schemas.CreateFitRequest)
     spec.definition("Error", schema=schemas.Error)
     spec.definition("Fit", schema=schemas.Fit)
