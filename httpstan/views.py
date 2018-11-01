@@ -56,10 +56,7 @@ async def handle_models(request):
               description: Stan program code to compile
               required: true
               schema:
-                  type: object
-                  properties:
-                      program_code:
-                          type: string
+                 $ref: '#/definitions/CreateModelRequest'
         responses:
             201:
               description: Identifier for compiled Stan model

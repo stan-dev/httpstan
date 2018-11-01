@@ -8,6 +8,7 @@ import functools
 import hashlib
 import importlib
 import logging
+import io
 import os
 import string
 import sys
@@ -15,7 +16,9 @@ import tempfile
 from typing import Tuple  # noqa: flake8 bug, #118
 from typing import List, Optional
 
-import setuptools  # noqa: IMPORTANT, import setuptools MUST come before any module imports distutils, see bugs.python.org/issue23114
+# IMPORTANT: import setuptools MUST come before any module imports distutils
+# background: bugs.python.org/issue23114
+import setuptools
 import Cython
 import Cython.Build
 import Cython.Build.Inline
@@ -158,6 +161,7 @@ def _build_extension_module(
     cpp_code: str,
     pyx_code_template: str,
     extra_compile_args: Optional[List[str]] = None,
+    verbose: bool = False,
 ) -> bytes:
     """Build extension module and return its name and binary representation.
 
@@ -177,6 +181,7 @@ def _build_extension_module(
         cpp_code
         pyx_code_template: string passed to ``string.Template``.
         extra_compile_args
+        verbose
 
     Returns:
         bytes: binary representation of module.
@@ -229,13 +234,65 @@ def _build_extension_module(
             extra_compile_args=extra_compile_args,
         )
         build_extension = Cython.Build.Inline._get_build_extension()
-        build_extension.extensions = Cython.Build.cythonize(
-            [extension], include_path=cython_include_path
-        )
-        build_extension.build_temp = build_extension.build_lib = temporary_dir
 
-        # TODO(AR): wrap stderr, return it as well
-        build_extension.run()
+        def _has_fileno(stream) -> bool:
+            """Returns whether the stream object has a working fileno()
+
+            Suggests whether _redirect_stderr is likely to work.
+            """
+            try:
+                stream.fileno()
+            except (AttributeError, OSError, IOError, io.UnsupportedOperation):
+                return False
+            return True
+
+        def _redirect_stdout() -> int:
+            """Redirect stdout for subprocesses to /dev/null.
+
+            Returns
+            -------
+            orig_stderr: copy of original stderr file descriptor
+            """
+            sys.stdout.flush()
+            stdout_fileno = sys.stdout.fileno()
+            orig_stdout = os.dup(stdout_fileno)
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull, stdout_fileno)
+            os.close(devnull)
+            return orig_stdout
+
+        def _redirect_stderr() -> int:
+            """Redirect stderr for subprocesses to /dev/null.
+
+            Returns
+            -------
+            orig_stderr: copy of original stderr file descriptor
+            """
+            sys.stderr.flush()
+            stderr_fileno = sys.stderr.fileno()
+            orig_stderr = os.dup(stderr_fileno)
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull, stderr_fileno)
+            os.close(devnull)
+            return orig_stderr
+
+        # silence stderr for compilation
+        redirect_stderr = not verbose or _has_fileno(sys.stderr)
+        if redirect_stderr:
+            orig_stdout = _redirect_stdout()
+            orig_stderr = _redirect_stderr()
+
+        try:
+            build_extension.extensions = Cython.Build.cythonize(
+                [extension], include_path=cython_include_path
+            )
+            build_extension.build_temp = build_extension.build_lib = temporary_dir
+            build_extension.run()
+        finally:
+            if redirect_stderr:
+                # restore
+                os.dup2(orig_stderr, sys.stderr.fileno())
+                os.dup2(orig_stdout, sys.stdout.fileno())
 
         module = _import_module(module_name, build_extension.build_lib)
         with open(module.__file__, "rb") as fh:  # type: ignore  # pending fix, see mypy#3062
