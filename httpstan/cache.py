@@ -3,8 +3,8 @@
 Functions in this module manage the Stan model cache and related caches.
 """
 import asyncio
+import gzip
 import logging
-import lzma
 import os
 import sqlite3
 
@@ -76,7 +76,10 @@ async def dump_model_extension_module(model_name: str, module_bytes: bytes, db: 
         db: Cache database handle.
 
     """
-    compressed = await asyncio.get_event_loop().run_in_executor(None, lzma.compress, module_bytes)
+    compress_level = 1  # fastest
+    compressed = await asyncio.get_event_loop().run_in_executor(
+        None, gzip.compress, module_bytes, compress_level
+    )
     with db:
         db.execute("""INSERT INTO models VALUES (?, ?)""", (model_name.encode(), compressed))
 
@@ -102,7 +105,7 @@ async def load_model_extension_module(model_name: str, db: sqlite3.Connection) -
     if not row:
         raise KeyError(f"Extension module for `{model_name}` not found.")
     compressed = row[0]
-    return await asyncio.get_event_loop().run_in_executor(None, lzma.decompress, compressed)
+    return await asyncio.get_event_loop().run_in_executor(None, gzip.decompress, compressed)
 
 
 async def dump_fit(name: str, fit_bytes: bytes, model_name: str, db: sqlite3.Connection):
