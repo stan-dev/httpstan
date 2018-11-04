@@ -82,7 +82,7 @@ async def handle_models(request):
                 program_code
             )
         except Exception as exc:
-            message, status = f"Failed to compile module. Exception: {exc}", 400
+            message, status = f"Failed to compile module: {exc}", 400
             logger.critical(message)
             return aiohttp.web.json_response(_make_error(message, status=status), status=status)
         await httpstan.cache.dump_model_extension_module(
@@ -156,7 +156,13 @@ async def handle_show_params(request):
     # ``param_names`` and ``dims`` are defined in ``anonymous_stan_model_services.pyx.template``.
     # Apart from converting C++ types into corresponding Python types, they do no processing of the
     # output of ``get_param_names`` and ``get_dims``.
-    param_names_bytes = model_module.param_names(array_var_context_capsule)
+    try:
+        param_names_bytes = model_module.param_names(array_var_context_capsule)
+    except Exception as exc:
+        # e.g., "Found negative dimension size in variable declaration"
+        message, status = f"Error calling param_names: `{exc}`", 400
+        logger.critical(message)
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     param_names = [name.decode() for name in param_names_bytes]
     dims = model_module.dims(array_var_context_capsule)
     constrained_param_names_bytes = model_module.constrained_param_names(array_var_context_capsule)
@@ -244,11 +250,18 @@ async def handle_create_fit(request):
     # a sequence of protocol buffer messages. Each message is prefixed by the
     # length of a message. This works and is Google's recommended approach.
     varint_encoder = google.protobuf.internal.encoder._EncodeVarint
-    async for message in services_stub.call(function, model_module, data, **kwargs):
-        assert message is not None, message
-        message_bytes = message.SerializeToString()
-        varint_encoder(messages_fh.write, len(message_bytes))
-        messages_fh.write(message_bytes)
+    try:
+        async for message in services_stub.call(function, model_module, data, **kwargs):
+            assert message is not None, message
+            message_bytes = message.SerializeToString()
+            varint_encoder(messages_fh.write, len(message_bytes))
+            messages_fh.write(message_bytes)
+    except Exception as exc:
+        # e.g., "hmc_nuts_diag_e_adapt_wrapper() got an unexpected keyword argument, ..."
+        # e.g., "Found negative dimension size in variable declaration"
+        message, status = f"Error calling services function: `{exc}`", 400
+        logger.critical(message)
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     await httpstan.cache.dump_fit(name, messages_fh.getvalue(), model_name, request.app["db"])
     return aiohttp.web.json_response(schemas.Fit().load({"name": name}), status=201)
 
