@@ -76,3 +76,78 @@ def test_bernoulli_params(httpstan_server):
         assert param["constrained_names"] == ["theta"]
 
     asyncio.get_event_loop().run_until_complete(main())
+
+
+def test_bernoulli_params_out_of_bounds(httpstan_server):
+    """Test getting parameters from Bernoulli model error handling."""
+
+    host, port = httpstan_server.host, httpstan_server.port
+
+    async def main():
+        models_url = f"http://{host}:{port}/v1/models"
+        payload = {"program_code": program_code}
+        resp = requests.post(models_url, json=payload)
+        assert resp.status_code == 201
+        model_name = resp.json()["name"]
+
+        models_params_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/params"
+        # N = -5 in data is invalid according to program code
+        resp = requests.post(models_params_url, json={"data": {"N": -5, "y": (0, 1, 0)}})
+        assert resp.status_code == 400
+        resp_dict = resp.json()
+        assert "error" in resp_dict and "message" in resp_dict["error"]
+        assert "Found negative dimension size" in resp_dict["error"]["message"]
+
+    asyncio.get_event_loop().run_until_complete(main())
+
+
+def test_bernoulli_invalid_arg(httpstan_server):
+    """Test sampling from Bernoulli model with invalid arg."""
+    host, port = httpstan_server.host, httpstan_server.port
+
+    async def main():
+        models_url = f"http://{host}:{port}/v1/models"
+        resp = requests.post(models_url, json={"program_code": program_code})
+        assert resp.status_code == 201
+        model_name = resp.json()["name"]
+        assert "compiler_output" in resp.json()
+
+        fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
+        payload = {
+            "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
+            "data": data,
+            "invalid_arg": 9,
+        }
+        resp = requests.post(fits_url, json=payload)
+        assert resp.status_code == 400
+        resp_dict = resp.json()
+        assert "error" in resp_dict and "message" in resp_dict["error"]
+        assert "got an unexpected keyword argument" in resp_dict["error"]["message"]
+
+    asyncio.get_event_loop().run_until_complete(main())
+
+
+def test_bernoulli_out_of_bounds(httpstan_server):
+    """Test sampling from Bernoulli model with out of bounds data."""
+    host, port = httpstan_server.host, httpstan_server.port
+
+    async def main():
+        models_url = f"http://{host}:{port}/v1/models"
+        resp = requests.post(models_url, json={"program_code": program_code})
+        assert resp.status_code == 201
+        model_name = resp.json()["name"]
+        assert "compiler_output" in resp.json()
+
+        fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
+        # N = -5 in data is invalid according to program code
+        payload = {
+            "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
+            "data": {"N": -5, "y": (0, 1, 0, 0, 0, 0, 0, 0, 0, 1)},
+        }
+        resp = requests.post(fits_url, json=payload)
+        assert resp.status_code == 400
+        resp_dict = resp.json()
+        assert "error" in resp_dict and "message" in resp_dict["error"]
+        assert "Found negative dimension size" in resp_dict["error"]["message"]
+
+    asyncio.get_event_loop().run_until_complete(main())
