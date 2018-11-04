@@ -11,6 +11,8 @@ from typing import Tuple
 
 import appdirs
 
+import httpstan
+
 logger = logging.getLogger("httpstan")
 
 
@@ -29,7 +31,7 @@ async def init_cache(app):
         app (aiohttp.web.Application): The current application.
 
     """
-    cache_path = appdirs.user_cache_dir("httpstan")
+    cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
     os.makedirs(cache_path, exist_ok=True)
     logging.info(f"Opening cache in `{cache_path}`.")
     # if `check_same_thread` is False, use of `conn` across threads should work
