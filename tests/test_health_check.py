@@ -4,13 +4,11 @@ import asyncio
 import requests
 
 
-def test_health_check(httpstan_server):
+def test_health_check(api_url):
     """Test health check route."""
 
-    host, port = httpstan_server.host, httpstan_server.port
-
     async def main():
-        resp = requests.get(f"http://{host}:{port}/v1/health")
+        resp = requests.get(f"{api_url}/health")
         assert resp.status_code == 200
 
     asyncio.get_event_loop().run_until_complete(main())

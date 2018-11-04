@@ -4,16 +4,13 @@ import asyncio
 import requests
 
 
-def test_compile_invalid_distribution(httpstan_server):
+def test_compile_invalid_distribution(api_url):
     """Check that compiler error is returned to client."""
-    host, port = httpstan_server.host, httpstan_server.port
 
     program_code = "parameters {real z;} model {z ~ no_such_distribution();}"
 
     async def main():
-        models_url = f"http://{host}:{port}/v1/models"
-        payload = {"program_code": program_code}
-        resp = requests.post(models_url, json=payload)
+        resp = requests.post(f"{api_url}/models", json={"program_code": program_code})
         assert resp.status_code == 400
         resp_dict = resp.json()
         assert "error" in resp_dict and "message" in resp_dict["error"]

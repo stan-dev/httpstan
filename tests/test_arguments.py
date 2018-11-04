@@ -1,10 +1,10 @@
 """Test services function argument lookups."""
 import asyncio
 
-import requests
-
 import httpstan.models
 import httpstan.services.arguments as arguments
+
+import helpers
 
 program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 
@@ -17,16 +17,12 @@ def test_lookup_default():
     assert expected == arguments.lookup_default(arguments.Method.SAMPLE, "gamma")
 
 
-def test_function_arguments(httpstan_server):
+def test_function_arguments(api_url):
     """Test function argument name lookup."""
-    host, port = httpstan_server.host, httpstan_server.port
 
     # function_arguments needs compiled module, so we have to get one
     async def main():
-        models_url = f"http://{host}:{port}/v1/models"
-        resp = requests.post(models_url, json={"program_code": program_code})
-        assert resp.status_code == 201
-        model_name = resp.json()["name"]
+        model_name = helpers.get_model_name(api_url, program_code)
 
         # get a reference to the model_module
         app = {}  # mock aiohttp.web.Application
