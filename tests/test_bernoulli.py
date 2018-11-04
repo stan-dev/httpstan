@@ -22,27 +22,19 @@ program_code = """
 data = {"N": 10, "y": (0, 1, 0, 0, 0, 0, 0, 0, 0, 1)}
 
 
-def test_bernoulli(httpstan_server):
+def test_bernoulli(api_url):
     """Test sampling from Bernoulli model with defaults."""
-    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
-        models_url = f"http://{host}:{port}/v1/models"
-        resp = requests.post(models_url, json={"program_code": program_code})
-        assert resp.status_code == 201
-        model_name = resp.json()["name"]
-        assert "compiler_output" in resp.json()
-
-        fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
+        model_name = helpers.get_model_name(api_url, program_code)
         payload = {"function": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data}
-        resp = requests.post(fits_url, json=payload)
+        resp = requests.post(f"{api_url}/models/{model_name.split('/')[-1]}/fits", json=payload)
         assert resp.status_code == 201
         fit_name = resp.json()["name"]
         assert fit_name is not None
         assert fit_name.startswith("models/") and "fits" in fit_name
 
-        fit_url = f"http://{host}:{port}/v1/{fit_name}"
-        resp = requests.get(fit_url)
+        resp = requests.get(f"{api_url}/{fit_name}")
         assert resp.status_code == 200
         assert resp.headers["Content-Type"] == "application/octet-stream"
         fit_bytes = resp.content
@@ -51,19 +43,12 @@ def test_bernoulli(httpstan_server):
     asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_bernoulli_params(httpstan_server):
+def test_bernoulli_params(api_url):
     """Test getting parameters from Bernoulli model."""
 
-    host, port = httpstan_server.host, httpstan_server.port
-
     async def main():
-        models_url = f"http://{host}:{port}/v1/models"
-        payload = {"program_code": program_code}
-        resp = requests.post(models_url, json=payload)
-        assert resp.status_code == 201
-        model_name = resp.json()["name"]
-
-        models_params_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/params"
+        model_name = helpers.get_model_name(api_url, program_code)
+        models_params_url = f"{api_url}/models/{model_name.split('/')[-1]}/params"
         resp = requests.post(models_params_url, json={"data": data})
         assert resp.status_code == 200
         response_payload = resp.json()
@@ -78,19 +63,12 @@ def test_bernoulli_params(httpstan_server):
     asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_bernoulli_params_out_of_bounds(httpstan_server):
+def test_bernoulli_params_out_of_bounds(api_url):
     """Test getting parameters from Bernoulli model error handling."""
 
-    host, port = httpstan_server.host, httpstan_server.port
-
     async def main():
-        models_url = f"http://{host}:{port}/v1/models"
-        payload = {"program_code": program_code}
-        resp = requests.post(models_url, json=payload)
-        assert resp.status_code == 201
-        model_name = resp.json()["name"]
-
-        models_params_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/params"
+        model_name = helpers.get_model_name(api_url, program_code)
+        models_params_url = f"{api_url}/models/{model_name.split('/')[-1]}/params"
         # N = -5 in data is invalid according to program code
         resp = requests.post(models_params_url, json={"data": {"N": -5, "y": (0, 1, 0)}})
         assert resp.status_code == 400
@@ -101,18 +79,12 @@ def test_bernoulli_params_out_of_bounds(httpstan_server):
     asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_bernoulli_invalid_arg(httpstan_server):
+def test_bernoulli_invalid_arg(api_url):
     """Test sampling from Bernoulli model with invalid arg."""
-    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
-        models_url = f"http://{host}:{port}/v1/models"
-        resp = requests.post(models_url, json={"program_code": program_code})
-        assert resp.status_code == 201
-        model_name = resp.json()["name"]
-        assert "compiler_output" in resp.json()
-
-        fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
+        model_name = helpers.get_model_name(api_url, program_code)
+        fits_url = f"{api_url}/models/{model_name.split('/')[-1]}/fits"
         payload = {
             "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
             "data": data,
@@ -127,18 +99,12 @@ def test_bernoulli_invalid_arg(httpstan_server):
     asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_bernoulli_out_of_bounds(httpstan_server):
+def test_bernoulli_out_of_bounds(api_url):
     """Test sampling from Bernoulli model with out of bounds data."""
-    host, port = httpstan_server.host, httpstan_server.port
 
     async def main():
-        models_url = f"http://{host}:{port}/v1/models"
-        resp = requests.post(models_url, json={"program_code": program_code})
-        assert resp.status_code == 201
-        model_name = resp.json()["name"]
-        assert "compiler_output" in resp.json()
-
-        fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
+        model_name = helpers.get_model_name(api_url, program_code)
+        fits_url = f"{api_url}/models/{model_name.split('/')[-1]}/fits"
         # N = -5 in data is invalid according to program code
         payload = {
             "function": "stan::services::sample::hmc_nuts_diag_e_adapt",

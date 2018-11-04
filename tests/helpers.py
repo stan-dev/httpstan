@@ -6,6 +6,15 @@ import google.protobuf.internal.decoder
 import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 
 
+def get_model_name(api_url, program_code):
+    """Compile and retrieve model name."""
+    resp = requests.post(f"{api_url}/models", json={"program_code": program_code})
+    assert resp.status_code == 201, (api_url, resp.content)
+    model_name = resp.json()["name"]
+    assert "compiler_output" in resp.json()
+    return model_name
+
+
 def validate_protobuf_messages(fit_bytes):
     """Superficially validate samples from a Stan model."""
     varint_decoder = google.protobuf.internal.decoder._DecodeVarint32

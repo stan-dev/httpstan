@@ -35,17 +35,12 @@ y = np.dot(X, beta_true) + np.random.normal(size=n)
 data = {"N": n, "p": p, "x": X.tolist(), "y": y.tolist()}
 
 
-def test_linear_regression(httpstan_server):
+def test_linear_regression(api_url):
     """Test sampling from linear regression posterior with defaults."""
 
-    host, port = httpstan_server.host, httpstan_server.port
-
     async def main():
-        models_url = f"http://{host}:{port}/v1/models"
-        resp = requests.post(models_url, json={"program_code": program_code})
-        assert resp.status_code == 201
-        model_name = resp.json()["name"]
-        fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
+        model_name = helpers.get_model_name(api_url, program_code)
+        fits_url = f"{api_url}/models/{model_name.split('/')[-1]}/fits"
         payload = {
             "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
             "data": data,
@@ -57,7 +52,7 @@ def test_linear_regression(httpstan_server):
         fit_name = resp.json()["name"]
         assert fit_name.startswith("models/") and "fits" in fit_name
 
-        fit_url = f"http://{host}:{port}/v1/{fit_name}"
+        fit_url = f"{api_url}/{fit_name}"
         resp = requests.get(fit_url)
         assert resp.status_code == 200
         fit_bytes = resp.content
