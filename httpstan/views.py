@@ -237,7 +237,7 @@ async def handle_create_fit(request):
     function, data = kwargs.pop("function"), kwargs.pop("data")
     name = httpstan.fits.calculate_fit_name(function, model_name, data, kwargs)
     try:
-        await httpstan.cache.load_fit(name, model_name, request.app["db"])
+        await httpstan.cache.load_fit(name)
     except KeyError:
         pass
     else:
@@ -253,7 +253,7 @@ async def handle_create_fit(request):
         logger.critical(message)
         messages_file.close()
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
-    await httpstan.cache.dump_fit(name, messages_file.getvalue(), model_name, request.app["db"])
+    await httpstan.cache.dump_fit(name, messages_file.getvalue())
     return aiohttp.web.json_response(schemas.Fit().load({"name": name}), status=201)
 
 
@@ -290,7 +290,7 @@ async def handle_get_fit(request):
     fit_name = f"{model_name}/fits/{request.match_info['fit_id']}"
 
     try:
-        fit_bytes = await httpstan.cache.load_fit(fit_name, model_name, request.app["db"])
+        fit_bytes = await httpstan.cache.load_fit(fit_name)
     except KeyError:
         message, status = f"Fit `{fit_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)

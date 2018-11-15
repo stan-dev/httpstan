@@ -123,55 +123,46 @@ async def load_model_extension_module(model_name: str, db: sqlite3.Connection) -
     return module_bytes, compiler_output
 
 
-async def dump_fit(name: str, fit_bytes: bytes, model_name: str, db: sqlite3.Connection):
-    """Store Stan fit in the cache.
+async def dump_fit(name: str, fit_bytes: bytes):
+    """Store Stan fit in filesystem-based cache.
 
-    The Stan fit is passed via ``fit_bytes``. ``model_name`` must also be provided
-    as a rudimentary integrity check.
-
-    Since compressing the bytes will take time, the compression function is run
-    in a different thread.
+    The Stan fit is passed via ``fit_bytes``.
 
     This function is a coroutine.
 
     Arguments:
         name: Stan fit name
         fit_bytes: Bytes of the Stan fit.
-        model_name: Name of Stan model associated with fit.
-        db: Cache database handle.
 
     """
-    with db:
-        db.execute(
-            """INSERT INTO fits VALUES (?, ?, ?)""", (name.encode(), model_name.encode(), fit_bytes)
-        )
+    cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
+    # fits are stored under their "parent" models
+    fit_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
+    fit_filename = os.path.join(fit_path, f'{name.split("/")[-1]}.dat')
+    os.makedirs(fit_path, exist_ok=True)
+    with open(fit_filename, "wb") as fh:
+        fh.write(fit_bytes)
 
 
-async def load_fit(name: str, model_name: str, db: sqlite3.Connection) -> bytes:
-    """Load Stan fit from the cache.
-
-    Model id must also be provided as a rudimentary integrity check. (Every
-    fit is associated with a unique model.)
+async def load_fit(name: str) -> bytes:
+    """Load Stan fit from the filesystem-based cache.
 
     This function is a coroutine.
 
     Arguments:
         name: Stan fit name
         model_name: Stan model name
-        db: Cache database handle.
 
     Returns
         bytes: Bytes of fit.
 
     """
-    row = db.execute(
-        """SELECT model_name, value FROM fits WHERE name=?""", (name.encode(),)
-    ).fetchone()
-    if not row:
+    cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
+    # fits are stored under their "parent" models
+    fit_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
+    fit_filename = os.path.join(fit_path, f'{name.split("/")[-1]}.dat')
+    try:
+        with open(fit_filename, "rb") as fh:
+            return fh.read()
+    except FileNotFoundError:
         raise KeyError(f"Fit `{name}` not found.")
-    model_name_db, fit_bytes = row
-    if model_name != model_name_db.decode():
-        raise KeyError(
-            f"Unexpected model when loading saved fit. Expected `{model_name}`, found `{model_name_db.decode()}`."
-        )
-    return fit_bytes
