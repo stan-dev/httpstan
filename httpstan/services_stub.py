@@ -9,6 +9,9 @@ queue. The queue is a lock-free single-producer/single-consumer queue defined in
 import asyncio
 import functools
 import queue  # for queue.Empty exception
+from typing import IO
+
+import google.protobuf.internal.encoder
 
 import httpstan.callbacks_writer_parser
 import httpstan.services.arguments as arguments
@@ -16,7 +19,7 @@ import httpstan.spsc_queue
 import httpstan.stan
 
 
-async def call(function_name: str, model_module, data: dict, **kwargs):
+async def call(function_name: str, model_module, data: dict, messages_file: IO[bytes], **kwargs):
     """Call stan::services function.
 
     Yields (asynchronously) messages from the stan::callbacks writers which are
@@ -28,6 +31,7 @@ async def call(function_name: str, model_module, data: dict, **kwargs):
         function_name: full name of function in stan::services
         model_module (module): Stan model extension module
         data: dictionary with data with which to populate array_var_context
+        messages_file: file into which length-prefixed messages will be written
         kwargs: named stan::services function arguments, see CmdStan documentation.
     """
     method, function_basename = function_name.replace("stan::services::", "").split("::", 1)
@@ -56,6 +60,10 @@ async def call(function_name: str, model_module, data: dict, **kwargs):
     loop = asyncio.get_event_loop()
     future = loop.run_in_executor(None, function_wrapper_partial)  # type: ignore
     parser = httpstan.callbacks_writer_parser.WriterParser()
+    # `varint_encoder` is used here as part of a simple strategy for storing
+    # a sequence of protocol buffer messages. Each message is prefixed by the
+    # length of a message. This works and is Google's recommended approach.
+    varint_encoder = google.protobuf.internal.encoder._EncodeVarint  # type: ignore
     while True:
         try:
             message = queue_wrapper.get_nowait()
@@ -67,6 +75,8 @@ async def call(function_name: str, model_module, data: dict, **kwargs):
         parsed = parser.parse(message.decode())
         # parsed is None if the message was a blank line or a header with param names
         if parsed:
-            yield parsed
+            message_bytes = parsed.SerializeToString()
+            varint_encoder(messages_file.write, len(message_bytes))
+            messages_file.write(message_bytes)
     # `result()` method will raise exceptions, if any
     future.result()  # type: ignore

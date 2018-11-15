@@ -7,11 +7,10 @@ import io
 import http
 import logging
 import re
+from typing import Optional, Sequence
 
 import aiohttp.web
-import google.protobuf.internal.encoder
 import webargs.aiohttpparser
-from typing import Optional, Sequence
 
 import httpstan.cache
 import httpstan.fits
@@ -244,25 +243,17 @@ async def handle_create_fit(request):
     else:
         return aiohttp.web.json_response(schemas.Fit().load({"name": name}), status=201)
 
-    messages_fh = io.BytesIO()
-
-    # `varint_encoder` is used here as part of a simple strategy for storing
-    # a sequence of protocol buffer messages. Each message is prefixed by the
-    # length of a message. This works and is Google's recommended approach.
-    varint_encoder = google.protobuf.internal.encoder._EncodeVarint
+    messages_file = io.BytesIO()
     try:
-        async for message in services_stub.call(function, model_module, data, **kwargs):
-            assert message is not None, message
-            message_bytes = message.SerializeToString()
-            varint_encoder(messages_fh.write, len(message_bytes))
-            messages_fh.write(message_bytes)
+        await services_stub.call(function, model_module, data, messages_file, **kwargs)
     except Exception as exc:
         # e.g., "hmc_nuts_diag_e_adapt_wrapper() got an unexpected keyword argument, ..."
         # e.g., "Found negative dimension size in variable declaration"
         message, status = f"Error calling services function: `{exc}`", 400
         logger.critical(message)
+        messages_file.close()
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
-    await httpstan.cache.dump_fit(name, messages_fh.getvalue(), model_name, request.app["db"])
+    await httpstan.cache.dump_fit(name, messages_file.getvalue(), model_name, request.app["db"])
     return aiohttp.web.json_response(schemas.Fit().load({"name": name}), status=201)
 
 
