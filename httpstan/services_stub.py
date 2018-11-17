@@ -78,5 +78,6 @@ async def call(function_name: str, model_module, data: dict, messages_file: IO[b
             message_bytes = parsed.SerializeToString()
             varint_encoder(messages_file.write, len(message_bytes))
             messages_file.write(message_bytes)
+    messages_file.flush()
     # `result()` method will raise exceptions, if any
     future.result()  # type: ignore

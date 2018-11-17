@@ -3,22 +3,29 @@ import marshmallow.fields as fields
 import marshmallow.validate as validate
 
 
+class Operation(marshmallow.Schema):
+    """Long-running operation.
+
+    Modeled on `operations.proto`, linked in
+    https://cloud.google.com/apis/design/standard_methods
+
+    """
+
+    name = fields.String(required=True)
+    metadata = fields.Dict()
+    done = fields.Bool(required=True)
+    # if `done` is False, this is empty
+    # if `done` is True, this is either an `error` or valid `response`.
+    result = fields.Dict()
+
+
 class Status(marshmallow.Schema):
-    """Part of Error schema."""
+    """Error."""
 
     code = fields.Integer(required=True)
     status = fields.String(required=True)
     message = fields.String(required=True)
     details = fields.List(fields.Dict())
-
-
-class Error(marshmallow.Schema):
-    """Error schema.
-
-    Follows Google's API Design.
-    """
-
-    error = fields.Nested(Status, required=True)
 
 
 class CreateModelRequest(marshmallow.Schema):

@@ -24,8 +24,21 @@ def test_fits(api_url):
         }
         resp = requests.post(fits_url, json=data)
         assert resp.status_code == 201
-        fit_name = resp.json()["name"]
-        assert fit_name is not None
+        operation = resp.json()
+        operation_name = operation["name"]
+        assert operation_name is not None
+        assert operation_name.startswith("operations/")
+        assert not operation["done"]
+
+        fit_name = operation["metadata"]["fit"]["name"]
+
+        resp = requests.get(f"{api_url}/{operation_name}")
+        assert resp.status_code == 200, f"{api_url}/{operation_name}"
+        assert not resp.json()["done"], resp.json()
+
+        # wait until fit is finished
+        while not requests.get(f"{api_url}/{operation_name}").json()["done"]:
+            await asyncio.sleep(0.1)
 
         fit_url = f"{api_url}/{fit_name}"
         resp = requests.get(fit_url)
