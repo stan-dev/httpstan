@@ -4,6 +4,7 @@ Functions in this module manage the Stan model cache and related caches.
 """
 import asyncio
 import gzip
+import json
 import logging
 import os
 import sqlite3
@@ -43,7 +44,10 @@ async def init_cache(app):
             """CREATE TABLE IF NOT EXISTS fits (name BLOB PRIMARY KEY, model_name BLOB, value BLOB);"""
         )
         conn.execute(
-            """CREATE TABLE IF NOT EXISTS models (key BLOB PRIMARY KEY, value BLOB, compiler_output TEXT);"""
+            """CREATE TABLE IF NOT EXISTS models (name BLOB PRIMARY KEY, value BLOB, compiler_output TEXT);"""
+        )
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS operations (name BLOB PRIMARY KEY, value value BLOB);"""
         )
     app["db"] = conn
 
@@ -114,7 +118,7 @@ async def load_model_extension_module(model_name: str, db: sqlite3.Connection) -
 
     """
     row = db.execute(
-        """SELECT value, compiler_output FROM models WHERE key=?""", (model_name.encode(),)
+        """SELECT value, compiler_output FROM models WHERE name=?""", (model_name.encode(),)
     ).fetchone()
     if not row:
         raise KeyError(f"Extension module for `{model_name}` not found.")
@@ -166,3 +170,35 @@ async def load_fit(name: str) -> bytes:
             return fh.read()
     except FileNotFoundError:
         raise KeyError(f"Fit `{name}` not found.")
+
+
+async def dump_operation(name: str, value: bytes, db: sqlite3.Connection):
+    """Store serialized Operation in cache.
+
+    This function is a coroutine.
+
+    Arguments:
+        name: Operation name.
+        value: Operation, serialized as JSON.
+        db: Cache database handle.
+
+    """
+    with db:
+        db.execute("""INSERT OR REPLACE INTO operations VALUES (?, ?)""", (name.encode(), value))
+
+
+async def load_operation(name: str, db: sqlite3.Connection) -> dict:
+    """Load serialized Operation.
+
+    This function is a coroutine.
+
+    Arguments:
+        name: Operation name.
+        db: Cache database handle.
+
+    """
+    row = db.execute("""SELECT value FROM operations WHERE name=?""", (name.encode(),)).fetchone()
+    if not row:
+        raise KeyError(f"Operation `{name}` not found.")
+    (value,) = row
+    return json.loads(value.decode())

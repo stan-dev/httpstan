@@ -49,9 +49,23 @@ def test_linear_regression(api_url):
         }
         resp = requests.post(fits_url, json=payload)
         assert resp.status_code == 201
-        fit_name = resp.json()["name"]
-        assert fit_name.startswith("models/") and "fits" in fit_name
+        operation = resp.json()
+        operation_name = operation["name"]
+        assert operation_name is not None
+        assert operation_name.startswith("operations/")
+        assert not operation["done"]
 
+        fit_name = operation["metadata"]["fit"]["name"]
+
+        resp = requests.get(f"{api_url}/{operation_name}")
+        assert resp.status_code == 200, f"{api_url}/{operation_name}"
+        assert not resp.json()["done"], resp.json()
+
+        # wait until fit is finished
+        while not requests.get(f"{api_url}/{operation_name}").json()["done"]:
+            await asyncio.sleep(0.1)
+
+        assert fit_name.startswith("models/") and "fits" in fit_name
         fit_url = f"{api_url}/{fit_name}"
         resp = requests.get(fit_url)
         assert resp.status_code == 200

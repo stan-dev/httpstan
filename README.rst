@@ -77,7 +77,7 @@ program::
         -d '{"program_code":"parameters {real y;} model {y ~ normal(0,1);}"}' \
         http://localhost:8080/v1/models
 
-This request will return a model name similar to the following::
+This request will return a model name along with all the compiler output::
 
     {"name": "models/89c4e75a2c", "compiler_output": "..."}
 
@@ -88,21 +88,23 @@ following request::
 
     curl -X POST -H "Content-Type: application/json" \
         -d '{"function":"stan::services::sample::hmc_nuts_diag_e_adapt"}' \
-        http://localhost:8080/v1/models/89c4e75a2c/fits
+        http://localhost:8080/v1/models/e1ca9f7ac7/fits
 
 This request instructs ``httpstan`` to draw samples from the normal
 distribution. The function name picks out a specific function in the Stan C++
 library (see the Stan C++ documentation for details).  This request will return
-a fit name similar to the following::
+immediately with a reference to the long-running fit operation::
 
-    {"name": "models/89c4e75a2c/fits/8c10a044b6"}
+    {"done": false, "name": "operations/9f9d701294", "metadata": {"fit": {"name": "models/e1ca9f7ac7/fits/9f9d701294"}}}
 
-The "fit" is saved as sequence of Protocol Buffer messages. These messages are strung together
+Once the operation is completed, the "fit" can be retrieved. The name of the fit,
+``models/e1ca9f7ac7/fits/9f9d701294``, is included in the ``metadata`` field above.
+The fit is saved as sequence of Protocol Buffer messages. These messages are strung together
 using `length-prefix encoding
 <https://eli.thegreenplace.net/2011/08/02/length-prefix-framing-for-protocol-buffers>`_.  To
 retrieve these messages, saving them in the file ``myfit.bin``, make the following request::
 
-    curl http://localhost:8080/v1/models/89c4e75a2c/fits/8c10a044b6 > myfit.bin
+    curl http://localhost:8080/v1/models/e1ca9f7ac7/fits/9f9d701294 > myfit.bin
 
 To read the messages you will need a library for reading the encoding that
 Protocol Buffer messages use.  In this example we will read the first message

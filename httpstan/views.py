@@ -3,8 +3,11 @@
 Handlers are separated from the endpoint names. Endpoints are defined in
 `httpstan.routes`.
 """
-import io
+import asyncio
+import functools
 import http
+import io
+import json
 import logging
 import re
 from typing import Optional, Sequence
@@ -25,8 +28,7 @@ def _make_error(message: str, status: int, details: Optional[Sequence] = None) -
     status_dict = {"code": status, "status": http.HTTPStatus(status).phrase, "message": message}
     if details is not None:
         status_dict["details"] = details
-    status = schemas.Status().load(status_dict)
-    return schemas.Error().load({"error": status})
+    return schemas.Status().load(status_dict)
 
 
 async def handle_health(request):
@@ -58,13 +60,13 @@ async def handle_models(request):
                  $ref: '#/definitions/CreateModelRequest'
         responses:
             201:
-              description: Identifier for compiled Stan model
+              description: Identifier for compiled Stan model and compiler output.
               schema:
                  $ref: '#/definitions/Model'
             400:
               description: Error associated with compile request.
               schema:
-                 $ref: '#/definitions/Error'
+                 $ref: '#/definitions/Status'
 
     """
     args = await webargs.aiohttpparser.parser.parse(schemas.CreateModelRequest(), request)
@@ -217,7 +219,7 @@ async def handle_create_fit(request):
             400:
               description: Error associated with request.
               schema:
-                 $ref: '#/definitions/Error'
+                 $ref: '#/definitions/Status'
     """
     model_name = f'models/{request.match_info["model_id"]}'
     # use webargs to make sure `function` is present and data is a mapping (or
@@ -241,20 +243,83 @@ async def handle_create_fit(request):
     except KeyError:
         pass
     else:
-        return aiohttp.web.json_response(schemas.Fit().load({"name": name}), status=201)
+        # cache hit
+        operation_name = f'operations/{name.split("/")[-1]}'
+        operation_dict = schemas.Operation().load(
+            {
+                "name": operation_name,
+                "done": True,
+                "metadata": {"fit": schemas.Fit().load({"name": name})},
+            }
+        )
+        return aiohttp.web.json_response(operation_dict, status=201)
 
-    messages_file = io.BytesIO()
-    try:
-        await services_stub.call(function, model_module, data, messages_file, **kwargs)
-    except Exception as exc:
-        # e.g., "hmc_nuts_diag_e_adapt_wrapper() got an unexpected keyword argument, ..."
-        # e.g., "Found negative dimension size in variable declaration"
-        message, status = f"Error calling services function: `{exc}`", 400
-        logger.critical(message)
+    def _services_call_done(operation: dict, messages_file, db, future):
+        """Called when services call (i.e., an operation) is done.
+
+        Arguments:
+            operation: Operation dict
+            messages_file: Open file handle passed to services call
+            db: Database connection
+            future: Finished future
+
+        """
+        # either the call succeeded or it raised an exception.
+        operation["done"] = True
+        exc = future.exception()
+        if exc:
+            # e.g., "hmc_nuts_diag_e_adapt_wrapper() got an unexpected keyword argument, ..."
+            # e.g., "Found negative dimension size in variable declaration"
+            message, status = f"Error calling services function: `{exc}`", 400
+            logger.critical(message)
+            operation["result"] = _make_error(message, status=status)
+            operation = schemas.Operation().load(operation)
+            asyncio.ensure_future(
+                httpstan.cache.dump_operation(operation["name"], json.dumps(operation).encode(), db)
+            )
+        else:
+            logger.info(f"Operation `{operation['name']}` finished.")
+            operation["result"] = schemas.Fit().load(operation["metadata"]["fit"])
+            operation = schemas.Operation().load(operation)
+            asyncio.ensure_future(
+                httpstan.cache.dump_fit(
+                    operation["metadata"]["fit"]["name"], messages_file.getvalue()
+                )
+            )
+            asyncio.ensure_future(
+                httpstan.cache.dump_operation(operation["name"], json.dumps(operation).encode(), db)
+            )
         messages_file.close()
-        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
-    await httpstan.cache.dump_fit(name, messages_file.getvalue())
-    return aiohttp.web.json_response(schemas.Fit().load({"name": name}), status=201)
+
+    operation_name = f'operations/{name.split("/")[-1]}'
+    operation_dict = schemas.Operation().load(
+        {
+            "name": operation_name,
+            "done": False,
+            "metadata": {"fit": schemas.Fit().load({"name": name})},
+        }
+    )
+    messages_file = io.BytesIO()
+
+    # Launch the call to the services function in the background. Wire things up
+    # such that the database gets updated when the task finishes. Note that
+    # if a task is cancelled before finishing a warning will be issued (see
+    # `on_cleanup` signal handler in main.py).
+    # Note: Python 3.7 and later, `ensure_future` is `create_task`
+    task = asyncio.ensure_future(
+        services_stub.call(function, model_module, data, messages_file, **kwargs)
+    )
+    task.add_done_callback(
+        functools.partial(_services_call_done, operation_dict, messages_file, request.app["db"])
+    )
+    # keep track of all operations, used by an `on_cleanup` signal handler.
+    request.app["operations"].add(operation_name)
+
+    # return the operation
+    await httpstan.cache.dump_operation(
+        operation_name, json.dumps(operation_dict).encode(), request.app["db"]
+    )
+    return aiohttp.web.json_response(operation_dict, status=201)
 
 
 async def handle_get_fit(request):
@@ -284,7 +349,7 @@ async def handle_get_fit(request):
             404:
               description: Error associated with request.
               schema:
-                 $ref: '#/definitions/Error'
+                 $ref: '#/definitions/Status'
     """
     model_name = f"models/{request.match_info['model_id']}"
     fit_name = f"{model_name}/fits/{request.match_info['fit_id']}"
@@ -296,3 +361,38 @@ async def handle_get_fit(request):
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     assert isinstance(fit_bytes, bytes)
     return aiohttp.web.Response(body=fit_bytes)
+
+
+async def handle_get_operation(request):
+    """Get Operation.
+
+    ---
+    get:
+        description: Operation.
+        consumes:
+            - application/json
+        produces:
+            - application/json
+        parameters:
+            - name: operation_id
+              in: path
+              description: ID of Operation
+              required: true
+              type: string
+        responses:
+            200:
+              description: Operation name and metadata.
+              schema:
+                 $ref: '#/definitions/Operation'
+            404:
+              description: Error associated with request.
+              schema:
+                 $ref: '#/definitions/Status'
+    """
+    operation_name = f"operations/{request.match_info['operation_id']}"
+    try:
+        operation = await httpstan.cache.load_operation(operation_name, request.app["db"])
+    except KeyError:
+        message, status = f"Operation `{operation_name}` not found.", 404
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+    return aiohttp.web.json_response(operation)

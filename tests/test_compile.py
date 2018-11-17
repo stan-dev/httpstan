@@ -13,7 +13,7 @@ def test_compile_invalid_distribution(api_url):
         resp = requests.post(f"{api_url}/models", json={"program_code": program_code})
         assert resp.status_code == 400
         resp_dict = resp.json()
-        assert "error" in resp_dict and "message" in resp_dict["error"]
-        assert "Probability function must end in _lpdf" in resp_dict["error"]["message"]
+        assert "message" in resp_dict
+        assert "Probability function must end in _lpdf" in resp_dict["message"]
 
     asyncio.get_event_loop().run_until_complete(main())

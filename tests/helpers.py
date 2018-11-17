@@ -1,9 +1,10 @@
 """Helper functions for tests."""
+import asyncio
 import typing
 
-import requests
 import google.protobuf.internal.decoder
 import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
+import requests
 
 
 def get_model_name(api_url, program_code):
@@ -77,18 +78,29 @@ async def sample_then_extract(
         Draws of `param_name`.
 
     """
-    models_url = f"http://{host}:{port}/v1/models"
-    resp = requests.post(models_url, json={"program_code": program_code})
+    api_url = f"http://{host}:{port}/v1"
+    resp = requests.post(f"{api_url}/models", json={"program_code": program_code})
     assert resp.status_code == 201
     model_name = resp.json()["name"]
+    del resp
 
-    fits_url = f"http://{host}:{port}/v1/models/{model_name.split('/')[-1]}/fits"
-    resp = requests.post(fits_url, json=fit_payload)
+    resp = requests.post(f"{api_url}/{model_name}/fits", json=fit_payload)
     assert resp.status_code == 201
-    name = resp.json()["name"]
+    operation = resp.json()
+    operation_name = operation["name"]
+    assert operation_name is not None
+    assert operation_name.startswith("operations/"), (f"{api_url}/{model_name}/fits", operation)
 
-    fit_url = f"http://{host}:{port}/v1/{name}"
-    resp = requests.get(fit_url)
+    fit_name = operation["metadata"]["fit"]["name"]
+
+    resp = requests.get(f"{api_url}/{operation_name}")
+    assert resp.status_code == 200
+
+    # wait until fit is finished
+    while not requests.get(f"{api_url}/{operation_name}").json()["done"]:
+        await asyncio.sleep(0.1)
+
+    resp = requests.get(f"{api_url}/{fit_name}")
     assert resp.status_code == 200, resp.json()
     fit_bytes = resp.content
     return extract_draws(fit_bytes, param_name)
