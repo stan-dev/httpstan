@@ -9,17 +9,25 @@ queue. The queue is a lock-free single-producer/single-consumer queue defined in
 import asyncio
 import functools
 import queue  # for queue.Empty exception
-from typing import IO
+from typing import Callable, IO
 
 import google.protobuf.internal.encoder
 
 import httpstan.callbacks_writer_parser
+import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 import httpstan.services.arguments as arguments
 import httpstan.spsc_queue
 import httpstan.stan
 
 
-async def call(function_name: str, model_module, data: dict, messages_file: IO[bytes], **kwargs):
+async def call(
+    function_name: str,
+    model_module,
+    data: dict,
+    messages_file: IO[bytes],
+    logger_callback: Callable = None,
+    **kwargs,
+):
     """Call stan::services function.
 
     Yields (asynchronously) messages from the stan::callbacks writers which are
@@ -32,6 +40,7 @@ async def call(function_name: str, model_module, data: dict, messages_file: IO[b
         model_module (module): Stan model extension module
         data: dictionary with data with which to populate array_var_context
         messages_file: file into which length-prefixed messages will be written
+        logger_callback: Callback function for logger messages, including sampling progress messages
         kwargs: named stan::services function arguments, see CmdStan documentation.
     """
     method, function_basename = function_name.replace("stan::services::", "").split("::", 1)
@@ -75,6 +84,10 @@ async def call(function_name: str, model_module, data: dict, messages_file: IO[b
         parsed = parser.parse(message.decode())
         # parsed is None if the message was a blank line or a header with param names
         if parsed:
+            if logger_callback and parsed.topic == callbacks_writer_pb2.WriterMessage.Topic.Value(
+                "LOGGER"
+            ):
+                logger_callback(parsed)
             message_bytes = parsed.SerializeToString()
             varint_encoder(messages_file.write, len(message_bytes))
             messages_file.write(message_bytes)
