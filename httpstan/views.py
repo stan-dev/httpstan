@@ -306,8 +306,23 @@ async def handle_create_fit(request):
     # if a task is cancelled before finishing a warning will be issued (see
     # `on_cleanup` signal handler in main.py).
     # Note: Python 3.7 and later, `ensure_future` is `create_task`
+    def logger_callback(operation, message):
+        value = message.feature[0].string_list.value[0]
+        if not value.startswith("Iteration:"):
+            return
+        # example: "Iteration:  700 / 2000 [ 35%]  (Warmup)"
+        operation["metadata"]["progress"] = value
+        asyncio.ensure_future(
+            httpstan.cache.dump_operation(
+                operation_name, json.dumps(operation_dict).encode(), request.app["db"]
+            )
+        )
+
+    logger_callback_partial = functools.partial(logger_callback, operation_dict)
     task = asyncio.ensure_future(
-        services_stub.call(function, model_module, data, messages_file, **kwargs)
+        services_stub.call(
+            function, model_module, data, messages_file, logger_callback_partial, **kwargs
+        )
     )
     task.add_done_callback(
         functools.partial(_services_call_done, operation_dict, messages_file, request.app["db"])
