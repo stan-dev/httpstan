@@ -1,3 +1,7 @@
+:orphan:
+
+.. _release-howto:
+
 ===============
  Release HOWTO
 ===============
