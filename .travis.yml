@@ -10,13 +10,17 @@ matrix:
     - env: TOXENV=flake8
     - env: TOXENV=format
     - env: TOXENV=mypy
+    - env: TOXENV=coverage
 before_install:
   - python --version
 install:
   - pip install cython
   - pip install tox
+  - pip install coveralls
 before_script:
   - pip install grpcio-tools
   - make cython protos
 script:
   - travis_wait 60 tox
+after_success:
+  - coveralls
