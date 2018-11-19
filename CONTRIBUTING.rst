@@ -29,3 +29,8 @@ line-length of 99 characters.
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008/
 .. _black: https://pypi.org/project/black/
+
+Code of Conduct
+---------------
+
+Contributors to httpstan agree to abide by the :ref:`Contributor Covenant Code of Conduct <code-of-conduct>`.
