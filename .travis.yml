@@ -23,4 +23,4 @@ before_script:
 script:
   - travis_wait 60 tox
 after_success:
-  - coveralls
+  - if [[ $TOXENV == "coverage" ]]; then coveralls; fi
