@@ -1,6 +1,13 @@
 Contributing to httpstan
 ========================
 
+Principles
+----------
+
+httpstan emerged out of a rewrite of an existing piece of software (PyStan)
+which was very difficult to maintain. httpstan aims to be maintainable. Code
+contributions should be readable and easy to understand.
+
 How to Make a Code Contribution
 -------------------------------
 
@@ -20,4 +27,5 @@ Coding Style
 httpstan code is `PEP 8`_ compliant. The project uses the code formatter black_ with a maximum
 line-length of 99 characters.
 
+.. _PEP 8: https://www.python.org/dev/peps/pep-0008/
 .. _black: https://pypi.org/project/black/

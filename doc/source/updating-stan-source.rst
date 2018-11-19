@@ -1,3 +1,7 @@
+:orphan:
+
+.. _updating-stan-source:
+
 ======================
  Updating Stan Source
 ======================
