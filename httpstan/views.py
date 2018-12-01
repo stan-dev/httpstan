@@ -250,6 +250,7 @@ async def handle_create_fit(request):
                 "name": operation_name,
                 "done": True,
                 "metadata": {"fit": schemas.Fit().load({"name": name})},
+                "result": schemas.Fit().load({"name": name}),
             }
         )
         return aiohttp.web.json_response(operation_dict, status=201)
