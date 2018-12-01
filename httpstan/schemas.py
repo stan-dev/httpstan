@@ -14,9 +14,17 @@ class Operation(marshmallow.Schema):
     name = fields.String(required=True)
     metadata = fields.Dict()
     done = fields.Bool(required=True)
-    # if `done` is False, this is empty
-    # if `done` is True, this is either an `error` or valid `response`.
+    # if `done` is False, `result` is empty, otherwise an `error` or valid `response`.
     result = fields.Dict()
+
+    @marshmallow.validates_schema
+    def validate_result(self, data):
+        if data["done"] and data.get("result") is None:
+            raise marshmallow.ValidationError("If `done` then `result` must be set.", "result")
+        if not data["done"] and data.get("result"):
+            raise marshmallow.ValidationError(
+                "If not `done` then `result` must be empty.", "result"
+            )
 
 
 class Status(marshmallow.Schema):
