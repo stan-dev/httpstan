@@ -139,3 +139,48 @@ def test_bernoulli_out_of_bounds(api_url):
         assert "Found negative dimension size" in error["message"]
 
     asyncio.get_event_loop().run_until_complete(main())
+
+
+def test_bernoulli_parallel(api_url):
+    """Test sampling in parallel from Bernoulli model with defaults."""
+
+    async def main():
+        model_name = helpers.get_model_name(api_url, program_code)
+        payload = {"function": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data}
+
+        # launch `num_chains` sample operations in parallel
+        num_chains = 3
+        resps = [
+            requests.post(f"{api_url}/{model_name}/fits", json=payload) for _ in range(num_chains)
+        ]
+        operation_names = []
+        fit_names = []
+        for resp in resps:
+            assert resp.status_code == 201
+            operation = resp.json()
+            operation_name = operation["name"]
+            assert operation_name is not None
+            assert operation_name.startswith("operations/")
+            assert not operation["done"]
+            operation_names.append(operation_name)
+            fit_names.append(operation["metadata"]["fit"]["name"])
+        assert fit_names[0] != fit_names[1]
+
+        resps = [requests.get(f"{api_url}/{operation_name}") for _ in range(num_chains)]
+        for resp in resps:
+            assert resp.status_code == 200, f"{api_url}/{operation_name}"
+            assert not resp.json()["done"], resp.json()
+
+        # wait until fit is finished
+        for operation_name in operation_names:
+            while not requests.get(f"{api_url}/{operation_name}").json()["done"]:
+                await asyncio.sleep(0.1)
+
+        for fit_name in fit_names:
+            resp = requests.get(f"{api_url}/{fit_name}")
+            assert resp.status_code == 200, resp.json()
+            assert resp.headers["Content-Type"] == "application/octet-stream"
+            fit_bytes = resp.content
+            helpers.validate_protobuf_messages(fit_bytes)
+
+    asyncio.get_event_loop().run_until_complete(main())
