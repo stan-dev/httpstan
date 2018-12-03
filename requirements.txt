@@ -8,7 +8,7 @@ appdirs<2,>=1.4.3
 webargs<5,>=4
 marshmallow<4,==3.0.0b20
 numpy<2,>=1.7
-Cython<1,>=0.25.2
+Cython<4,>=0.29
 apispec<1,>=0.21
 protobuf<4,>=3.3.0
 setuptools>=28.8
