@@ -169,7 +169,6 @@ def test_bernoulli_parallel(api_url):
         resps = [requests.get(f"{api_url}/{operation_name}") for _ in range(num_chains)]
         for resp in resps:
             assert resp.status_code == 200, f"{api_url}/{operation_name}"
-            assert not resp.json()["done"], resp.json()
 
         # wait until fit is finished
         for operation_name in operation_names:
