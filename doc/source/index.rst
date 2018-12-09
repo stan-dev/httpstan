@@ -6,16 +6,13 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-   readme
    installation
    usage
-   modules
+   whats_new
    openapi
+   httpstan
    contributing
    developers
-
-The generated `httpstan API <api.html>`_ documentation describes the range of requests
-the ``httpstan`` server accepts.
 
 Indices and tables
 ==================

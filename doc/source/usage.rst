@@ -1,3 +1,4 @@
+=====
 Usage
 =====
 
@@ -6,60 +7,59 @@ localhost, port 8080::
 
     python3 -m httpstan
 
-If you have interacted with a `Web API`_ elsewhere on the Internet, you likely
-want to stop here and read the `OpenAPI documentation for httpstan`_ for a full
-description of the HTTP requests you can make to ``httpstan``. The remainder of
-this page illustrates how to interact with the server using  ``curl``.
-
-In practice, HTTP requests would be composed using a software package such as
-requests_ (Python) or httr_ (R). ``curl`` is used here as it is installed by
-default on a wide range of systems.
-
-While ``python3 -m httpstan`` is running, making a POST request (likely in a different terminal) to
-``http://localhost:8080/v1/models`` with Stan Program code will compile a model.
-
-Begin by assigning the Stan program code to a variable ``PROGRAM_CODE``. The following variable
-definition will work if you use the bash_ shell and may work in other settings.
-
-::
-
-    PROGRAM_CODE="
-        data {
-            int<lower=0> N;
-            int<lower=0,upper=1> y[N];
-        }
-        parameters {
-            real<lower=0,upper=1> theta;
-        }
-        model {
-            theta ~ beta(1,1);
-            for (n in 1:N)
-            y[n] ~ bernoulli(theta);
-        }
-    "
-    PROGRAM_CODE=$(echo -n $PROGRAM_CODE | tr -d "\n")
-
-(The ``tr -d "\n"`` removes newlines from the string as required by ``curl``.)
-
-With the program code available in an environment variable, make an HTTP request
-to compile the model::
-
-    curl -X POST -H "Content-Type: application/json" -d "{\"program_code\":\"$PROGRAM_CODE\"}" http://localhost:8080/v1/models
-
-which will return a model ``id`` such as ``150384037eefeb670b31c4bd91920c2c6bda6cfc05623d79867b9579a99575d9``.
-
-Data is provided using JSON arrays. The form will be familiar if you have used any of the Stan
-interfaces (CmdStan, PyStan, RStan).
-
-::
+In a different terminal, make a POST request to
+``http://localhost:8080/v1/models`` with Stan program code to compile the
+program::
 
     curl -X POST -H "Content-Type: application/json" \
-        -d '{"type":"stan::services::sample::hmc_nuts_diag_e_adapt","data":{"N":10,"y":[0, 1, 0, 1, 0, 0, 0, 0, 0, 0]}}' \
-        http://localhost:8080/v1/models/150384037eefeb670b31c4bd91920c2c6bda6cfc05623d79867b9579a99575d9/actions
+        -d '{"program_code":"parameters {real y;} model {y ~ normal(0,1);}"}' \
+        http://localhost:8080/v1/models
 
+This request will return a model name along with all the compiler output::
 
-.. _`Web API`: https://en.wikipedia.org/wiki/Web_API
-.. _OpenAPI documentation for httpstan: api.html
-.. _bash: https://en.wikipedia.org/wiki/Bash_%28Unix_shell%29
-.. _requests: https://github.com/kennethreitz/requests
-.. _httr: https://github.com/hadley/httr
+    {"name": "models/89c4e75a2c", "compiler_output": "..."}
+
+(The model ``name`` depends on the platform and the version of Stan.)
+
+To draw samples from this model using default settings, we first make the
+following request::
+
+    curl -X POST -H "Content-Type: application/json" \
+        -d '{"function":"stan::services::sample::hmc_nuts_diag_e_adapt"}' \
+        http://localhost:8080/v1/models/e1ca9f7ac7/fits
+
+This request instructs ``httpstan`` to draw samples from the normal
+distribution. The function name picks out a specific function in the Stan C++
+library (see the Stan C++ documentation for details).  This request will return
+immediately with a reference to the long-running fit operation::
+
+    {"done": false, "name": "operations/9f9d701294", "metadata": {"fit": {"name": "models/e1ca9f7ac7/fits/9f9d701294"}}}
+
+Once the operation is completed, the "fit" can be retrieved. The name of the fit,
+``models/e1ca9f7ac7/fits/9f9d701294``, is included in the ``metadata`` field above.
+The fit is saved as sequence of Protocol Buffer messages. These messages are strung together
+using `length-prefix encoding
+<https://eli.thegreenplace.net/2011/08/02/length-prefix-framing-for-protocol-buffers>`_.  To
+retrieve these messages, saving them in the file ``myfit.bin``, make the following request::
+
+    curl http://localhost:8080/v1/models/e1ca9f7ac7/fits/9f9d701294 > myfit.bin
+
+To read the messages you will need a library for reading the encoding that
+Protocol Buffer messages use.  In this example we will read the first message
+in the stream using the Protocol Buffer compiler tool ``protoc``. (On
+Debian-based Linux you can find this tool in the ``protobuf-compiler``
+package.) The following command skips the message length (one byte)
+and then decodes the message (which is 48 bytes in length)::
+
+    dd bs=1 skip=1 if=myfit.bin 2>/dev/null | head -c 48 | \
+      protoc --decode stan.WriterMessage protos/callbacks_writer.proto
+
+Running the command above decodes the first message in the stream. The
+decoded message should resemble the following::
+
+    topic: LOGGER
+    feature {
+      string_list {
+        value: "Gradient evaluation took 1.3e-05 seconds"
+      }
+    }
