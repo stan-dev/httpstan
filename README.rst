@@ -26,12 +26,11 @@ to Stan (CmdStan_) over HTTP 1.1, **httpstan** provides:
 
 Documentation lives at `https://httpstan.readthedocs.org <https://httpstan.readthedocs.org>`_.
 
-Important Disclaimer
-====================
-**httpstan** is experimental software. This software is not intended for general use.
+Experimental software!
+======================
+**httpstan** is experimental software. This software is not yet intended for general use.
 
-httpstan currently requires Python version 3.6 or higher. No older versions of
-Python will be supported.
+httpstan currently requires Python version 3.6 or higher.
 
 httpstan only works on Linux and macOS. Windows support is planned.
 
@@ -47,7 +46,7 @@ Install
 
 ::
 
-    python3 -m pip install httpstan
+    $ python3 -m pip install httpstan
 
 Install from Source
 -------------------
@@ -57,9 +56,9 @@ A working copy of ``protoc`` is needed to build from source. One way to get this
 
 ::
 
-    make cython  # generate C++ code from Cython .pyx files
-    make protos  # generate Python modules for protocol buffer schemas
-    python3 setup.py install
+    $ make cython  # generate C++ code from Cython .pyx files
+    $ make protos  # generate Python modules for protocol buffer schemas
+    $ python3 setup.py install
 
 Usage
 =====
