@@ -36,4 +36,17 @@ def make_array_var_context(dict data):
 
     cdef stan.array_var_context * var_context = new stan.array_var_context(names_r, values_r, dim_r,
                                                                            names_i, values_i, dim_i)
-    return pycapsule.PyCapsule_New(var_context, b'array_var_context', del_array_var_context)
+    capsule = pycapsule.PyCapsule_New(var_context, b'array_var_context', del_array_var_context)
+    assert pycapsule.PyCapsule_IsValid(capsule, b'array_var_context')
+    return capsule
+
+
+def _array_var_context_contains(str name, object array_var_context_capsule):
+    """Check if `name` is associated with an array_var_context (capsule).
+
+    Used in tests.
+
+    """
+    cdef stan.array_var_context * var_context_ptr = <stan.array_var_context*> pycapsule.PyCapsule_GetPointer(array_var_context_capsule, b'array_var_context')
+    assert pycapsule.PyCapsule_IsValid(array_var_context_capsule, b'array_var_context')
+    return var_context_ptr.contains_r(name.encode('utf-8')) or var_context_ptr.contains_i(name.encode('utf-8'))
