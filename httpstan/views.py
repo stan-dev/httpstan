@@ -153,20 +153,19 @@ async def handle_show_params(request):
 
     model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
-    array_var_context_capsule = httpstan.stan.make_array_var_context(data)
     # ``param_names`` and ``dims`` are defined in ``anonymous_stan_model_services.pyx.template``.
     # Apart from converting C++ types into corresponding Python types, they do no processing of the
     # output of ``get_param_names`` and ``get_dims``.
     try:
-        param_names_bytes = model_module.param_names(array_var_context_capsule)
+        param_names_bytes = model_module.param_names(data)
     except Exception as exc:
         # e.g., "Found negative dimension size in variable declaration"
         message, status = f"Error calling param_names: `{exc}`", 400
         logger.critical(message)
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     param_names = [name.decode() for name in param_names_bytes]
-    dims = model_module.dims(array_var_context_capsule)
-    constrained_param_names_bytes = model_module.constrained_param_names(array_var_context_capsule)
+    dims = model_module.dims(data)
+    constrained_param_names_bytes = model_module.constrained_param_names(data)
     constrained_param_names = [name.decode() for name in constrained_param_names_bytes]
     params = []
     for name, dims_ in zip(param_names, dims):

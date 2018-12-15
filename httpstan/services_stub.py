@@ -47,7 +47,6 @@ async def call(
     queue_wrapper = httpstan.spsc_queue.SPSCQueue(
         capacity=10_000_000
     )  # 10_000 is enough for ~4000 draws
-    array_var_context_capsule = httpstan.stan.make_array_var_context(data)
     # function_basename will be something like "hmc_nuts_diag_e"
     # function_wrapper will refer to a function like "hmc_nuts_diag_e_wrapper"
     function_wrapper = getattr(model_module, function_basename + "_wrapper")
@@ -63,7 +62,7 @@ async def call(
         if arg not in kwargs:
             kwargs[arg] = arguments.lookup_default(arguments.Method[method.upper()], arg)
     function_wrapper_partial = functools.partial(
-        function_wrapper, array_var_context_capsule, queue_wrapper.to_capsule(), **kwargs
+        function_wrapper, data, queue_wrapper.to_capsule(), **kwargs
     )
 
     loop = asyncio.get_event_loop()
