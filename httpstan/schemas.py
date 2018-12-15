@@ -1,3 +1,5 @@
+import numbers
+
 import marshmallow
 import marshmallow.fields as fields
 import marshmallow.validate as validate
@@ -51,9 +53,33 @@ SERVICES_FUNCTION_NAMES = frozenset(
 )
 
 
+class Data(marshmallow.Schema):
+    """Data for a Stan model."""
+
+    class Meta:
+        unknown = marshmallow.INCLUDE
+
+    @marshmallow.validates_schema
+    def validate_values(self, data):
+        def is_nested_list_of_numbers(value):
+            if not isinstance(value, list):
+                return False
+            return all(
+                isinstance(val, numbers.Number) or is_nested_list_of_numbers(val) for val in value
+            )
+
+        for key, value in data.items():
+            if isinstance(value, numbers.Number):
+                continue  # scalar value
+            elif not is_nested_list_of_numbers(value):
+                raise marshmallow.ValidationError(
+                    f"Values associated with `{key}` must be sequences of numbers."
+                )
+
+
 class CreateFitRequest(marshmallow.Schema):
     function = fields.String(required=True, validate=validate.OneOf(SERVICES_FUNCTION_NAMES))
-    data = fields.Dict(missing={})
+    data = fields.Nested(Data(), missing={})
 
 
 class Fit(marshmallow.Schema):
@@ -62,7 +88,7 @@ class Fit(marshmallow.Schema):
 
 
 class ShowParamsRequest(marshmallow.Schema):
-    data = fields.Dict(required=True)
+    data = fields.Nested(Data(), missing={})
 
 
 class Parameter(marshmallow.Schema):  # noqa
