@@ -94,5 +94,5 @@ def function_arguments(function_name: str, model_module) -> typing.List[str]:
     function = getattr(model_module, f"{function_name}_wrapper")
     sig = inspect.Signature.from_callable(function)
     # remove arguments which are specific to the wrapper
-    arguments_exclude = {"data", "queue_capsule"}
+    arguments_exclude = {"data", "queue"}
     return list(filter(lambda arg: arg not in arguments_exclude, sig.parameters))
