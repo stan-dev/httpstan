@@ -77,7 +77,7 @@ async def handle_models(request):
             model_name, request.app["db"]
         )
     except KeyError:
-        logger.info("Compiling Stan model, `{model_name}`.")
+        logger.info(f"Compiling Stan model, `{model_name}`.")
         try:
             module_bytes, compiler_output = await httpstan.models.compile_model_extension_module(
                 program_code
