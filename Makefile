@@ -6,7 +6,7 @@ default: protos cython
 %.cpp: %.pyx
 	$(CYTHON) -3 --cplus $<
 
-cython: httpstan/stan.cpp httpstan/compile.cpp httpstan/spsc_queue.cpp
+cython: httpstan/stan.cpp httpstan/compile.cpp
 
 openapi: doc/source/openapi.json
 

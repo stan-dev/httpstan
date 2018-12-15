@@ -16,7 +16,6 @@ import google.protobuf.internal.encoder
 import httpstan.callbacks_writer_parser
 import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 import httpstan.services.arguments as arguments
-import httpstan.spsc_queue
 import httpstan.stan
 
 
@@ -44,9 +43,7 @@ async def call(
         kwargs: named stan::services function arguments, see CmdStan documentation.
     """
     method, function_basename = function_name.replace("stan::services::", "").split("::", 1)
-    queue_wrapper = httpstan.spsc_queue.SPSCQueue(
-        capacity=10_000_000
-    )  # 10_000 is enough for ~4000 draws
+    queue_wrapper = model_module.SPSCQueue(capacity=10_000_000)  # 10_000 is enough for ~4000 draws
     # function_basename will be something like "hmc_nuts_diag_e"
     # function_wrapper will refer to a function like "hmc_nuts_diag_e_wrapper"
     function_wrapper = getattr(model_module, function_basename + "_wrapper")
@@ -61,9 +58,7 @@ async def call(
     for arg in function_arguments:
         if arg not in kwargs:
             kwargs[arg] = arguments.lookup_default(arguments.Method[method.upper()], arg)
-    function_wrapper_partial = functools.partial(
-        function_wrapper, data, queue_wrapper.to_capsule(), **kwargs
-    )
+    function_wrapper_partial = functools.partial(function_wrapper, data, queue_wrapper, **kwargs)
 
     loop = asyncio.get_event_loop()
     future = loop.run_in_executor(None, function_wrapper_partial)  # type: ignore
