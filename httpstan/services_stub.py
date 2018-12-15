@@ -62,7 +62,7 @@ async def call(
         if arg not in kwargs:
             kwargs[arg] = arguments.lookup_default(arguments.Method[method.upper()], arg)
     function_wrapper_partial = functools.partial(
-        function_wrapper, data, queue_wrapper.to_capsule(), **kwargs
+        function_wrapper, data, queue_wrapper, **kwargs
     )
 
     loop = asyncio.get_event_loop()

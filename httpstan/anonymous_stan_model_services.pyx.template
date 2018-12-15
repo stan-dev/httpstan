@@ -11,7 +11,7 @@ signature of the function in stan::services with the same name. The differences
 between the two functions include:
 
 - a Python dictionary is passed instead of a ``var_context``.
-- output of all writers is added to a single boost::spsc_queue, passed via a PyCapsule.
+- output of all writers is added to a single boost::spsc_queue
 
 The template version of this file has a single string.Template placeholder
 (``cpp_filename`` surrounded by curly brackets) which is replaced with the
@@ -22,7 +22,6 @@ functions defined here to be inspected.
 """
 import httpstan.stan
 
-cimport cpython.pycapsule as pycapsule
 cimport cython.operator.dereference as deref
 cimport libcpp
 from libcpp.string cimport string
@@ -31,6 +30,7 @@ from libcpp.vector cimport vector
 cimport httpstan.boost as boost
 cimport httpstan.stan as stan
 
+cimport httpstan.spsc_queue
 import httpstan.utils
 
 
@@ -109,13 +109,13 @@ def dims(dict data):
     return dims_
 
 
-def hmc_nuts_diag_e_wrapper(dict data, object queue_capsule,
+def hmc_nuts_diag_e_wrapper(dict data, httpstan.spsc_queue.SPSCQueue queue,
                             int random_seed, int chain, double init_radius,
                             int num_warmup, int num_samples, int num_thin, libcpp.bool save_warmup,
                             int refresh, double stepsize, double stepsize_jitter, int max_depth):
     cdef int return_code
     cdef stan.array_var_context * var_context_ptr = make_array_var_context(data)
-    cdef boost.spsc_queue[string] * queue_ptr = <boost.spsc_queue[string] *> pycapsule.PyCapsule_GetPointer(queue_capsule, b'spsc_queue')
+    cdef boost.spsc_queue[string] * queue_ptr = queue.queue_ptr
     cdef stan.var_context * init_var_context = new stan.empty_var_context()
     cdef stan_model * model = new stan_model(deref(var_context_ptr), <unsigned int> random_seed)
     cdef stan.interrupt interrupt
@@ -138,7 +138,7 @@ def hmc_nuts_diag_e_wrapper(dict data, object queue_capsule,
     return return_code
 
 
-def hmc_nuts_diag_e_adapt_wrapper(dict data, object queue_capsule,
+def hmc_nuts_diag_e_adapt_wrapper(dict data, httpstan.spsc_queue.SPSCQueue queue,
                                   int random_seed, int chain, double init_radius,
                                   int num_warmup, int num_samples, int num_thin, libcpp.bool save_warmup,
                                   int refresh, double stepsize, double stepsize_jitter, int max_depth,
@@ -146,7 +146,7 @@ def hmc_nuts_diag_e_adapt_wrapper(dict data, object queue_capsule,
                                   int term_buffer, int window):
     cdef int return_code
     cdef stan.array_var_context * var_context_ptr = make_array_var_context(data)
-    cdef boost.spsc_queue[string] * queue_ptr = <boost.spsc_queue[string] *> pycapsule.PyCapsule_GetPointer(queue_capsule, b'spsc_queue')
+    cdef boost.spsc_queue[string] * queue_ptr = queue.queue_ptr
     cdef stan.var_context * init_var_context = new stan.empty_var_context()
     cdef stan_model * model = new stan_model(deref(var_context_ptr), <unsigned int> random_seed)
     cdef stan.interrupt interrupt

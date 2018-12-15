@@ -36,13 +36,5 @@ cdef class SPSCQueue:
         else:
             raise queue.Empty
 
-    def to_capsule(self):
-        """Create a PyCapsule of the pointer to spsc_queue.
-
-        No destructor function passed here since __dealloc__ does this work.
-
-        """
-        return cpython.PyCapsule_New(self.queue_ptr, b'spsc_queue', NULL)
-
     def __dealloc__(self):
         del self.queue_ptr
