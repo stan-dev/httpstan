@@ -83,14 +83,6 @@ httpstan.services\_stub module
     :undoc-members:
     :show-inheritance:
 
-httpstan.spsc\_queue module
----------------------------
-
-.. automodule:: httpstan.spsc_queue
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 httpstan.stan module
 --------------------
 
