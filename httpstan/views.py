@@ -170,7 +170,7 @@ async def handle_show_params(request):
     params = []
     for name, dims_ in zip(param_names, dims):
         constrained_names = tuple(
-            filter(lambda s: re.match(fr"{name}\.?", s), constrained_param_names)
+            filter(lambda s: re.match(fr"{name}\.\S+|{name}\Z", s), constrained_param_names)
         )
         assert isinstance(dims_, list)
         assert constrained_names, constrained_names
