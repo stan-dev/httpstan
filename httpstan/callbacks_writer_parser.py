@@ -31,10 +31,7 @@ of the model on the unconstrained scale.
 ``error_writer`` receives error messages.
 
 """
-try:
-    import ujson as json
-except ImportError:
-    import json
+import ujson as json
 import re
 from typing import Optional
 

@@ -10,10 +10,12 @@ import importlib
 import logging
 import io
 import os
+from pathlib import Path
 import platform
+import shutil
 import string
 import sys
-import tempfile
+from tempfile import TemporaryFile, TemporaryDirectory
 from typing import Any, Tuple, List, Optional, IO
 
 # IMPORTANT: import setuptools MUST come before any module imports distutils
@@ -28,6 +30,18 @@ import httpstan.compile
 import httpstan.stan
 
 logger = logging.getLogger("httpstan")
+
+
+class TemporaryDirectory(TemporaryDirectory):
+    """Patch TemporaryDirectory to ignore errors."""
+
+    def __init__(self, suffix=None, prefix="httpstan_temp_", dir=None):
+        super(TemporaryDirectory, self).__init__(suffix, prefix, dir)
+
+    def cleanup(self):
+        """Ignore errors"""
+        if self._finalizer.detach():
+            shutil.rmtree(self.name, ignore_errors=True)
 
 
 def calculate_model_name(program_code: str) -> str:
@@ -151,7 +165,7 @@ def import_model_extension_module(model_name: str, module_bytes: bytes):
     module_filename = f"{module_name}.so"
     assert isinstance(module_bytes, bytes)
 
-    with tempfile.TemporaryDirectory() as temporary_directory:
+    with TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
@@ -192,18 +206,20 @@ def _build_extension_module(
     """
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
-    with tempfile.TemporaryDirectory() as temporary_dir:
-        cpp_filepath = os.path.join(temporary_dir, f"{module_name}.hpp")
-        pyx_filepath = os.path.join(temporary_dir, f"{module_name}.pyx")
-        pyx_code = string.Template(pyx_code_template).substitute(cpp_filename=cpp_filepath)
+    with TemporaryDirectory() as temporary_dir:
+        temporary_dir = Path(temporary_dir)
+        cpp_filepath = temporary_dir / f"{module_name}.hpp"
+        pyx_filepath = temporary_dir / f"{module_name}.pyx"
+        pyx_code = string.Template(pyx_code_template).substitute(
+            cpp_filename=cpp_filepath.as_posix()
+        )
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
             with open(filepath, "w") as fh:
                 fh.write(code)
-
         httpstan_dir = os.path.dirname(__file__)
         include_dirs = [
             httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
-            temporary_dir,
+            temporary_dir.as_posix(),
             os.path.join(httpstan_dir, "lib", "stan", "src"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
@@ -213,13 +229,12 @@ def _build_extension_module(
             ),
         ]
 
-        if platform.system() != "Windows":
+        if platform.system() == "Windows":
             stan_macros: List[Tuple[str, Optional[str]]] = [
                 ("BOOST_DISABLE_ASSERTS", None),
                 ("BOOST_NO_DECLTYPE", None),
                 ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
                 ("BOOST_RESULT_OF_USE_TR1", None),
-                ("STAN_THREADS", None),
             ]
         else:
             stan_macros: List[Tuple[str, Optional[str]]] = [
@@ -227,16 +242,17 @@ def _build_extension_module(
                 ("BOOST_NO_DECLTYPE", None),
                 ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
                 ("BOOST_RESULT_OF_USE_TR1", None),
+                ("STAN_THREADS", None),
             ]
-
         if extra_compile_args is None:
             extra_compile_args = ["-O3", "-std=c++11"]
-
+            if platform.system() == "Windows":
+                extra_compile_args.append("-D_hypot=hypot")
         cython_include_path = [os.path.dirname(httpstan_dir)]
         extension = setuptools.Extension(
             module_name,
             language="c++",
-            sources=[pyx_filepath],
+            sources=[pyx_filepath.as_posix()],
             define_macros=stan_macros,
             include_dirs=include_dirs,
             extra_compile_args=extra_compile_args,
@@ -262,12 +278,18 @@ def _build_extension_module(
             orig_stderr: copy of original stderr file descriptor
             """
             sys.stdout.flush()
-            stdout_fileno = sys.stdout.fileno()
-            orig_stdout = os.dup(stdout_fileno)
-            devnull = os.open(os.devnull, os.O_WRONLY)
-            os.dup2(devnull, stdout_fileno)
-            os.close(devnull)
-            return orig_stdout
+            if platform.system() == "Windows":
+                orig_stdout = sys.stdout
+                devnull = open(os.devnull, "w")
+                sys.stdout = devnull
+                return orig_stdout, devnull
+            else:
+                stdout_fileno = sys.stdout.fileno()
+                orig_stdout = os.dup(stdout_fileno)
+                devnull = os.open(os.devnull, os.O_WRONLY)
+                os.dup2(devnull, stdout_fileno)
+                os.close(devnull)
+                return orig_stdout
 
         def _redirect_stderr_to(stream: IO[Any]) -> int:
             """Redirect stderr for subprocesses to /dev/null.
@@ -284,18 +306,17 @@ def _build_extension_module(
 
         # silence stdout and stderr for compilation, if stderr is silenceable
         # silence stdout too as cythonizing prints a couple of lines to stdout
-        stream = tempfile.TemporaryFile()
+        stream = TemporaryFile(prefix="httpstan_")
         redirect_stderr = _has_fileno(sys.stderr)
         compiler_output = ""
         if redirect_stderr:
             orig_stdout = _redirect_stdout()
             orig_stderr = _redirect_stderr_to(stream)
-
         try:
             build_extension.extensions = Cython.Build.cythonize(
                 [extension], include_path=cython_include_path
             )
-            build_extension.build_temp = build_extension.build_lib = temporary_dir
+            build_extension.build_temp = build_extension.build_lib = temporary_dir.as_posix()
             build_extension.run()
         finally:
             if redirect_stderr:
@@ -304,9 +325,14 @@ def _build_extension_module(
                 stream.close()
                 # restore
                 os.dup2(orig_stderr, sys.stderr.fileno())
-                os.dup2(orig_stdout, sys.stdout.fileno())
-
+                if platform.system() == "Windows":
+                    orig_stdout, devnull = orig_stdout
+                    sys.stdout = orig_stdout
+                    devnull.close()
+                else:
+                    os.dup2(orig_stderr, sys.stderr.fileno())
         module = _import_module(module_name, build_extension.build_lib)
+        assert module.__name__ == module_name, (module.__name__, module_name)
         with open(module.__file__, "rb") as fh:  # type: ignore  # see mypy#3062
-            assert module.__name__ == module_name, (module.__name__, module_name)
-            return fh.read(), compiler_output  # type: ignore  # see mypy#3062
+            module_bytes = fh.read()  # type: ignore  # see mypy#3062
+    return module_bytes, compiler_output
