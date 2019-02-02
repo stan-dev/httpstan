@@ -8,7 +8,10 @@ import threading
 from typing import Optional
 
 import aiohttp.web
-import uvloop
+try:
+    from uvloop import EventLoopPolicy
+except ImportError:
+    from asyncio import DefaultEventLoopPolicy as EventLoopPolicy
 
 import httpstan.routes
 
@@ -59,7 +62,7 @@ class Server(threading.Thread):
     def __init__(self, host: str = "127.0.0.1", port: Optional[int] = None) -> None:
         super().__init__()
         self.host, self.port = host, port
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        asyncio.set_event_loop_policy(EventLoopPolicy())
         self.loop = asyncio.new_event_loop()  # control will be passed to thread
         self.app = make_app()
         self.runner = aiohttp.web.AppRunner(self.app)
