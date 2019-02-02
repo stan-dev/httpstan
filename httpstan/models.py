@@ -10,6 +10,7 @@ import importlib
 import logging
 import io
 import os
+import platform
 import string
 import sys
 import tempfile
@@ -212,19 +213,24 @@ def _build_extension_module(
             ),
         ]
 
-        stan_macros: List[Tuple[str, Optional[str]]] = [
-            ("BOOST_DISABLE_ASSERTS", None),
-            ("BOOST_NO_DECLTYPE", None),
-            ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
-            ("BOOST_RESULT_OF_USE_TR1", None),
-            ("STAN_THREADS", None),
-        ]
+        if platform.system() != "Windows":
+            stan_macros: List[Tuple[str, Optional[str]]] = [
+                ("BOOST_DISABLE_ASSERTS", None),
+                ("BOOST_NO_DECLTYPE", None),
+                ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
+                ("BOOST_RESULT_OF_USE_TR1", None),
+                ("STAN_THREADS", None),
+            ]
+        else:
+            stan_macros: List[Tuple[str, Optional[str]]] = [
+                ("BOOST_DISABLE_ASSERTS", None),
+                ("BOOST_NO_DECLTYPE", None),
+                ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
+                ("BOOST_RESULT_OF_USE_TR1", None),
+            ]
 
         if extra_compile_args is None:
-            if sys.platform.startswith("win"):
-                extra_compile_args = ["/EHsc", "-DBOOST_DATE_TIME_NO_LIB"]
-            else:
-                extra_compile_args = ["-O3", "-std=c++11"]
+            extra_compile_args = ["-O3", "-std=c++11"]
 
         cython_include_path = [os.path.dirname(httpstan_dir)]
         extension = setuptools.Extension(
