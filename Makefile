@@ -13,13 +13,13 @@ openapi: doc/source/openapi.json
 protos: httpstan/callbacks_writer_pb2.py
 
 httpstan/%_pb2.py: protos/%.proto
-	python3 -m grpc_tools.protoc -Iprotos --python_out=httpstan $<
+	$(PYTHON) -m grpc_tools.protoc -Iprotos --python_out=httpstan $<
 
 doc/source/openapi.json: httpstan/routes.py httpstan/views.py
 	@echo writing OpenAPI spec to $@
-	@python3 -c'from httpstan import routes; print(routes.openapi_spec())' > $@
+	@$(PYTHON) -c'from httpstan import routes; print(routes.openapi_spec())' > $@
 
 apidoc:
-	@echo excluding ``httpstan/views.py`` as Sphinx cannot process the the OpenAPI YAML 
+	@echo excluding ``httpstan/views.py`` as Sphinx cannot process the the OpenAPI YAML
 	@echo excluding ``httpstan/routes.py`` as useless without ``views.py``
 	sphinx-apidoc --ext-autodoc --force --no-toc -o doc/source httpstan httpstan/views.py httpstan/routes.py
