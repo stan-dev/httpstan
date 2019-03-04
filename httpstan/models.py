@@ -242,6 +242,7 @@ def _build_extension_module(
             if platform.system() == "Windows":
                 # -D_hypot=hypot, MinGW fix, https://github.com/python/cpython/pull/11283
                 extra_compile_args.append("-D_hypot=hypot")
+                extra_compile_args.append("-static")
 
         cython_include_path = [os.path.dirname(httpstan_dir)]
         extension = setuptools.Extension(
