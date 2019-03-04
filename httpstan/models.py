@@ -10,6 +10,7 @@ import importlib
 import io
 import logging
 import os
+import pathlib
 import platform
 import string
 import sys
@@ -193,9 +194,12 @@ def _build_extension_module(
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
     with tempfile.TemporaryDirectory() as temporary_dir:
-        cpp_filepath = os.path.join(temporary_dir, f"{module_name}.hpp")
-        pyx_filepath = os.path.join(temporary_dir, f"{module_name}.pyx")
-        pyx_code = string.Template(pyx_code_template).substitute(cpp_filename=cpp_filepath)
+        temporary_dir_path = pathlib.Path(temporary_dir)
+        cpp_filepath = temporary_dir_path / f"{module_name}.hpp"
+        pyx_filepath = temporary_dir_path / f"{module_name}.pyx"
+        pyx_code = string.Template(pyx_code_template).substitute(
+            cpp_filename=cpp_filepath.as_posix()
+        )
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
             with open(filepath, "w") as fh:
                 fh.write(code)
@@ -203,7 +207,7 @@ def _build_extension_module(
         httpstan_dir = os.path.dirname(__file__)
         include_dirs = [
             httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
-            temporary_dir,
+            temporary_dir_path.as_posix(),
             os.path.join(httpstan_dir, "lib", "stan", "src"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
@@ -231,7 +235,7 @@ def _build_extension_module(
         extension = setuptools.Extension(
             module_name,
             language="c++",
-            sources=[pyx_filepath],
+            sources=[pyx_filepath.as_posix()],
             define_macros=stan_macros,
             include_dirs=include_dirs,
             extra_compile_args=extra_compile_args,
@@ -279,7 +283,7 @@ def _build_extension_module(
 
         # silence stdout and stderr for compilation, if stderr is silenceable
         # silence stdout too as cythonizing prints a couple of lines to stdout
-        stream = tempfile.TemporaryFile()
+        stream = tempfile.TemporaryFile(prefix="httpstan_")
         redirect_stderr = _has_fileno(sys.stderr)
         compiler_output = ""
         if redirect_stderr:
@@ -290,7 +294,7 @@ def _build_extension_module(
             build_extension.extensions = Cython.Build.cythonize(
                 [extension], include_path=cython_include_path
             )
-            build_extension.build_temp = build_extension.build_lib = temporary_dir
+            build_extension.build_temp = build_extension.build_lib = temporary_dir_path.as_posix()
             build_extension.run()
         finally:
             if redirect_stderr:
