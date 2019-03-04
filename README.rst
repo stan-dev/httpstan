@@ -56,8 +56,7 @@ A working copy of ``protoc`` is needed to build from source. One way to get this
 
 ::
 
-    $ make cython  # generate C++ code from Cython .pyx files
-    $ make protos  # generate Python modules for protocol buffer schemas
+    $ make  # generate required C++ code
     $ python3 setup.py install
 
 Usage
