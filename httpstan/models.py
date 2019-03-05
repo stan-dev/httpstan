@@ -152,12 +152,12 @@ def import_model_extension_module(model_name: str, module_bytes: bytes):
     module_filename = f"{module_name}.so"
     assert isinstance(module_bytes, bytes)
 
-    with tempfile.TemporaryDirectory() as temporary_directory:
-        with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
-            fh.write(module_bytes)
-        module_path = temporary_directory
-        assert module_name == os.path.splitext(module_filename)[0]
-        return _import_module(module_name, module_path)
+    temporary_directory = tempfile.TemporaryDirectory().name
+    with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
+        fh.write(module_bytes)
+    module_path = temporary_directory
+    assert module_name == os.path.splitext(module_filename)[0]
+    return _import_module(module_name, module_path)
 
 
 @functools.lru_cache()
@@ -193,119 +193,119 @@ def _build_extension_module(
     """
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
-    with tempfile.TemporaryDirectory() as temporary_dir:
-        temporary_dir_path = pathlib.Path(temporary_dir)
-        cpp_filepath = temporary_dir_path / f"{module_name}.hpp"
-        pyx_filepath = temporary_dir_path / f"{module_name}.pyx"
-        pyx_code = string.Template(pyx_code_template).substitute(
-            cpp_filename=cpp_filepath.as_posix()
-        )
-        for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
-            with open(filepath, "w") as fh:
-                fh.write(code)
+    temporary_dir = tempfile.TemporaryDirectory().name
+    temporary_dir_path = pathlib.Path(temporary_dir)
+    cpp_filepath = temporary_dir_path / f"{module_name}.hpp"
+    pyx_filepath = temporary_dir_path / f"{module_name}.pyx"
+    pyx_code = string.Template(pyx_code_template).substitute(
+        cpp_filename=cpp_filepath.as_posix()
+    )
+    for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
+        with open(filepath, "w") as fh:
+            fh.write(code)
 
-        httpstan_dir = os.path.dirname(__file__)
-        include_dirs = [
-            httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
-            temporary_dir_path.as_posix(),
-            os.path.join(httpstan_dir, "lib", "stan", "src"),
-            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
-            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
-            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "boost_1.66.0"),
-            os.path.join(
-                httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "sundials_3.1.0", "include"
-            ),
-        ]
+    httpstan_dir = os.path.dirname(__file__)
+    include_dirs = [
+        httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
+        temporary_dir_path.as_posix(),
+        os.path.join(httpstan_dir, "lib", "stan", "src"),
+        os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
+        os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
+        os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "boost_1.66.0"),
+        os.path.join(
+            httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "sundials_3.1.0", "include"
+        ),
+    ]
 
-        stan_macros: List[Tuple[str, Optional[str]]] = [
-            ("BOOST_DISABLE_ASSERTS", None),
-            ("BOOST_NO_DECLTYPE", None),
-            ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
-            ("BOOST_RESULT_OF_USE_TR1", None),
-            ("STAN_THREADS", None),
-        ]
+    stan_macros: List[Tuple[str, Optional[str]]] = [
+        ("BOOST_DISABLE_ASSERTS", None),
+        ("BOOST_NO_DECLTYPE", None),
+        ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
+        ("BOOST_RESULT_OF_USE_TR1", None),
+        ("STAN_THREADS", None),
+    ]
 
-        if extra_compile_args is None:
-            extra_compile_args = ["-O3", "-std=c++11"]
-            if platform.system() == "Windows":
-                # -D_hypot=hypot, MinGW fix, https://github.com/python/cpython/pull/11283
-                extra_compile_args.append("-D_hypot=hypot")
+    if extra_compile_args is None:
+        extra_compile_args = ["-O3", "-std=c++11"]
+        if platform.system() == "Windows":
+            # -D_hypot=hypot, MinGW fix, https://github.com/python/cpython/pull/11283
+            extra_compile_args.append("-D_hypot=hypot")
 
-        cython_include_path = [os.path.dirname(httpstan_dir)]
-        extension = setuptools.Extension(
-            module_name,
-            language="c++",
-            sources=[pyx_filepath.as_posix()],
-            define_macros=stan_macros,
-            include_dirs=include_dirs,
-            extra_compile_args=extra_compile_args,
-        )
-        build_extension = Cython.Build.Inline._get_build_extension()
+    cython_include_path = [os.path.dirname(httpstan_dir)]
+    extension = setuptools.Extension(
+        module_name,
+        language="c++",
+        sources=[pyx_filepath.as_posix()],
+        define_macros=stan_macros,
+        include_dirs=include_dirs,
+        extra_compile_args=extra_compile_args,
+    )
+    build_extension = Cython.Build.Inline._get_build_extension()
 
-        def _has_fileno(stream) -> bool:
-            """Returns whether the stream object has a working fileno()
+    def _has_fileno(stream) -> bool:
+        """Returns whether the stream object has a working fileno()
 
-            Suggests whether _redirect_stderr is likely to work.
-            """
-            try:
-                stream.fileno()
-            except (AttributeError, OSError, IOError, io.UnsupportedOperation):
-                return False
-            return True
-
-        def _redirect_stdout() -> int:
-            """Redirect stdout for subprocesses to /dev/null.
-
-            Returns
-            -------
-            orig_stderr: copy of original stderr file descriptor
-            """
-            sys.stdout.flush()
-            stdout_fileno = sys.stdout.fileno()
-            orig_stdout = os.dup(stdout_fileno)
-            devnull = os.open(os.devnull, os.O_WRONLY)
-            os.dup2(devnull, stdout_fileno)
-            os.close(devnull)
-            return orig_stdout
-
-        def _redirect_stderr_to(stream: IO[Any]) -> int:
-            """Redirect stderr for subprocesses to /dev/null.
-
-            Returns
-            -------
-            orig_stderr: copy of original stderr file descriptor
-            """
-            sys.stderr.flush()
-            stderr_fileno = sys.stderr.fileno()
-            orig_stderr = os.dup(stderr_fileno)
-            os.dup2(stream.fileno(), stderr_fileno)
-            return orig_stderr
-
-        # silence stdout and stderr for compilation, if stderr is silenceable
-        # silence stdout too as cythonizing prints a couple of lines to stdout
-        stream = tempfile.TemporaryFile(prefix="httpstan_")
-        redirect_stderr = _has_fileno(sys.stderr)
-        compiler_output = ""
-        if redirect_stderr:
-            orig_stdout = _redirect_stdout()
-            orig_stderr = _redirect_stderr_to(stream)
-
+        Suggests whether _redirect_stderr is likely to work.
+        """
         try:
-            build_extension.extensions = Cython.Build.cythonize(
-                [extension], include_path=cython_include_path
-            )
-            build_extension.build_temp = build_extension.build_lib = temporary_dir_path.as_posix()
-            build_extension.run()
-        finally:
-            if redirect_stderr:
-                stream.seek(0)
-                compiler_output = stream.read().decode()
-                stream.close()
-                # restore
-                os.dup2(orig_stderr, sys.stderr.fileno())
-                os.dup2(orig_stdout, sys.stdout.fileno())
+            stream.fileno()
+        except (AttributeError, OSError, IOError, io.UnsupportedOperation):
+            return False
+        return True
 
-        module = _import_module(module_name, build_extension.build_lib)
-        with open(module.__file__, "rb") as fh:  # type: ignore  # see mypy#3062
-            assert module.__name__ == module_name, (module.__name__, module_name)
-            return fh.read(), compiler_output  # type: ignore  # see mypy#3062
+    def _redirect_stdout() -> int:
+        """Redirect stdout for subprocesses to /dev/null.
+
+        Returns
+        -------
+        orig_stderr: copy of original stderr file descriptor
+        """
+        sys.stdout.flush()
+        stdout_fileno = sys.stdout.fileno()
+        orig_stdout = os.dup(stdout_fileno)
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, stdout_fileno)
+        os.close(devnull)
+        return orig_stdout
+
+    def _redirect_stderr_to(stream: IO[Any]) -> int:
+        """Redirect stderr for subprocesses to /dev/null.
+
+        Returns
+        -------
+        orig_stderr: copy of original stderr file descriptor
+        """
+        sys.stderr.flush()
+        stderr_fileno = sys.stderr.fileno()
+        orig_stderr = os.dup(stderr_fileno)
+        os.dup2(stream.fileno(), stderr_fileno)
+        return orig_stderr
+
+    # silence stdout and stderr for compilation, if stderr is silenceable
+    # silence stdout too as cythonizing prints a couple of lines to stdout
+    stream = tempfile.TemporaryFile(prefix="httpstan_")
+    redirect_stderr = _has_fileno(sys.stderr)
+    compiler_output = ""
+    if redirect_stderr:
+        orig_stdout = _redirect_stdout()
+        orig_stderr = _redirect_stderr_to(stream)
+
+    try:
+        build_extension.extensions = Cython.Build.cythonize(
+            [extension], include_path=cython_include_path
+        )
+        build_extension.build_temp = build_extension.build_lib = temporary_dir_path.as_posix()
+        build_extension.run()
+    finally:
+        if redirect_stderr:
+            stream.seek(0)
+            compiler_output = stream.read().decode()
+            stream.close()
+            # restore
+            os.dup2(orig_stderr, sys.stderr.fileno())
+            os.dup2(orig_stdout, sys.stdout.fileno())
+
+    module = _import_module(module_name, build_extension.build_lib)
+    with open(module.__file__, "rb") as fh:  # type: ignore  # see mypy#3062
+        assert module.__name__ == module_name, (module.__name__, module_name)
+        return fh.read(), compiler_output  # type: ignore  # see mypy#3062
