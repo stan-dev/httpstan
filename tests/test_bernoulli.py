@@ -86,7 +86,7 @@ def test_bernoulli_params_out_of_bounds(api_url):
         assert resp.status_code == 400
         resp_dict = resp.json()
         assert "message" in resp_dict
-        assert "Found negative dimension size" in resp_dict["message"]
+        assert "N is -5, but must be greater than or equal to 0" in resp_dict["message"]
 
     asyncio.get_event_loop().run_until_complete(main())
 
@@ -136,7 +136,7 @@ def test_bernoulli_out_of_bounds(api_url):
         operation = requests.get(f"{api_url}/{operation_name}").json()
         error = operation["result"]
         assert "message" in error
-        assert "Found negative dimension size" in error["message"]
+        assert "N is -5, but must be greater than or equal to 0" in error["message"]
 
     asyncio.get_event_loop().run_until_complete(main())
 
