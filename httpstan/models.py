@@ -263,9 +263,9 @@ def _build_extension_module(
             os.path.join(httpstan_dir, "lib", "stan", "src"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
-            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "boost_1.66.0"),
+            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "boost_1.69.0"),
             os.path.join(
-                httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "sundials_3.1.0", "include"
+                httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "sundials_4.1.0", "include"
             ),
         ]
 
@@ -278,7 +278,7 @@ def _build_extension_module(
         ]
 
         if extra_compile_args is None:
-            extra_compile_args = ["-O3", "-std=c++11"]
+            extra_compile_args = ["-O3", "-std=c++1y"]
             if platform.system() == "Windows":
                 # -D_hypot=hypot, MinGW fix, https://github.com/python/cpython/pull/11283
                 extra_compile_args.append("-D_hypot=hypot")
