@@ -314,18 +314,12 @@ def _build_extension_module(
             orig_stderr: copy of original stderr file descriptor
             """
             sys.stdout.flush()
-            if platform.system() == "Windows":
-                orig_stdout = sys.stdout
-                devnull = open(os.devnull, "w")
-                sys.stdout = devnull
-                return orig_stdout, devnull
-            else:
-                stdout_fileno = sys.stdout.fileno()
-                orig_stdout = os.dup(stdout_fileno)
-                devnull = os.open(os.devnull, os.O_WRONLY)
-                os.dup2(devnull, stdout_fileno)
-                os.close(devnull)
-                return orig_stdout
+            stdout_fileno = sys.stdout.fileno()
+            orig_stdout = os.dup(stdout_fileno)
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull, stdout_fileno)
+            os.close(devnull)
+            return orig_stdout
 
         def _redirect_stderr_to(stream: IO[Any]) -> int:
             """Redirect stderr for subprocesses to /dev/null.
@@ -361,12 +355,7 @@ def _build_extension_module(
                 stream.close()
                 # restore
                 os.dup2(orig_stderr, sys.stderr.fileno())
-                if platform.system() == "Windows":
-                    orig_stdout, devnull = orig_stdout
-                    sys.stdout = orig_stdout
-                    devnull.close()
-                else:
-                    os.dup2(orig_stderr, sys.stderr.fileno())
+                os.dup2(orig_stdout, sys.stdout.fileno())
         module = _import_module(module_name, build_extension.build_lib)
         assert module.__name__ == module_name, (module.__name__, module_name)
         with open(module.__file__, "rb") as fh:  # type: ignore  # see mypy#3062
