@@ -152,7 +152,7 @@ def import_model_extension_module(model_name: str, module_bytes: bytes):
     module_filename = f"{module_name}.so"
     assert isinstance(module_bytes, bytes)
 
-    temporary_directory = tempfile.TemporaryDirectory().name
+    temporary_directory = tempfile.TemporaryDirectory(prefix="httpstan_").name
     with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
         fh.write(module_bytes)
     module_path = temporary_directory
@@ -193,7 +193,7 @@ def _build_extension_module(
     """
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
-    temporary_dir = tempfile.TemporaryDirectory().name
+    temporary_dir = tempfile.TemporaryDirectory(prefix="httpstan_").name
     temporary_dir_path = pathlib.Path(temporary_dir)
     cpp_filepath = temporary_dir_path / f"{module_name}.hpp"
     pyx_filepath = temporary_dir_path / f"{module_name}.pyx"
@@ -202,6 +202,7 @@ def _build_extension_module(
     )
     for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
         with open(filepath, "w") as fh:
+            print("DEBUG: WRITING FILE TO:", filepath)
             fh.write(code)
 
     httpstan_dir = os.path.dirname(__file__)
