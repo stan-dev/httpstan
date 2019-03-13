@@ -226,7 +226,7 @@ def _build_extension_module(
         ]
 
         if extra_compile_args is None:
-            extra_compile_args = ["-O3", "-std=c++11"]
+            extra_compile_args = ["-O3", "-std=c++1y"]
             if platform.system() == "Windows":
                 # -D_hypot=hypot, MinGW fix, https://github.com/python/cpython/pull/11283
                 extra_compile_args.append("-D_hypot=hypot")
