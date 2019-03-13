@@ -12,6 +12,7 @@ import logging
 import os
 import pathlib
 import platform
+import shutil
 import string
 import sys
 import tempfile
@@ -29,6 +30,18 @@ import httpstan.compile
 import httpstan.stan
 
 logger = logging.getLogger("httpstan")
+
+
+class TemporaryDirectory(tempfile.TemporaryDirectory):
+    """Patch TemporaryDirectory to ignore errors."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def cleanup(self):
+        """Ignore errors"""
+        if self._finalizer.detach():
+            shutil.rmtree(self.name, ignore_errors=True)
 
 
 def calculate_model_name(program_code: str) -> str:
@@ -152,7 +165,7 @@ def import_model_extension_module(model_name: str, module_bytes: bytes):
     module_filename = f"{module_name}.so"
     assert isinstance(module_bytes, bytes)
 
-    with tempfile.TemporaryDirectory() as temporary_directory:
+    with TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
@@ -234,21 +247,20 @@ def _build_extension_module(
 
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
-    with tempfile.TemporaryDirectory() as temporary_dir:
-        temporary_dir_path = pathlib.Path(temporary_dir)
-        cpp_filepath = temporary_dir_path / f"{module_name}.hpp"
-        pyx_filepath = temporary_dir_path / f"{module_name}.pyx"
+    with TemporaryDirectory() as temporary_dir:
+        temporary_dir = pathlib.Path(temporary_dir)
+        cpp_filepath = temporary_dir / f"{module_name}.hpp"
+        pyx_filepath = temporary_dir / f"{module_name}.pyx"
         pyx_code = string.Template(pyx_code_template).substitute(
             cpp_filename=cpp_filepath.as_posix()
         )
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
             with open(filepath, "w") as fh:
                 fh.write(code)
-
         httpstan_dir = os.path.dirname(__file__)
         include_dirs = [
             httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
-            temporary_dir_path.as_posix(),
+            temporary_dir.as_posix(),
             os.path.join(httpstan_dir, "lib", "stan", "src"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
@@ -283,6 +295,51 @@ def _build_extension_module(
         )
         build_extension = Cython.Build.Inline._get_build_extension()
 
+        def _has_fileno(stream) -> bool:
+            """Returns whether the stream object has a working fileno()
+
+            Suggests whether _redirect_stderr is likely to work.
+            """
+            try:
+                stream.fileno()
+            except (AttributeError, OSError, IOError, io.UnsupportedOperation):
+                return False
+            return True
+
+        def _redirect_stdout() -> int:
+            """Redirect stdout for subprocesses to /dev/null.
+
+            Returns
+            -------
+            orig_stderr: copy of original stderr file descriptor
+            """
+            sys.stdout.flush()
+            if platform.system() == "Windows":
+                orig_stdout = sys.stdout
+                devnull = open(os.devnull, "w")
+                sys.stdout = devnull
+                return orig_stdout, devnull
+            else:
+                stdout_fileno = sys.stdout.fileno()
+                orig_stdout = os.dup(stdout_fileno)
+                devnull = os.open(os.devnull, os.O_WRONLY)
+                os.dup2(devnull, stdout_fileno)
+                os.close(devnull)
+                return orig_stdout
+
+        def _redirect_stderr_to(stream: IO[Any]) -> int:
+            """Redirect stderr for subprocesses to /dev/null.
+
+            Returns
+            -------
+            orig_stderr: copy of original stderr file descriptor
+            """
+            sys.stderr.flush()
+            stderr_fileno = sys.stderr.fileno()
+            orig_stderr = os.dup(stderr_fileno)
+            os.dup2(stream.fileno(), stderr_fileno)
+            return orig_stderr
+
         # silence stdout and stderr for compilation, if stderr is silenceable
         # silence stdout too as cythonizing prints a couple of lines to stdout
         stream = tempfile.TemporaryFile(prefix="httpstan_")
@@ -291,12 +348,11 @@ def _build_extension_module(
         if redirect_stderr:
             orig_stdout = _redirect_stdout()
             orig_stderr = _redirect_stderr_to(stream)
-
         try:
             build_extension.extensions = Cython.Build.cythonize(
                 [extension], include_path=cython_include_path
             )
-            build_extension.build_temp = build_extension.build_lib = temporary_dir_path.as_posix()
+            build_extension.build_temp = build_extension.build_lib = temporary_dir.as_posix()
             build_extension.run()
         finally:
             if redirect_stderr:
@@ -305,9 +361,14 @@ def _build_extension_module(
                 stream.close()
                 # restore
                 os.dup2(orig_stderr, sys.stderr.fileno())
-                os.dup2(orig_stdout, sys.stdout.fileno())
-
+                if platform.system() == "Windows":
+                    orig_stdout, devnull = orig_stdout
+                    sys.stdout = orig_stdout
+                    devnull.close()
+                else:
+                    os.dup2(orig_stderr, sys.stderr.fileno())
         module = _import_module(module_name, build_extension.build_lib)
+        assert module.__name__ == module_name, (module.__name__, module_name)
         with open(module.__file__, "rb") as fh:  # type: ignore  # see mypy#3062
-            assert module.__name__ == module_name, (module.__name__, module_name)
-            return fh.read(), compiler_output  # type: ignore  # see mypy#3062
+            module_bytes = fh.read()  # type: ignore  # see mypy#3062
+        return module_bytes, compiler_output
