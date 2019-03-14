@@ -191,6 +191,47 @@ def _build_extension_module(
         str: Output (standard error) from compiler.
 
     """
+
+    # define utility functions for silencing compiler output
+    def _has_fileno(stream) -> bool:
+        """Returns whether the stream object has a working fileno()
+
+        Suggests whether _redirect_stderr is likely to work.
+        """
+        try:
+            stream.fileno()
+        except (AttributeError, OSError, IOError, io.UnsupportedOperation):
+            return False
+        return True
+
+    def _redirect_stdout() -> int:
+        """Redirect stdout for subprocesses to /dev/null.
+
+        Returns
+        -------
+        orig_stderr: copy of original stderr file descriptor
+        """
+        sys.stdout.flush()
+        stdout_fileno = sys.stdout.fileno()
+        orig_stdout = os.dup(stdout_fileno)
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, stdout_fileno)
+        os.close(devnull)
+        return orig_stdout
+
+    def _redirect_stderr_to(stream: IO[Any]) -> int:
+        """Redirect stderr for subprocesses to /dev/null.
+
+        Returns
+        -------
+        orig_stderr: copy of original stderr file descriptor
+        """
+        sys.stderr.flush()
+        stderr_fileno = sys.stderr.fileno()
+        orig_stderr = os.dup(stderr_fileno)
+        os.dup2(stream.fileno(), stderr_fileno)
+        return orig_stderr
+
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
     with tempfile.TemporaryDirectory() as temporary_dir:
@@ -241,45 +282,6 @@ def _build_extension_module(
             extra_compile_args=extra_compile_args,
         )
         build_extension = Cython.Build.Inline._get_build_extension()
-
-        def _has_fileno(stream) -> bool:
-            """Returns whether the stream object has a working fileno()
-
-            Suggests whether _redirect_stderr is likely to work.
-            """
-            try:
-                stream.fileno()
-            except (AttributeError, OSError, IOError, io.UnsupportedOperation):
-                return False
-            return True
-
-        def _redirect_stdout() -> int:
-            """Redirect stdout for subprocesses to /dev/null.
-
-            Returns
-            -------
-            orig_stderr: copy of original stderr file descriptor
-            """
-            sys.stdout.flush()
-            stdout_fileno = sys.stdout.fileno()
-            orig_stdout = os.dup(stdout_fileno)
-            devnull = os.open(os.devnull, os.O_WRONLY)
-            os.dup2(devnull, stdout_fileno)
-            os.close(devnull)
-            return orig_stdout
-
-        def _redirect_stderr_to(stream: IO[Any]) -> int:
-            """Redirect stderr for subprocesses to /dev/null.
-
-            Returns
-            -------
-            orig_stderr: copy of original stderr file descriptor
-            """
-            sys.stderr.flush()
-            stderr_fileno = sys.stderr.fileno()
-            orig_stderr = os.dup(stderr_fileno)
-            os.dup2(stream.fileno(), stderr_fileno)
-            return orig_stderr
 
         # silence stdout and stderr for compilation, if stderr is silenceable
         # silence stdout too as cythonizing prints a couple of lines to stdout
