@@ -359,5 +359,5 @@ def _build_extension_module(
         module = _import_module(module_name, build_extension.build_lib)
         assert module.__name__ == module_name, (module.__name__, module_name)
         with open(module.__file__, "rb") as fh:  # type: ignore  # see mypy#3062
-            module_bytes = fh.read()  # type: ignore  # see mypy#3062
-        return module_bytes, compiler_output
+            module_bytes = fh.read()
+        return module_bytes, compiler_output  # type: ignore  # see mypy#3062
