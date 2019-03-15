@@ -32,18 +32,6 @@ import httpstan.stan
 logger = logging.getLogger("httpstan")
 
 
-class TemporaryDirectory(tempfile.TemporaryDirectory):
-    """Patch TemporaryDirectory to ignore errors."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def cleanup(self):
-        """Ignore errors"""
-        if self._finalizer.detach():
-            shutil.rmtree(self.name, ignore_errors=True)
-
-
 def calculate_model_name(program_code: str) -> str:
     """Calculate model name from Stan program code.
 
@@ -165,7 +153,7 @@ def import_model_extension_module(model_name: str, module_bytes: bytes):
     module_filename = f"{module_name}.so"
     assert isinstance(module_bytes, bytes)
 
-    with TemporaryDirectory() as temporary_directory:
+    with tempfile.TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
@@ -247,7 +235,7 @@ def _build_extension_module(
 
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
-    with TemporaryDirectory() as temporary_dir:
+    with tempfile.TemporaryDirectory() as temporary_dir:
         temporary_dir = pathlib.Path(temporary_dir)
         cpp_filepath = temporary_dir / f"{module_name}.hpp"
         pyx_filepath = temporary_dir / f"{module_name}.pyx"
