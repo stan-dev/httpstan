@@ -4,6 +4,7 @@ These functions manage the process of compiling a Python extension module
 from C++ code generated and loading the resulting module.
 """
 import asyncio
+import contextlib
 import functools
 import hashlib
 import importlib
@@ -30,6 +31,16 @@ import httpstan.compile
 import httpstan.stan
 
 logger = logging.getLogger("httpstan")
+
+
+@contextlib.contextmanager
+def TemporaryDirectory(suffix=None, prefix=None, dir=None):
+    """tempfile.TemporaryDirectory with one Windows-specific cleanup fix."""
+    name = tempfile.mkdtemp(suffix, prefix, dir)
+    yield name
+    # ignore_errors=True is important for Windows. Windows will encounter an
+    # `Access denied` error if the standard library TemporaryDirectory used.
+    shutil.rmtree(name, ignore_errors=True)
 
 
 def calculate_model_name(program_code: str) -> str:
@@ -153,7 +164,7 @@ def import_model_extension_module(model_name: str, module_bytes: bytes):
     module_filename = f"{module_name}.so"
     assert isinstance(module_bytes, bytes)
 
-    with tempfile.TemporaryDirectory() as temporary_directory:
+    with TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
@@ -235,10 +246,10 @@ def _build_extension_module(
 
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
-    with tempfile.TemporaryDirectory() as temporary_dir:
-        temporary_dir = pathlib.Path(temporary_dir)
-        cpp_filepath = temporary_dir / f"{module_name}.hpp"
-        pyx_filepath = temporary_dir / f"{module_name}.pyx"
+    with TemporaryDirectory() as temporary_directory:
+        temporary_directory = pathlib.Path(temporary_directory)
+        cpp_filepath = temporary_directory / f"{module_name}.hpp"
+        pyx_filepath = temporary_directory / f"{module_name}.pyx"
         pyx_code = string.Template(pyx_code_template).substitute(
             cpp_filename=cpp_filepath.as_posix()
         )
@@ -248,7 +259,7 @@ def _build_extension_module(
         httpstan_dir = os.path.dirname(__file__)
         include_dirs = [
             httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
-            temporary_dir.as_posix(),
+            temporary_directory.as_posix(),
             os.path.join(httpstan_dir, "lib", "stan", "src"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
@@ -283,45 +294,6 @@ def _build_extension_module(
         )
         build_extension = Cython.Build.Inline._get_build_extension()
 
-        def _has_fileno(stream) -> bool:
-            """Returns whether the stream object has a working fileno()
-
-            Suggests whether _redirect_stderr is likely to work.
-            """
-            try:
-                stream.fileno()
-            except (AttributeError, OSError, IOError, io.UnsupportedOperation):
-                return False
-            return True
-
-        def _redirect_stdout() -> int:
-            """Redirect stdout for subprocesses to /dev/null.
-
-            Returns
-            -------
-            orig_stderr: copy of original stderr file descriptor
-            """
-            sys.stdout.flush()
-            stdout_fileno = sys.stdout.fileno()
-            orig_stdout = os.dup(stdout_fileno)
-            devnull = os.open(os.devnull, os.O_WRONLY)
-            os.dup2(devnull, stdout_fileno)
-            os.close(devnull)
-            return orig_stdout
-
-        def _redirect_stderr_to(stream: IO[Any]) -> int:
-            """Redirect stderr for subprocesses to /dev/null.
-
-            Returns
-            -------
-            orig_stderr: copy of original stderr file descriptor
-            """
-            sys.stderr.flush()
-            stderr_fileno = sys.stderr.fileno()
-            orig_stderr = os.dup(stderr_fileno)
-            os.dup2(stream.fileno(), stderr_fileno)
-            return orig_stderr
-
         # silence stdout and stderr for compilation, if stderr is silenceable
         # silence stdout too as cythonizing prints a couple of lines to stdout
         stream = tempfile.TemporaryFile(prefix="httpstan_")
@@ -334,7 +306,7 @@ def _build_extension_module(
             build_extension.extensions = Cython.Build.cythonize(
                 [extension], include_path=cython_include_path
             )
-            build_extension.build_temp = build_extension.build_lib = temporary_dir.as_posix()
+            build_extension.build_temp = build_extension.build_lib = temporary_directory.as_posix()
             build_extension.run()
         finally:
             if redirect_stderr:
