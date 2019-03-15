@@ -12,6 +12,7 @@ prune httpstan/lib/stan/src/test
 # unused parts of the stan math source
 prune httpstan/lib/stan/lib/stan_math/doxygen
 prune httpstan/lib/stan/lib/stan_math/lib/cpplint_*
+prune httpstan/lib/stan/lib/stan_math/lib/eigen_*/unsupported/doc
 prune httpstan/lib/stan/lib/stan_math/lib/gtest_*
 prune httpstan/lib/stan/lib/stan_math/make
 prune httpstan/lib/stan/lib/stan_math/test

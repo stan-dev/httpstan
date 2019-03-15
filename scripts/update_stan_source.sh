@@ -44,6 +44,8 @@ echo "Running 'git stash'"
 git stash
 rm -rf httpstan/lib/stan
 mv "${TEMPDIR}/stan-${VERSION}" httpstan/lib/stan
+echo "Deleting 'doc' directories in httpstan/lib/stan/lib to save space"
+find httpstan/lib/stan/lib -type d -iname doc -print0 | xargs -0 rm -rf
 echo "Running 'git add httpstan/lib/stan -f'"
 git add httpstan/lib/stan -f
 echo "Running 'git commit' with message:"\
