@@ -4,6 +4,7 @@ These functions manage the process of compiling a Python extension module
 from C++ code generated and loading the resulting module.
 """
 import asyncio
+import contextlib
 import functools
 import hashlib
 import importlib
@@ -12,6 +13,7 @@ import logging
 import os
 import pathlib
 import platform
+import shutil
 import string
 import sys
 import tempfile
@@ -29,6 +31,16 @@ import httpstan.compile
 import httpstan.stan
 
 logger = logging.getLogger("httpstan")
+
+
+@contextlib.contextmanager
+def TemporaryDirectory(suffix=None, prefix=None, dir=None):
+    """Mimic tempfile.TemporaryDirectory with one Windows-specific cleanup fix."""
+    name = tempfile.mkdtemp(suffix, prefix, dir)
+    yield name
+    # ignore_errors=True is important for Windows. Windows will encounter an
+    # `Access denied` error if the standard library TemporaryDirectory is used.
+    shutil.rmtree(name, ignore_errors=True)
 
 
 def calculate_model_name(program_code: str) -> str:
@@ -152,7 +164,7 @@ def import_model_extension_module(model_name: str, module_bytes: bytes):
     module_filename = f"{module_name}.so"
     assert isinstance(module_bytes, bytes)
 
-    with tempfile.TemporaryDirectory() as temporary_directory:
+    with TemporaryDirectory() as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
@@ -234,21 +246,20 @@ def _build_extension_module(
 
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
-    with tempfile.TemporaryDirectory() as temporary_dir:
-        temporary_dir_path = pathlib.Path(temporary_dir)
-        cpp_filepath = temporary_dir_path / f"{module_name}.hpp"
-        pyx_filepath = temporary_dir_path / f"{module_name}.pyx"
+    with TemporaryDirectory() as temporary_directory:
+        temporary_directory = pathlib.Path(temporary_directory)
+        cpp_filepath = temporary_directory / f"{module_name}.hpp"
+        pyx_filepath = temporary_directory / f"{module_name}.pyx"
         pyx_code = string.Template(pyx_code_template).substitute(
             cpp_filename=cpp_filepath.as_posix()
         )
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
             with open(filepath, "w") as fh:
                 fh.write(code)
-
         httpstan_dir = os.path.dirname(__file__)
         include_dirs = [
             httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
-            temporary_dir_path.as_posix(),
+            temporary_directory.as_posix(),
             os.path.join(httpstan_dir, "lib", "stan", "src"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
@@ -291,12 +302,11 @@ def _build_extension_module(
         if redirect_stderr:
             orig_stdout = _redirect_stdout()
             orig_stderr = _redirect_stderr_to(stream)
-
         try:
             build_extension.extensions = Cython.Build.cythonize(
                 [extension], include_path=cython_include_path
             )
-            build_extension.build_temp = build_extension.build_lib = temporary_dir_path.as_posix()
+            build_extension.build_temp = build_extension.build_lib = temporary_directory.as_posix()
             build_extension.run()
         finally:
             if redirect_stderr:
