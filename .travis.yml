@@ -1,15 +1,20 @@
 dist: xenial
 language: python
 python: 3.6
-compiler:
-  - gcc
-  - clang
 matrix:
   include:
     - python: 3.6
       env: TOXENV=py36
+      compiler: gcc
+    - python: 3.6
+      env: TOXENV=py36
+      compiler: clang
     - python: 3.7
       env: TOXENV=py37
+      compiler: gcc
+    - python: 3.7
+      env: TOXENV=py37
+      compiler: clang
     - env: TOXENV=flake8
     - env: TOXENV=format
     - env: TOXENV=mypy
