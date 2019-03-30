@@ -44,8 +44,16 @@ echo "Running 'git stash'"
 git stash
 rm -rf httpstan/lib/stan
 mv "${TEMPDIR}/stan-${VERSION}" httpstan/lib/stan
+
 echo "Deleting 'doc' directories in httpstan/lib/stan/lib to save space"
 find httpstan/lib/stan/lib -type d -iname doc -print0 | xargs -0 rm -rf
+echo "Deleting 'test' directories in httpstan/lib/stan/lib/stan_math/lib to save space"
+find httpstan/lib/stan/lib/stan_math/lib -type d -name test -print0 | xargs -0 rm -rf
+echo "Deleting boost 'libs' directory in httpstan/lib/stan/lib/stan_math/lib to save space"
+find httpstan/lib/stan/lib/stan_math/lib -maxdepth 2 -type d -name libs -print0 | xargs -0 rm -rf
+echo "Deleting boost 'tools' directory in httpstan/lib/stan/lib/stan_math/lib to save space"
+find httpstan/lib/stan/lib/stan_math/lib -maxdepth 2 -type d -name tools -print0 | xargs -0 rm -rf
+
 echo "Running 'git add httpstan/lib/stan -f'"
 git add httpstan/lib/stan -f
 echo "Running 'git commit' with message:"\
