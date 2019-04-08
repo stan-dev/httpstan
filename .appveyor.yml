@@ -39,3 +39,4 @@ test_script:
   - cd empty_folder
   # eventually `- python -m pytest ../tests`
   - python -c "import httpstan"
+  - python -m pytest ../tests
