@@ -9,6 +9,7 @@ environment:
 
 install:
   - set PATH=%MINICONDA%;%MINICONDA%\Scripts;C:\\msys64\usr\bin;%PATH%
+  - conda activate base
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
