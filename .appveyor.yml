@@ -1,14 +1,14 @@
-os: Visual Studio 2015
+os: Visual Studio 2017
 platform: x64
 environment:
-  global:
-    MINICONDA: "C:\\Miniconda37-x64"
   matrix:
     - PYTHON_VERSION: 3.6
+      PYTHON_ROOT: "C:\\Miniconda36-x64"
     - PYTHON_VERSION: 3.7
+      PYTHON_ROOT: "C:\\Miniconda37-x64"
 
 install:
-  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;C:\\msys64\usr\bin;%PATH%
+  - CALL "%PYTHON_ROOT%\\Scripts\\activate.bat"
   - conda activate base
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
@@ -23,7 +23,7 @@ install:
 
   - ECHO "Starting to build the wheel"
   # generate required cpp files
-  - make
+  - mingw32-make
   # build the wheel and install it
   - python setup.py --quiet bdist_wheel
   - ps: "ls dist"
