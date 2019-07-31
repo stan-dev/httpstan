@@ -5,11 +5,11 @@ platform:
   - x64
 
 environment:
+  global:
+    - PYTHON_ROOT: "C:\\Miniconda36-x64"
   matrix:
     - PYTHON_VERSION: 3.6
-      PYTHON_ROOT: "C:\\Miniconda36-x64"
     - PYTHON_VERSION: 3.7
-      PYTHON_ROOT: "C:\\Miniconda37-x64"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
