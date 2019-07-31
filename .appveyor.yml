@@ -1,5 +1,9 @@
-os: Visual Studio 2017
-platform: x64
+skip_branch_with_pr: true
+image: Visual Studio 2017
+
+platform: 
+  - x64
+
 environment:
   matrix:
     - PYTHON_VERSION: 3.6
@@ -8,23 +12,38 @@ environment:
       PYTHON_ROOT: "C:\\Miniconda37-x64"
 
 install:
+  # If there is a newer build queued for the same PR, cancel this one.
+  # The AppVeyor 'rollout builds' option is supposed to serve the same
+  # purpose but it is problematic because it tends to cancel builds pushed
+  # directly to master instead of just PR builds (or the converse).
+  # credits: JuliaLang developers.
+  - ps: if ($env:APPVEYOR_PULL_REQUEST_NUMBER -and $env:APPVEYOR_BUILD_NUMBER -ne ((Invoke-RestMethod `
+      https://ci.appveyor.com/api/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/history?recordsNumber=50).builds | `
+      Where-Object pullRequestId -eq $env:APPVEYOR_PULL_REQUEST_NUMBER)[0].buildNumber) { `
+        throw "There are newer queued builds for this pull request, failing early." }
+  
   - SET PATH=%PYTHON_ROOT%;%PYTHON_ROOT%\Scripts;%PATH%
   - CALL activate.bat base
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
+  
   - conda create -q -n test-env python=%PYTHON_VERSION%
   - conda activate test-env
   - conda install numpy cython scipy matplotlib pandas setuptools libpython m2w64-toolchain -c msys2 -q
+  
   - gcc --version
   - mingw32-make --version
+  
   # Install the build dependencies of the project.
   - pip install -q -r requirements.txt
   - pip install -q -r test-requirements.txt
 
   - ECHO "Starting to build the wheel"
+  
   # generate required cpp files
   - mingw32-make
+  
   # build the wheel and install it
   - python setup.py --quiet bdist_wheel
   - ps: "ls dist"
@@ -39,5 +58,6 @@ build: false
 test_script:
   - mkdir empty_folder
   - cd empty_folder
+  
   # eventually `- python -m pytest ../tests`
   - python -c "import httpstan"
