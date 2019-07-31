@@ -8,8 +8,8 @@ environment:
       PYTHON_ROOT: "C:\\Miniconda37-x64"
 
 install:
-  - CALL "%PYTHON_ROOT%\\Scripts\\activate.bat"
-  - conda activate base
+  - SET PATH=%PYTHON_ROOT%;%PYTHON_ROOT%\Scripts;%PATH%
+  - CALL activate.bat base
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
@@ -17,6 +17,7 @@ install:
   - conda activate test-env
   - conda install numpy cython scipy matplotlib pandas setuptools libpython m2w64-toolchain -c msys2 -q
   - gcc --version
+  - mingw32-make --version
   # Install the build dependencies of the project.
   - pip install -q -r requirements.txt
   - pip install -q -r test-requirements.txt
