@@ -1,7 +1,7 @@
 #ifndef STAN_MATH_PRIM_MAT_VECTORIZE_APPLY_SCALAR_UNARY_HPP
 #define STAN_MATH_PRIM_MAT_VECTORIZE_APPLY_SCALAR_UNARY_HPP
 
-#include <Eigen/Dense>
+#include <stan/math/prim/mat/fun/Eigen.hpp>
 #include <vector>
 
 namespace stan {
@@ -54,11 +54,8 @@ struct apply_scalar_unary {
    * by F to the specified matrix.
    */
   static inline return_t apply(const T& x) {
-    return_t result(x.rows(), x.cols());
-    for (int j = 0; j < x.cols(); ++j)
-      for (int i = 0; i < x.rows(); ++i)
-        result(i, j) = apply_scalar_unary<F, scalar_t>::apply(x(i, j));
-    return result;
+    return x.unaryExpr(
+        [](scalar_t x) { return apply_scalar_unary<F, scalar_t>::apply(x); });
   }
 };
 
