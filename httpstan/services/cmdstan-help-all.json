@@ -87,6 +87,11 @@
         "default": "diag_e"
       },
       {
+        "name": "metric_file",
+        "type": "string",
+        "default": "\"\""
+      },
+      {
         "name": "stepsize",
         "type": "double",
         "default": "1"
@@ -247,11 +252,6 @@
         "name": "error",
         "type": "double",
         "default": "1e-6"
-      },
-      {
-        "name": "id",
-        "type": "int",
-        "default": "0"
       }
     ]
   },
