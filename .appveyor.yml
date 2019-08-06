@@ -2,13 +2,13 @@ os: Visual Studio 2015
 platform: x64
 environment:
   global:
-    MINICONDA: "C:\\Miniconda37-x64"
+    MINICONDA: "C:\\Miniconda36-x64"
   matrix:
     - PYTHON_VERSION: 3.6
     - PYTHON_VERSION: 3.7
 
 install:
-  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;C:\\msys64\usr\bin;%PATH%
+  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
@@ -16,13 +16,14 @@ install:
   - activate test-env
   - conda install numpy cython scipy matplotlib pandas setuptools libpython m2w64-toolchain -c msys2 -q
   - gcc --version
+  - mingw32-make --version
   # Install the build dependencies of the project.
   - pip install -q -r requirements.txt
   - pip install -q -r test-requirements.txt
 
   - ECHO "Starting to build the wheel"
   # generate required cpp files
-  - make
+  - mingw32-make
   # build the wheel and install it
   - python setup.py --quiet bdist_wheel
   - ps: "ls dist"
