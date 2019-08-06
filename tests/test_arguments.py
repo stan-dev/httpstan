@@ -46,8 +46,15 @@ def test_function_arguments(api_url):
             "stepsize",
             "stepsize_jitter",
             "max_depth",
+            "delta",
+            "gamma",
+            "kappa",
+            "t0",
+            "init_buffer",
+            "term_buffer",
+            "window",
         ]
 
-        assert expected == arguments.function_arguments("hmc_nuts_diag_e", model_module)
+        assert expected == arguments.function_arguments("hmc_nuts_diag_e_adapt", model_module)
 
     asyncio.get_event_loop().run_until_complete(main())
