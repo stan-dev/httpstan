@@ -140,6 +140,14 @@ def hmc_nuts_diag_e_adapt_wrapper(dict data, SPSCQueue queue,
                                   int refresh, double stepsize, double stepsize_jitter, int max_depth,
                                   double delta, double gamma, double kappa, double t0, int init_buffer,
                                   int term_buffer, int window):
+    # An instance of ChainableStack must be created in each thread. Without
+    # creating such an instance, use of a stan model instance is not threadsafe.
+    # See documentation in stan/math/rev/core/autodiffstackstorage.hpp for details.
+    cdef stan.ChainableStack thread_instance
+    # The following line is prevent Cython from ignoring the previous line. Without the following line
+    # Cython will think that `thread_instance` is not used and elide the declaration. But we need
+    # the declaration in order to use Stan in a threadsafe manner.
+    cdef stan.ChainableStack * thread_instance_ptr = &thread_instance
     cdef int return_code
     cdef stan.array_var_context * var_context_ptr = make_array_var_context(data)
     cdef boost.spsc_queue[string] * queue_ptr = queue.queue_ptr
