@@ -155,13 +155,15 @@ def import_model_extension_module(model_name: str, module_bytes: bytes):
     # TODO(AR): This function is a security risk! Bytes should be authenticated.
     # In principle this should be easy to do because httpstan will only ever
     # load modules that it has itself produced.
-    # NOTE: module suffix can be '.so'; does not need to be, say,
+    # NOTE: module suffix can be '.so'/'.pyd'; does not need to be, say,
     # '.cpython-36m-x86_64-linux-gnu.so'.  The module's filename (minus any
     # suffix) does matter: Python calls an initialization function using the
     # module name, e.g., PyInit_mymodule.  Filenames which do not match the name
     # of this function will not load.
     module_name = calculate_module_name(model_name)
-    module_filename = f"{module_name}.so"
+    # On Windows the correct module suffix is '.pyd'
+    # See https://docs.python.org/3/faq/windows.html#is-a-pyd-file-the-same-as-a-dll
+    module_filename = f"{module_name}{'.so' if platform.system() != 'Windows' else '.pyd'}"
     assert isinstance(module_bytes, bytes)
 
     with TemporaryDirectory() as temporary_directory:

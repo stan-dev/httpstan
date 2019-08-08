@@ -1,6 +1,9 @@
 """Test Stan model compilation."""
 import asyncio
+import random
 import requests
+import string
+from time import time
 
 import httpstan
 
@@ -30,3 +33,30 @@ def test_calculate_model_name(api_url):
         assert model_name == httpstan.models.calculate_model_name(program_code)
 
     asyncio.get_event_loop().run_until_complete(main())
+
+
+def test_model_cache(api_url):
+    """Test model cache."""
+    # use random string, so the module name is new and compilation happens
+
+    random_string = "".join(random.choices(string.ascii_letters, k=random.randint(10, 30)))
+
+    program_code = "".join(
+        ["parameters {real ", random_string, ";} model { ", random_string, " ~ std_normal();}"]
+    )
+
+    async def main():
+        models_url = f"{api_url}/models"
+        resp = requests.post(models_url, json={"program_code": program_code})
+        assert resp.status_code == 201
+        assert "name" in resp.json()
+
+    ts1 = time()
+    asyncio.get_event_loop().run_until_complete(main())
+    duration_compilation = time() - ts1
+
+    ts2 = time()
+    asyncio.get_event_loop().run_until_complete(main())
+    duration_cache = time() - ts2
+
+    assert (duration_compilation / duration_cache) > 10
