@@ -84,14 +84,6 @@ cdef extern from "queue_logger.hpp" namespace "stan::callbacks" nogil:
 
 # stan sample
 
-cdef extern from "stan/services/sample/hmc_nuts_diag_e.hpp" namespace "stan::services::sample" nogil:
-    int hmc_nuts_diag_e[Model](Model& model, var_context& init,
-                               unsigned int random_seed, unsigned int chain, double init_radius,
-                               int num_warmup, int num_samples, int num_thin, libcpp.bool save_warmup,
-                               int refresh, double stepsize, double stepsize_jitter, int max_depth,
-                               interrupt& interrupt, logger& logger, writer& init_writer,
-                               writer& sample_writer, writer& diagnostic_writer)
-
 cdef extern from "stan/services/sample/hmc_nuts_diag_e_adapt.hpp" namespace "stan::services::sample" nogil:
     int hmc_nuts_diag_e_adapt[Model](Model& model, var_context& init,
                                      unsigned int random_seed, unsigned int chain, double init_radius,
