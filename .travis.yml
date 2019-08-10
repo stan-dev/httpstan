@@ -1,6 +1,7 @@
+os: linux
 dist: bionic
 language: python
-python: 3.6
+sudo: false
 matrix:
   include:
     - python: 3.6
@@ -9,11 +10,29 @@ matrix:
     - python: 3.7
       env: TOXENV=py37
       compiler: clang
+
+    - os: osx
+      language: generic
+      env: TRAVIS_PYTHON_VERSION=3.6
+      env: TOXENV=py36
+
     - env: TOXENV=flake8
     - env: TOXENV=format
     - env: TOXENV=mypy
     - env: TOXENV=coverage
 before_install:
+  - |
+    # install Python on macOS
+    if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      env | sort
+      if ! which python$TRAVIS_PYTHON_VERSION; then
+        HOMEBREW_NO_AUTO_UPDATE=1 brew tap minrk/homebrew-python-frameworks
+        HOMEBREW_NO_AUTO_UPDATE=1 brew cask install python-framework-${TRAVIS_PYTHON_VERSION/./}
+      fi
+      python3 -m pip install virtualenv
+      python3 -m virtualenv -p $(which python$TRAVIS_PYTHON_VERSION) ~/travis-env
+      source ~/travis-env/bin/activate
+    fi
   - python --version
 install:
   - pip install cython
