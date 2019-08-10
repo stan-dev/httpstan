@@ -84,6 +84,14 @@ cdef extern from "queue_logger.hpp" namespace "stan::callbacks" nogil:
 
 # stan sample
 
+# stan math item needed to sample in parallel in different threads
+# An instance of ChainableStack must be created in each thread. Without
+# creating such an instance, use of a stan model instance is not threadsafe.
+# See documentation in stan/math/rev/core/autodiffstackstorage.hpp for details.
+cdef extern from "<stan/math/rev/core/chainablestack.hpp>" namespace "stan::math" nogil:
+    ctypedef struct ChainableStack:
+        pass
+
 cdef extern from "stan/services/sample/hmc_nuts_diag_e_adapt.hpp" namespace "stan::services::sample" nogil:
     int hmc_nuts_diag_e_adapt[Model](Model& model, var_context& init,
                                      unsigned int random_seed, unsigned int chain, double init_radius,
