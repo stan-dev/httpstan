@@ -59,4 +59,6 @@ def test_model_cache(api_url):
     asyncio.get_event_loop().run_until_complete(main())
     duration_cache = time() - ts2
 
+    # force duration_cache > 0
+    duration_cache += 1e-9
     assert (duration_compilation / duration_cache) > 10
