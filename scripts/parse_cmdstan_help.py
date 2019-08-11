@@ -3,6 +3,7 @@ import argparse
 import collections
 import json
 import re
+import typing
 
 METHODS = {"sample", "optimize", "variational", "diagnose"}
 OPTIMIZE_ALGORITHMS = {"bfgs", "lbfgs", "newton"}
@@ -11,7 +12,7 @@ parser = argparse.ArgumentParser(description="Parse CmdStan 'help-all' text.")
 parser.add_argument("input_filename", help="Filename containing 'help-all' output.")
 
 
-def _split_cmdstan_help(text):
+def _split_cmdstan_help(text: str) -> dict:
     """Break CmdStan help text into logical parts."""
     parts = {"method": collections.defaultdict(dict), "output": ""}
     for chunk in re.split(r"\n  (?=\w+\n)", text):
@@ -23,26 +24,26 @@ def _split_cmdstan_help(text):
                         for optchunk in re.split(r"\n        (?=\w+\n)", subchunk):
                             algo = optchunk.lstrip().split()[0]
                             if algo in OPTIMIZE_ALGORITHMS:
-                                parts["method"][header][algo] = optchunk
+                                parts["method"][header][algo] = optchunk  # type: ignore
                     else:
-                        parts["method"][header] = subchunk
+                        parts["method"][header] = subchunk  # type: ignore
         elif chunk.lstrip().startswith("output"):
             parts["output"] = chunk
     assert "refresh" in parts["output"]
     return parts
 
 
-def _extract_defaults(text):
+def _extract_defaults(text: str) -> typing.Generator[dict, None, None]:
     regex = r"\s(\w+)=<([^>]+)>.*?Defaults to ([^\n]+)"
     for name, type, default in re.findall(regex, text, re.DOTALL):
         yield {"name": name, "type": type, "default": default}
 
 
-def parse_cmdstan_help(text):
+def parse_cmdstan_help(text: str) -> dict:
     """Parse output of CmdStan `help-all`."""
     parts = _split_cmdstan_help(text)
 
-    def walk(node, visit_func):
+    def walk(node: dict, visit_func: typing.Callable) -> dict:
         node = node.copy()
         for key, item in node.items():
             if isinstance(item, dict):

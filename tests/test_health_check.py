@@ -4,10 +4,10 @@ import asyncio
 import requests
 
 
-def test_health_check(api_url):
+def test_health_check(api_url: str) -> None:
     """Test health check route."""
 
-    async def main():
+    async def main() -> None:
         resp = requests.get(f"{api_url}/health")
         assert resp.status_code == 200
 
