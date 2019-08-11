@@ -4,6 +4,7 @@ import functools
 import inspect
 import json
 import time
+import types
 import typing
 
 import pkg_resources
@@ -13,7 +14,7 @@ Method = enum.Enum("Method", "SAMPLE OPTIMIZE VARIATIONAL DIAGNOSE")
 DEFAULTS_LOOKUP = None  # lazy loaded by lookup_default
 
 
-def _pythonize_cmdstan_type(type_name: str):
+def _pythonize_cmdstan_type(type_name: str) -> type:
     """Turn CmdStan C++ type name into Python type.
 
     For example, "double" becomes `float` (the type).
@@ -76,7 +77,7 @@ def lookup_default(method: Method, arg: str) -> typing.Union[float, int]:
     return type(item["default"])
 
 
-def function_arguments(function_name: str, model_module) -> typing.List[str]:
+def function_arguments(function_name: str, model_module: types.ModuleType) -> typing.List[str]:
     """Get function arguments for stan::services `function_name`.
 
     A compiled `model_module` is required for the lookup. Only simple function

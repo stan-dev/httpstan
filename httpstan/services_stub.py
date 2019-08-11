@@ -9,7 +9,8 @@ queue. The queue is a lock-free single-producer/single-consumer queue defined in
 import asyncio
 import functools
 import queue  # for queue.Empty exception
-from typing import Callable, IO
+import types
+import typing
 
 import google.protobuf.internal.encoder
 
@@ -21,12 +22,12 @@ import httpstan.stan
 
 async def call(
     function_name: str,
-    model_module,
+    model_module: types.ModuleType,
     data: dict,
-    messages_file: IO[bytes],
-    logger_callback: Callable = None,
-    **kwargs,
-):
+    messages_file: typing.IO[bytes],
+    logger_callback: typing.Callable = None,
+    **kwargs: dict,
+) -> None:
     """Call stan::services function.
 
     Yields (asynchronously) messages from the stan::callbacks writers which are
@@ -43,7 +44,9 @@ async def call(
         kwargs: named stan::services function arguments, see CmdStan documentation.
     """
     method, function_basename = function_name.replace("stan::services::", "").split("::", 1)
-    queue_wrapper = model_module.SPSCQueue(capacity=10_000_000)  # 10_000 is enough for ~4000 draws
+    # queue capacity of 10_000 is enough for ~4000 draws. Type ignored because
+    # SPSCQueue is part of a module which is compiled during run time.
+    queue_wrapper = model_module.SPSCQueue(capacity=10_000_000)  # type: ignore
     # function_basename will be something like "hmc_nuts_diag_e"
     # function_wrapper will refer to a function like "hmc_nuts_diag_e_wrapper"
     function_wrapper = getattr(model_module, function_basename + "_wrapper")
@@ -57,7 +60,7 @@ async def call(
     # `stan::services::hmc_nuts_diag_e_adapt`).
     for arg in function_arguments:
         if arg not in kwargs:
-            kwargs[arg] = arguments.lookup_default(arguments.Method[method.upper()], arg)
+            kwargs[arg] = typing.cast(typing.Any, arguments.lookup_default(arguments.Method[method.upper()], arg))
     function_wrapper_partial = functools.partial(function_wrapper, data, queue_wrapper, **kwargs)
 
     loop = asyncio.get_event_loop()

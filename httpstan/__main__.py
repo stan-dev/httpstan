@@ -11,7 +11,7 @@ import time
 import httpstan.main
 
 
-def main():
+def main() -> None:
     server = httpstan.main.Server()
     server.start()
     print(f"httpstan serving on {server.host}:{server.port}", file=sys.stderr)
