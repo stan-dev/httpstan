@@ -60,7 +60,9 @@ async def call(
     # `stan::services::hmc_nuts_diag_e_adapt`).
     for arg in function_arguments:
         if arg not in kwargs:
-            kwargs[arg] = typing.cast(typing.Any, arguments.lookup_default(arguments.Method[method.upper()], arg))
+            kwargs[arg] = typing.cast(
+                typing.Any, arguments.lookup_default(arguments.Method[method.upper()], arg)
+            )
     function_wrapper_partial = functools.partial(function_wrapper, data, queue_wrapper, **kwargs)
 
     loop = asyncio.get_event_loop()

@@ -55,10 +55,15 @@ def test_transformed_data_params(api_url: str) -> None:
 def test_transformed_data_rng(api_url: str) -> None:
     """Test consistency in rng in `transformed data` block."""
 
-    async def draws(random_seed: typing.Optional[int] = None) -> typing.List[typing.Union[int, float]]:
+    async def draws(
+        random_seed: typing.Optional[int] = None
+    ) -> typing.List[typing.Union[int, float]]:
         model_name = helpers.get_model_name(api_url, program_code)
         fits_url = f"{api_url}/models/{model_name.split('/')[-1]}/fits"
-        data: dict = {"function": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": test_data}
+        data: dict = {
+            "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
+            "data": test_data,
+        }
         if random_seed is not None:
             data["random_seed"] = random_seed
         resp = requests.post(fits_url, json=data)

@@ -258,7 +258,9 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         )
         return aiohttp.web.json_response(operation_dict, status=201)
 
-    def _services_call_done(operation: dict, messages_file: io.BytesIO, db: sqlite3.Connection, future: asyncio.Future) -> None:
+    def _services_call_done(
+        operation: dict, messages_file: io.BytesIO, db: sqlite3.Connection, future: asyncio.Future
+    ) -> None:
         """Called when services call (i.e., an operation) is done.
 
         Arguments:
