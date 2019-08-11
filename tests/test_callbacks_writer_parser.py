@@ -7,7 +7,7 @@ import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 TopicEnum = callbacks_writer_pb2.WriterMessage.Topic
 
 
-def test_callbacks_writer_parser_message_writer():
+def test_callbacks_writer_parser_message_writer() -> None:
     """Test that callback writer messages are parsed correctly."""
     message = """logger:Gradient evaluation took 4.7e-05 seconds"""
     message_pb = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("LOGGER"))
@@ -17,7 +17,7 @@ def test_callbacks_writer_parser_message_writer():
     assert observed == message_pb
 
 
-def test_callbacks_writer_parser_sample_writer_adapt():
+def test_callbacks_writer_parser_sample_writer_adapt() -> None:
     """Test that callback writer messages are parsed correctly."""
     messages = (
         """sample_writer:["lp__", "accept_stat__"]""",
@@ -34,7 +34,7 @@ def test_callbacks_writer_parser_sample_writer_adapt():
     assert observed == expected
 
 
-def test_callbacks_writer_parser_sample_writer():
+def test_callbacks_writer_parser_sample_writer() -> None:
     """Test that callback writer messages are parsed correctly."""
     messages = [
         """sample_writer:["lp__","accept_stat__","y"]""",  # noqa

@@ -9,23 +9,21 @@ import helpers
 program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 
 
-def test_lookup_default():
+def test_lookup_default() -> None:
     """Test argument default value lookup."""
-    expected = 1000
-    assert expected == arguments.lookup_default(arguments.Method.SAMPLE, "num_samples")
-    expected = 0.05
-    assert expected == arguments.lookup_default(arguments.Method.SAMPLE, "gamma")
+    assert 1000 == arguments.lookup_default(arguments.Method.SAMPLE, "num_samples")
+    assert 0.05 == arguments.lookup_default(arguments.Method.SAMPLE, "gamma")
 
 
-def test_function_arguments(api_url):
+def test_function_arguments(api_url: str) -> None:
     """Test function argument name lookup."""
 
     # function_arguments needs compiled module, so we have to get one
-    async def main():
+    async def main() -> None:
         model_name = helpers.get_model_name(api_url, program_code)
 
         # get a reference to the model_module
-        app = {}  # mock aiohttp.web.Application
+        app: dict = {}  # mock aiohttp.web.Application
         await httpstan.cache.init_cache(app)  # setup database, populates app['db']
         module_bytes, compiler_output = await httpstan.cache.load_model_extension_module(
             model_name, app["db"]

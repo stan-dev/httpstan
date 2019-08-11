@@ -35,10 +35,10 @@ y = np.dot(X, beta_true) + np.random.normal(size=n)
 data = {"N": n, "p": p, "x": X.tolist(), "y": y.tolist()}
 
 
-def test_linear_regression(api_url):
+def test_linear_regression(api_url: str) -> None:
     """Test sampling from linear regression posterior with defaults."""
 
-    async def main():
+    async def main() -> None:
         model_name = helpers.get_model_name(api_url, program_code)
         fits_url = f"{api_url}/models/{model_name.split('/')[-1]}/fits"
         payload = {
