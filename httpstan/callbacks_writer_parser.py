@@ -55,8 +55,12 @@ class WriterParser:
     def __init__(self) -> None:
         self.sample_fields: typing.Optional[list] = None
         self.diagnostic_fields: typing.Optional[list] = None
-        self.processing_adaptation: typing.Optional[bool] = None  # learn from output if adaptation happened
-        self.previous_message: typing.Optional[str] = None  # used for detecting last adaptation message
+        self.processing_adaptation: typing.Optional[
+            bool
+        ] = None  # learn from output if adaptation happened
+        self.previous_message: typing.Optional[
+            str
+        ] = None  # used for detecting last adaptation message
 
     def parse(self, message: str) -> typing.Optional[callbacks_writer_pb2.WriterMessage]:
         """Convert raw writer message into protobuf message.
@@ -81,7 +85,9 @@ class WriterParser:
         self.previous_message = message
         return result
 
-    def parse_sample_writer(self, values: list) -> typing.Optional[callbacks_writer_pb2.WriterMessage]:
+    def parse_sample_writer(
+        self, values: list
+    ) -> typing.Optional[callbacks_writer_pb2.WriterMessage]:
         """Convert raw writer message into protobuf message."""
         if self.sample_fields is None:
             self.sample_fields = values
