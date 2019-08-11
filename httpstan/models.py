@@ -273,9 +273,7 @@ def _build_extension_module(
 
         stan_macros: List[Tuple[str, Optional[str]]] = [
             ("BOOST_DISABLE_ASSERTS", None),
-            ("BOOST_NO_DECLTYPE", None),
             ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
-            ("BOOST_RESULT_OF_USE_TR1", None),
             ("STAN_THREADS", None),
         ]
 
