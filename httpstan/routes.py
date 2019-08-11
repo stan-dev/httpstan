@@ -5,13 +5,13 @@ Routes for the HTTP server are defined here.
 import json
 
 import apispec
+import aiohttp.web
 
 import httpstan
 import httpstan.schemas as schemas
 import httpstan.views as views
 
-
-def setup_routes(app):
+def setup_routes(app: aiohttp.web.Application) -> None:
     """Add routes to Application.
 
     Arguments:

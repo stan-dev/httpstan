@@ -1,4 +1,5 @@
 import numbers
+import typing
 
 import marshmallow
 import marshmallow.fields as fields
@@ -20,7 +21,7 @@ class Operation(marshmallow.Schema):
     result = fields.Dict()
 
     @marshmallow.validates_schema
-    def validate_result(self, data):
+    def validate_result(self, data: dict) -> None:
         if data["done"] and data.get("result") is None:
             raise marshmallow.ValidationError("If `done` then `result` must be set.", "result")
         if not data["done"] and data.get("result"):
@@ -60,8 +61,8 @@ class Data(marshmallow.Schema):
         unknown = marshmallow.INCLUDE
 
     @marshmallow.validates_schema
-    def validate_values(self, data):
-        def is_nested_list_of_numbers(value):
+    def validate_values(self, data: dict) -> None:
+        def is_nested_list_of_numbers(value: typing.Any) -> bool:
             if not isinstance(value, list):
                 return False
             return all(

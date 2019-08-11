@@ -17,7 +17,8 @@ import shutil
 import string
 import sys
 import tempfile
-from typing import Any, Tuple, List, Optional, IO
+from types import ModuleType
+from typing import Any, Generator, TextIO, Tuple, List, Optional, IO
 
 # IMPORTANT: import setuptools MUST come before any module imports distutils
 # background: bugs.python.org/issue23114
@@ -34,7 +35,7 @@ logger = logging.getLogger("httpstan")
 
 
 @contextlib.contextmanager
-def TemporaryDirectory(suffix=None, prefix=None, dir=None):
+def TemporaryDirectory(suffix: str=None, prefix: str=None, dir: str=None) -> Generator[str, None, None]:
     """Mimic tempfile.TemporaryDirectory with one Windows-specific cleanup fix."""
     name = tempfile.mkdtemp(suffix, prefix, dir)
     yield name
@@ -121,7 +122,7 @@ async def compile_model_extension_module(program_code: str) -> Tuple[bytes, str]
     return module_bytes, compiler_output
 
 
-def _import_module(module_name: str, module_path: str):
+def _import_module(module_name: str, module_path: str) -> ModuleType:
     """Load the module named `module_name` from  `module_path`.
 
     Arguments:
@@ -138,7 +139,7 @@ def _import_module(module_name: str, module_path: str):
     return module
 
 
-def import_model_extension_module(model_name: str, module_bytes: bytes):
+def import_model_extension_module(model_name: str, module_bytes: bytes) -> ModuleType:
     """Load Stan model extension module from binary representation.
 
     This function presents a security risk! It will load a Python module which
@@ -207,7 +208,7 @@ def _build_extension_module(
     """
 
     # define utility functions for silencing compiler output
-    def _has_fileno(stream) -> bool:
+    def _has_fileno(stream: TextIO) -> bool:
         """Returns whether the stream object has a working fileno()
 
         Suggests whether _redirect_stderr is likely to work.
@@ -248,8 +249,8 @@ def _build_extension_module(
 
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
-    with TemporaryDirectory(prefix="httpstan_") as temporary_directory:
-        temporary_directory = pathlib.Path(temporary_directory)
+    with TemporaryDirectory(prefix="httpstan_") as temp_dir:
+        temporary_directory = pathlib.Path(temp_dir)
         cpp_filepath = temporary_directory / f"{module_name}.hpp"
         pyx_filepath = temporary_directory / f"{module_name}.pyx"
         pyx_code = string.Template(pyx_code_template).substitute(

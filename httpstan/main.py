@@ -19,7 +19,7 @@ import httpstan.routes
 logger = logging.getLogger("httpstan")
 
 
-async def _warn_unfinished_operations(app):
+async def _warn_unfinished_operations(app: aiohttp.web.Application) -> None:
     """Warn if tasks (e.g., operations) are unfinished.
 
     Called immediately before tasks are cancelled.
@@ -86,13 +86,13 @@ class Server(threading.Thread):
             site = aiohttp.web.TCPSite(self.runner, self.host, self.port)
             self.loop.run_until_complete(site.start())
 
-    def run(self):
+    def run(self) -> None:
         """Runs in a separate thread when ``start`` is called."""
         # This thread takes over control of the event loop.
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()  # will stop when ``stop`` is called
 
-    def stop(self):
+    def stop(self) -> None:
         """Arrange for the server to gracefully exit."""
         # reminder: these functions are called from the original context
         if not self.is_alive():
