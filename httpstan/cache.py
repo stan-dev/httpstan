@@ -10,6 +10,7 @@ import os
 import sqlite3
 from typing import Tuple
 
+import aiohttp.web
 import appdirs
 
 import httpstan
@@ -17,7 +18,7 @@ import httpstan
 logger = logging.getLogger("httpstan")
 
 
-async def init_cache(app):
+async def init_cache(app: aiohttp.web.Application) -> None:
     """Store reference to opened cache database in app.
 
     Objects stored in the aiohttp.web.Application instance can be accessed by
@@ -52,7 +53,7 @@ async def init_cache(app):
     app["db"] = conn
 
 
-async def close_cache(app):
+async def close_cache(app: aiohttp.web.Application) -> None:
     """Close cache.
 
     This function is intended to be added to the ``on_cleanup`` functions
@@ -70,7 +71,7 @@ async def close_cache(app):
 
 async def dump_model_extension_module(
     model_name: str, module_bytes: bytes, compiler_output: str, db: sqlite3.Connection
-):
+) -> None:
     """Store Stan model extension module the cache.
 
     The Stan model extension module is passed via ``module_bytes``. The bytes
@@ -127,7 +128,7 @@ async def load_model_extension_module(model_name: str, db: sqlite3.Connection) -
     return module_bytes, compiler_output
 
 
-async def dump_fit(name: str, fit_bytes: bytes):
+async def dump_fit(name: str, fit_bytes: bytes) -> None:
     """Store Stan fit in filesystem-based cache.
 
     The Stan fit is passed via ``fit_bytes``.
@@ -172,7 +173,7 @@ async def load_fit(name: str) -> bytes:
         raise KeyError(f"Fit `{name}` not found.")
 
 
-async def dump_operation(name: str, value: bytes, db: sqlite3.Connection):
+async def dump_operation(name: str, value: bytes, db: sqlite3.Connection) -> None:
     """Store serialized Operation in cache.
 
     This function is a coroutine.

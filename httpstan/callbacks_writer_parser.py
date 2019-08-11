@@ -33,7 +33,7 @@ of the model on the unconstrained scale.
 """
 import ujson as json
 import re
-from typing import Optional
+import typing
 
 import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 
@@ -52,12 +52,13 @@ class WriterParser:
 
     """
 
-    def __init__(self):  # noqa
-        self.sample_fields, self.diagnostic_fields = None, None
-        self.processing_adaptation = None  # learn from output if adaptation happened
-        self.previous_message = None  # used for detecting last adaptation message
+    def __init__(self) -> None:
+        self.sample_fields: typing.Optional[list] = None
+        self.diagnostic_fields: typing.Optional[list] = None
+        self.processing_adaptation: typing.Optional[bool] = None  # learn from output if adaptation happened
+        self.previous_message: typing.Optional[str] = None  # used for detecting last adaptation message
 
-    def parse(self, message: str) -> Optional[callbacks_writer_pb2.WriterMessage]:
+    def parse(self, message: str) -> typing.Optional[callbacks_writer_pb2.WriterMessage]:
         """Convert raw writer message into protobuf message.
 
         This function delegates further parsing to message-specific parser.
@@ -80,7 +81,7 @@ class WriterParser:
         self.previous_message = message
         return result
 
-    def parse_sample_writer(self, values) -> Optional[callbacks_writer_pb2.WriterMessage]:
+    def parse_sample_writer(self, values: list) -> typing.Optional[callbacks_writer_pb2.WriterMessage]:
         """Convert raw writer message into protobuf message."""
         if self.sample_fields is None:
             self.sample_fields = values
@@ -92,6 +93,7 @@ class WriterParser:
         message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("SAMPLE"))
         if self.processing_adaptation:
             # detect if we are on last adaptation message
+            self.previous_message = typing.cast(str, self.previous_message)
             is_last_adaptation_message = re.match(
                 r"sample_writer:Diagonal elements of inverse mass matrix:", self.previous_message
             )
@@ -115,7 +117,7 @@ class WriterParser:
                 feature.double_list.value.append(value)
         return message
 
-    def parse_diagnostic_writer(self, values):
+    def parse_diagnostic_writer(self, values: list) -> None:
         """Convert raw writer message into protobuf message."""
         if self.diagnostic_fields is None:
             self.diagnostic_fields = values
@@ -132,14 +134,14 @@ class WriterParser:
             feature.double_list.value.append(value)
         return message
 
-    def parse_logger(self, values) -> callbacks_writer_pb2.WriterMessage:
+    def parse_logger(self, values: list) -> callbacks_writer_pb2.WriterMessage:
         """Convert raw writer message into protobuf message."""
         message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("LOGGER"))
         for value in values:
             message.feature.add().string_list.value.append(value)
         return message
 
-    def parse_init_writer(self, values) -> callbacks_writer_pb2.WriterMessage:
+    def parse_init_writer(self, values: list) -> callbacks_writer_pb2.WriterMessage:
         """Convert raw writer message into protobuf message."""
         message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("INITIALIZATION"))
         for value in values:

@@ -10,12 +10,14 @@ import io
 import json
 import logging
 import re
+import sqlite3
 from typing import Optional, Sequence
 
 import aiohttp.web
 import webargs.aiohttpparser
 
 import httpstan.cache
+import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 import httpstan.fits
 import httpstan.models
 import httpstan.schemas as schemas
@@ -31,7 +33,7 @@ def _make_error(message: str, status: int, details: Optional[Sequence] = None) -
     return schemas.Status().load(status_dict)
 
 
-async def handle_health(request):
+async def handle_health(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Return 200 OK.
 
     ---
@@ -41,7 +43,7 @@ async def handle_health(request):
     return aiohttp.web.Response(text="httpstan is running.")
 
 
-async def handle_models(request):
+async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Compile Stan model.
 
     ---
@@ -95,7 +97,7 @@ async def handle_models(request):
     return aiohttp.web.json_response(response_dict, status=201)
 
 
-async def handle_show_params(request):
+async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Show parameter names and dimensions.
 
     Data must be provided as model parameters can and frequently do
@@ -156,16 +158,18 @@ async def handle_show_params(request):
     # ``param_names`` and ``dims`` are defined in ``anonymous_stan_model_services.pyx.template``.
     # Apart from converting C++ types into corresponding Python types, they do no processing of the
     # output of ``get_param_names`` and ``get_dims``.
+    # Ignoring types due to the difficulty of referring to an extension module
+    # which is compiled during run time.
     try:
-        param_names_bytes = model_module.param_names(data)
+        param_names_bytes = model_module.param_names(data)  # type: ignore
     except Exception as exc:
         # e.g., "Found negative dimension size in variable declaration"
         message, status = f"Error calling param_names: `{exc}`", 400
         logger.critical(message)
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     param_names = [name.decode() for name in param_names_bytes]
-    dims = model_module.dims(data)
-    constrained_param_names_bytes = model_module.constrained_param_names(data)
+    dims = model_module.dims(data)  # type: ignore
+    constrained_param_names_bytes = model_module.constrained_param_names(data)  # type: ignore
     constrained_param_names = [name.decode() for name in constrained_param_names_bytes]
     params = []
     for name, dims_ in zip(param_names, dims):
@@ -182,7 +186,7 @@ async def handle_show_params(request):
     return aiohttp.web.json_response({"name": model_name, "params": params})
 
 
-async def handle_create_fit(request):
+async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Call function defined in stan::services.
 
     ---
@@ -254,7 +258,7 @@ async def handle_create_fit(request):
         )
         return aiohttp.web.json_response(operation_dict, status=201)
 
-    def _services_call_done(operation: dict, messages_file, db, future):
+    def _services_call_done(operation: dict, messages_file: io.BytesIO, db: sqlite3.Connection, future: asyncio.Future) -> None:
         """Called when services call (i.e., an operation) is done.
 
         Arguments:
@@ -306,7 +310,7 @@ async def handle_create_fit(request):
     # if a task is cancelled before finishing a warning will be issued (see
     # `on_cleanup` signal handler in main.py).
     # Note: Python 3.7 and later, `ensure_future` is `create_task`
-    def logger_callback(operation, message):
+    def logger_callback(operation: dict, message: callbacks_writer_pb2.WriterMessage) -> None:
         value = message.feature[0].string_list.value[0]
         if not value.startswith("Iteration:"):
             return
@@ -337,7 +341,7 @@ async def handle_create_fit(request):
     return aiohttp.web.json_response(operation_dict, status=201)
 
 
-async def handle_get_fit(request):
+async def handle_get_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Get result of a call to a function defined in stan::services.
 
     ---
@@ -378,7 +382,7 @@ async def handle_get_fit(request):
     return aiohttp.web.Response(body=fit_bytes)
 
 
-async def handle_get_operation(request):
+async def handle_get_operation(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Get Operation.
 
     ---
