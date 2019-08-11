@@ -11,6 +11,7 @@ import httpstan
 import httpstan.schemas as schemas
 import httpstan.views as views
 
+
 def setup_routes(app: aiohttp.web.Application) -> None:
     """Add routes to Application.
 

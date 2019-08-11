@@ -35,7 +35,9 @@ logger = logging.getLogger("httpstan")
 
 
 @contextlib.contextmanager
-def TemporaryDirectory(suffix: str=None, prefix: str=None, dir: str=None) -> Generator[str, None, None]:
+def TemporaryDirectory(
+    suffix: str = None, prefix: str = None, dir: str = None
+) -> Generator[str, None, None]:
     """Mimic tempfile.TemporaryDirectory with one Windows-specific cleanup fix."""
     name = tempfile.mkdtemp(suffix, prefix, dir)
     yield name

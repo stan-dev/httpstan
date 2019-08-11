@@ -98,6 +98,8 @@ def test_eight_schools_params(api_url: str) -> None:
         param = params[2]
         assert param["name"] == "eta"
         assert param["dims"] == [schools_data["J"]]
-        assert param["constrained_names"] == [f"eta.{i}" for i in range(1, typing.cast(int, schools_data["J"]) + 1)]
+        assert param["constrained_names"] == [
+            f"eta.{i}" for i in range(1, typing.cast(int, schools_data["J"]) + 1)
+        ]
 
     asyncio.get_event_loop().run_until_complete(main())
