@@ -7,7 +7,7 @@ import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 import requests
 
 
-def get_model_name(api_url, program_code):
+def get_model_name(api_url: str, program_code: str) -> str:
     """Compile and retrieve model name."""
     resp = requests.post(f"{api_url}/models", json={"program_code": program_code})
     assert resp.status_code == 201, (api_url, resp.content)
@@ -16,7 +16,7 @@ def get_model_name(api_url, program_code):
     return model_name
 
 
-def validate_protobuf_messages(fit_bytes):
+def validate_protobuf_messages(fit_bytes: bytes) -> None:
     """Superficially validate samples from a Stan model."""
     varint_decoder = google.protobuf.internal.decoder._DecodeVarint32
     next_pos, pos = 0, 0
@@ -28,7 +28,7 @@ def validate_protobuf_messages(fit_bytes):
         pos += next_pos
 
 
-def extract_draws(fit_bytes, param_name):
+def extract_draws(fit_bytes: bytes, param_name: str) -> typing.List[typing.Union[int, float]]:
     """Extract all draws for parameter from stream response.
 
     Only works with a single parameter.

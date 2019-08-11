@@ -1,5 +1,6 @@
 """Test sampling from Eight Schools model."""
 import asyncio
+import typing
 
 import requests
 
@@ -34,10 +35,10 @@ schools_data = {
 }
 
 
-def test_eight_schools(api_url):
+def test_eight_schools(api_url: str) -> None:
     """Test sampling from Eight Schools model with defaults."""
 
-    async def main():
+    async def main() -> None:
         model_name = helpers.get_model_name(api_url, program_code)
         fits_url = f"{api_url}/models/{model_name.split('/')[-1]}/fits"
         payload = {
@@ -74,10 +75,10 @@ def test_eight_schools(api_url):
     asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_eight_schools_params(api_url):
+def test_eight_schools_params(api_url: str) -> None:
     """Test getting parameters from Eight Schools model."""
 
-    async def main():
+    async def main() -> None:
         model_name = helpers.get_model_name(api_url, program_code)
         models_params_url = f"{api_url}/models/{model_name.split('/')[-1]}/params"
         resp = requests.post(models_params_url, json={"data": schools_data})
@@ -97,6 +98,6 @@ def test_eight_schools_params(api_url):
         param = params[2]
         assert param["name"] == "eta"
         assert param["dims"] == [schools_data["J"]]
-        assert param["constrained_names"] == [f"eta.{i}" for i in range(1, schools_data["J"] + 1)]
+        assert param["constrained_names"] == [f"eta.{i}" for i in range(1, typing.cast(int, schools_data["J"]) + 1)]
 
     asyncio.get_event_loop().run_until_complete(main())

@@ -1,6 +1,7 @@
 """Test generated quantities rng."""
 import asyncio
 import requests
+import typing
 
 import numpy as np
 
@@ -20,10 +21,10 @@ program_code = """
 """
 
 
-def test_generated_quantities_rng(api_url):
+def test_generated_quantities_rng(api_url: str) -> None:
     """Test consistency in rng in `generated quantities` block."""
 
-    async def draws(random_seed):
+    async def draws(random_seed: int) -> typing.List[typing.Union[int, float]]:
         model_name = helpers.get_model_name(api_url, program_code)
         fits_url = f"{api_url}/models/{model_name.split('/')[-1]}/fits"
         data = {
@@ -48,7 +49,7 @@ def test_generated_quantities_rng(api_url):
         fit_bytes = resp.content
         return helpers.extract_draws(fit_bytes, "y")
 
-    async def main():
+    async def main() -> None:
         draws1 = np.array(await draws(random_seed=1))
         draws2 = np.array(await draws(random_seed=1))
         draws3 = np.array(await draws(random_seed=2))

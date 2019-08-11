@@ -12,10 +12,10 @@ import helpers
 program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 
 
-def test_models(api_url):
+def test_models(api_url: str) -> None:
     """Test compilation of an extension module."""
 
-    async def main():
+    async def main() -> None:
         models_url = f"{api_url}/models"
         resp = requests.post(models_url, json={"program_code": program_code})
         assert resp.status_code == 201
@@ -24,10 +24,10 @@ def test_models(api_url):
     asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_calculate_model_name(api_url):
+def test_calculate_model_name(api_url: str) -> None:
     """Test model name calculation."""
 
-    async def main():
+    async def main() -> None:
         model_name = helpers.get_model_name(api_url, program_code)
         assert len(model_name.split("/")[-1]) == 10
         assert model_name == httpstan.models.calculate_model_name(program_code)
@@ -35,7 +35,7 @@ def test_calculate_model_name(api_url):
     asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_model_cache(api_url):
+def test_model_cache(api_url: str) -> None:
     """Test model cache."""
     # use random string, so the module name is new and compilation happens
 
@@ -45,7 +45,7 @@ def test_model_cache(api_url):
         ["parameters {real ", random_string, ";} model { ", random_string, " ~ std_normal();}"]
     )
 
-    async def main():
+    async def main() -> None:
         models_url = f"{api_url}/models"
         resp = requests.post(models_url, json={"program_code": program_code})
         assert resp.status_code == 201

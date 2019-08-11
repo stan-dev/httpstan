@@ -2,7 +2,7 @@
 import httpstan.routes
 
 
-def test_openapi_spec():
+def test_openapi_spec() -> None:
     """Test OpenAPI spec generation."""
     spec = httpstan.routes.openapi_spec()
     assert spec

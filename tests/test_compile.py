@@ -4,12 +4,12 @@ import asyncio
 import requests
 
 
-def test_compile_invalid_distribution(api_url):
+def test_compile_invalid_distribution(api_url: str) -> None:
     """Check that compiler error is returned to client."""
 
     program_code = "parameters {real z;} model {z ~ no_such_distribution();}"
 
-    async def main():
+    async def main() -> None:
         resp = requests.post(f"{api_url}/models", json={"program_code": program_code})
         assert resp.status_code == 400
         resp_dict = resp.json()
