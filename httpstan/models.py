@@ -166,7 +166,7 @@ def import_model_extension_module(model_name: str, module_bytes: bytes):
     module_filename = f"{module_name}{'.so' if platform.system() != 'Windows' else '.pyd'}"
     assert isinstance(module_bytes, bytes)
 
-    with TemporaryDirectory() as temporary_directory:
+    with TemporaryDirectory(prefix="httpstan_") as temporary_directory:
         with open(os.path.join(temporary_directory, module_filename), "wb") as fh:
             fh.write(module_bytes)
         module_path = temporary_directory
@@ -248,7 +248,7 @@ def _build_extension_module(
 
     # write files need for compilation in a temporary directory which will be
     # removed when this function exits.
-    with TemporaryDirectory() as temporary_directory:
+    with TemporaryDirectory(prefix="httpstan_") as temporary_directory:
         temporary_directory = pathlib.Path(temporary_directory)
         cpp_filepath = temporary_directory / f"{module_name}.hpp"
         pyx_filepath = temporary_directory / f"{module_name}.pyx"
