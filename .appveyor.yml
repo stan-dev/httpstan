@@ -39,4 +39,4 @@ test_script:
   - mkdir empty_folder
   - cd empty_folder
   - python -c "import httpstan"
-  - python -m pytest ../tests -v
+  - python -m pytest ../tests --deselect tests/test_bernoulli.py::test_bernoulli_parallel -v
