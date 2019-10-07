@@ -18,7 +18,7 @@ def get_model_name(api_url: str, program_code: str) -> str:
 
 def validate_protobuf_messages(fit_bytes: bytes) -> None:
     """Superficially validate samples from a Stan model."""
-    varint_decoder = google.protobuf.internal.decoder._DecodeVarint32
+    varint_decoder = google.protobuf.internal.decoder._DecodeVarint32  # type: ignore
     next_pos, pos = 0, 0
     while pos < len(fit_bytes):
         msg = callbacks_writer_pb2.WriterMessage()
@@ -43,7 +43,7 @@ def extract_draws(fit_bytes: bytes, param_name: str) -> typing.List[typing.Union
     """
     draws = []
 
-    varint_decoder = google.protobuf.internal.decoder._DecodeVarint32
+    varint_decoder = google.protobuf.internal.decoder._DecodeVarint32  # type: ignore
     next_pos, pos = 0, 0
     while pos < len(fit_bytes):
         msg = callbacks_writer_pb2.WriterMessage()
