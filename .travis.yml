@@ -1,6 +1,7 @@
-dist: xenial
+dist: bionic
 language: python
-python: 3.6
+# NOTE: when `language: python` is set, using `compiler: clang` or
+# `compiler: gcc` does nothing. These only work when `language: cpp`.
 matrix:
   include:
     - python: 3.6
@@ -13,13 +14,10 @@ matrix:
     - env: TOXENV=coverage
 before_install:
   - python --version
+  - if [[ -n $CC ]]; then $CC --version; fi
 install:
-  - pip install cython
-  - pip install tox
-  - pip install coveralls
-before_script:
-  - pip install grpcio-tools
-  - make cython protos
+  - pip install cython tox coveralls grpcio-tools
+  - make  # generate required C++ files
 script:
   - travis_wait 60 tox
 after_success:
