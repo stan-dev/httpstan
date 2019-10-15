@@ -22,11 +22,7 @@ matrix:
 before_install:
   - python --version
 install:
-  - pip install cython
-  - pip install tox
-  - pip install coveralls
-before_script:
-  - pip install grpcio-tools
+  - pip install cython tox coveralls grpcio-tools
   - make  # generate required C++ files
 script:
   - travis_wait 60 tox
