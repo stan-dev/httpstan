@@ -17,7 +17,6 @@ matrix:
       compiler: clang
     - env: TOXENV=flake8
     - env: TOXENV=format
-    - env: TOXENV=mypy
     - env: TOXENV=coverage
 before_install:
   - python --version
