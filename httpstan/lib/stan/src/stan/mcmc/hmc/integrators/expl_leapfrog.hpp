@@ -3,7 +3,7 @@
 
 #include <stan/callbacks/logger.hpp>
 #include <stan/mcmc/hmc/integrators/base_leapfrog.hpp>
-#include <stan/math/prim/mat/fun/Eigen.hpp>
+#include <Eigen/Dense>
 
 namespace stan {
   namespace mcmc {

@@ -1,8 +1,7 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_HYPOT_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_HYPOT_HPP
 
-#include <stan/math/prim/meta.hpp>
-#include <stan/math/prim/scal/fun/square.hpp>
+#include <stan/math/prim/scal/fun/is_nan.hpp>
 #include <boost/math/tools/promotion.hpp>
 #include <cmath>
 
@@ -25,7 +24,7 @@ template <typename T1, typename T2>
 inline typename boost::math::tools::promote_args<T1, T2>::type hypot(
     const T1& x, const T2& y) {
   using std::sqrt;
-  return sqrt(square(x) + square(y));
+  return sqrt(x * x + y * y);
 }
 
 }  // namespace math

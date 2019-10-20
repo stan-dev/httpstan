@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_PRIM_SCAL_META_IS_CONSTANT_HPP
 #define STAN_MATH_PRIM_SCAL_META_IS_CONSTANT_HPP
 
-#include <stan/math/prim/scal/meta/conjunction.hpp>
 #include <type_traits>
 
 namespace stan {
@@ -27,15 +26,6 @@ struct is_constant {
    */
   enum { value = std::is_convertible<T, double>::value };
 };
-
-/**
- * Metaprogram defining an enum <code>value</code> which
- * is <code>true</code> if all of the type parameters
- * are constant (i.e., primtive types) and
- * <code>false</code> otherwise.
- */
-template <typename... T>
-using is_constant_all = math::conjunction<is_constant<T>...>;
 
 }  // namespace stan
 #endif

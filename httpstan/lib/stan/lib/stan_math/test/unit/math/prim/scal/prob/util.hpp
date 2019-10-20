@@ -2,7 +2,6 @@
 #define TEST_UNIT_MATH_PRIM_SCAL_PROB_HPP
 
 #include <boost/math/distributions.hpp>
-#include <gtest/gtest.h>
 #include <algorithm>
 #include <vector>
 
@@ -27,58 +26,34 @@ void assert_chi_squared(const std::vector<int>& counts,
 }
 
 /**
- * Like assert_matches_quantiles, but the bins are not necessarily
- * equiprobable. Assert that approximately proportions[i] of the
- * samples are in bin i, which has lower bound bin_boundaries[i-1] and
- * upper bound bin_boundaries[i], using a chi-squared goodness of fit
- * test. bin_boundaries is assumed sorted in increasing order.
- **/
-void assert_matches_bins(const std::vector<double>& samples,
-                         const std::vector<double>& bin_boundaries,
-                         const std::vector<double>& proportions,
-                         double tolerance) {
-  ASSERT_GT(samples.size(), 0);
+ * From a collection of samples and a list of quantiles, assumed ordered,
+ * assert that the samples resemble draws from a distribution with those
+ * quantiles, using a chi_squared goodness of fit test.
+ */
+void assert_matches_quantiles(const std::vector<double>& samples,
+                              const std::vector<double>& quantiles,
+                              double tolerance) {
   int N = samples.size();
   std::vector<double> mysamples = samples;
   std::sort(mysamples.begin(), mysamples.end());
 
-  ASSERT_GT(bin_boundaries.size(), 0);
-  ASSERT_TRUE(bin_boundaries.size() == proportions.size());
-  int K = bin_boundaries.size();
+  int K = quantiles.size();
+  double expected_count = static_cast<double>(N) / K;
+
   std::vector<double> expected;
   for (int i = 0; i < K; i++) {
-    ASSERT_TRUE(proportions[i] >= 0 && proportions[i] <= 1);
-    expected.push_back(proportions[i] * N);
+    expected.push_back(expected_count);
   }
 
   std::vector<int> counts(K);
   size_t current_index = 0;
   for (int i = 0; i < N; ++i) {
-    while (mysamples[i] >= bin_boundaries[current_index]) {
+    while (mysamples[i] >= quantiles[current_index]) {
       ++current_index;
-      EXPECT_TRUE(current_index < bin_boundaries.size());
+      EXPECT_TRUE(current_index < quantiles.size());
     }
     ++counts[current_index];
   }
   assert_chi_squared(counts, expected, tolerance);
-}
-
-/**
- * From a collection of samples and a list of quantiles, assumed
- * ordered, assert that the samples resemble draws from a distribution
- * with those quantiles, using a chi_squared goodness of fit
- * test. That is, assert that the samples are approximately evenly
- * distributed among the quantiles.size() equiprobable bins, who's
- * upper bounds are given in quantiles in increasing order.
- */
-void assert_matches_quantiles(const std::vector<double>& samples,
-                              const std::vector<double>& quantiles,
-                              double tolerance) {
-  int K = quantiles.size();
-  std::vector<double> proportions;
-  for (int i = 0; i < K; ++i)
-    proportions.push_back(1.0 / K);
-
-  assert_matches_bins(samples, quantiles, proportions, tolerance);
 }
 #endif

@@ -5,6 +5,7 @@
 #include <stan/math/prim/mat/fun/Eigen.hpp>
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 #include <vector>
 
 namespace stan {
@@ -20,8 +21,11 @@ namespace math {
  */
 inline int max(const std::vector<int>& x) {
   check_nonzero_size("max", "int vector", x);
-  Eigen::Map<const Eigen::Matrix<int, Eigen::Dynamic, 1>> m(&x[0], x.size());
-  return m.maxCoeff();
+  int max = x[0];
+  for (size_t i = 1; i < x.size(); ++i)
+    if (x[i] > max)
+      max = x[i];
+  return max;
 }
 
 /**
@@ -35,8 +39,11 @@ template <typename T>
 inline T max(const std::vector<T>& x) {
   if (x.size() == 0)
     return -std::numeric_limits<T>::infinity();
-  Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> m(&x[0], x.size());
-  return m.maxCoeff();
+  T max = x[0];
+  for (size_t i = 1; i < x.size(); ++i)
+    if (x[i] > max)
+      max = x[i];
+  return max;
 }
 
 /**

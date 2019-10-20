@@ -3,8 +3,6 @@
 
 #include <boost/throw_exception.hpp>
 #include <stan/math/prim/mat.hpp>
-#include <stdexcept>
-#include <string>
 #include <vector>
 
 namespace stan {
@@ -638,11 +636,11 @@ public:
   /**
    * Return the next scalar.
    *
-   * @tparam TL type of offset
-   * @tparam TS type of multiplier
-   * @param offset offset
-   * @param multiplier multiplier
-   * @return next scalar value
+   * @tparam TL Type of offset.
+   * @tparam TS Type of multiplier.
+   * @param offset Offset.
+   * @param scal Multiplier.
+   * @return Next scalar value.
    */
   template <typename TL, typename TS>
   inline T scalar_offset_multiplier(const TL offset, const TS multiplier) {
@@ -779,16 +777,11 @@ public:
    *
    * <p>See <code>stan::math::check_unit_vector</code>.
    *
-   * @param k Size of returned unit_vector
-   * @return unit_vector read from the specified size number of scalars
-   * @throw std::runtime_error if the next k values is not a unit_vector
-   * @throw std::invalid_argument if k is zero
+   * @param k Size of returned unit_vector.
+   * @return unit_vector read from the specified size number of scalars.
+   * @throw std::runtime_error if the k values is not a unit_vector.
    */
   inline vector_t unit_vector(size_t k) {
-    if (k == 0) {
-      std::string msg = "io::unit_vector: unit vectors cannot be size 0.";
-      throw std::invalid_argument(msg);
-    }
     vector_t theta(vector(k));
     stan::math::check_unit_vector("stan::io::unit_vector", "Constrained vector",
                                   theta);
@@ -804,14 +797,8 @@ public:
    *
    * @param k Number of dimensions in resulting unit_vector.
    * @return unit_vector derived from next <code>k</code> scalars.
-   * @throw std::invalid_argument if k is zero
    */
   inline Eigen::Matrix<T, Eigen::Dynamic, 1> unit_vector_constrain(size_t k) {
-    if (k == 0) {
-      std::string msg = "io::unit_vector_constrain:"
-          " unit vectors cannot be size 0.";
-      throw std::invalid_argument(msg);
-    }
     return stan::math::unit_vector_constrain(vector(k));
   }
 
@@ -826,14 +813,8 @@ public:
    * @param lp Log probability to increment with log absolute
    * Jacobian determinant.
    * @return The next unit_vector of the specified size.
-   * @throw std::invalid_argument if k is zero
    */
   inline vector_t unit_vector_constrain(size_t k, T &lp) {
-    if (k == 0) {
-      std::string msg = "io::unit_vector_constrain:"
-          " unit vectors cannot be size 0.";
-      throw std::invalid_argument(msg);
-    }
     return stan::math::unit_vector_constrain(vector(k), lp);
   }
 
@@ -846,13 +827,8 @@ public:
    * @param k Size of returned simplex.
    * @return Simplex read from the specified size number of scalars.
    * @throw std::runtime_error if the k values is not a simplex.
-   * @throw std::invalid_argument if k is zero
    */
   inline vector_t simplex(size_t k) {
-    if (k == 0) {
-      std::string msg = "io::simplex: simplexes cannot be size 0.";
-      throw std::invalid_argument(msg);
-    }
     vector_t theta(vector(k));
     stan::math::check_simplex("stan::io::simplex", "Constrained vector", theta);
     return theta;
@@ -865,15 +841,10 @@ public:
    *
    * <p>See <code>stan::math::simplex_constrain(Eigen::Matrix)</code>.
    *
-   * @param k number of dimensions in resulting simplex
-   * @return simplex derived from next `k - 1` scalars
-   * @throws std::invalid_argument if number of dimensions (`k`) is zero
+   * @param k Number of dimensions in resulting simplex.
+   * @return Simplex derived from next <code>k-1</code> scalars.
    */
   inline Eigen::Matrix<T, Eigen::Dynamic, 1> simplex_constrain(size_t k) {
-    if (k == 0) {
-      std::string msg = "io::simplex_constrain: simplexes cannot be size 0.";
-      throw std::invalid_argument(msg);
-    }
     return stan::math::simplex_constrain(vector(k - 1));
   }
 
@@ -888,13 +859,8 @@ public:
    * @param lp Log probability to increment with log absolute
    * Jacobian determinant.
    * @return The next simplex of the specified size.
-   * @throws std::invalid_argument if number of dimensions (`k`) is zero
    */
   inline vector_t simplex_constrain(size_t k, T &lp) {
-    if (k == 0) {
-      std::string msg = "io::simplex_constrain: simplexes cannot be size 0.";
-      throw std::invalid_argument(msg);
-    }
     return stan::math::simplex_constrain(vector(k - 1), lp);
   }
 

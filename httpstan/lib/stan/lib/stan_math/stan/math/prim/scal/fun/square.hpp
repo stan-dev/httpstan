@@ -1,8 +1,6 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_SQUARE_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_SQUARE_HPP
 
-#include <cmath>
-
 namespace stan {
 namespace math {
 
@@ -19,7 +17,7 @@ namespace math {
  * @param x Input to square.
  * @return Square of input.
  */
-inline double square(double x) { return std::pow(x, 2); }
+inline double square(double x) { return x * x; }
 
 }  // namespace math
 }  // namespace stan

@@ -200,9 +200,9 @@ namespace stan {
         >> lit(',')
         >> expression_g(_r1)     // 2) y0
         >> lit(',')
-        >> expression_g(_r1)     // 3) t0
+        >> expression_g(_r1)     // 3) t0 (data only)
         >> lit(',')
-        >> expression_g(_r1)     // 4) ts
+        >> expression_g(_r1)     // 4) ts (data only)
         >> lit(',')
         >> expression_g(_r1)     // 5) theta
         >> lit(',')
@@ -232,9 +232,9 @@ namespace stan {
         > lit(',')
         > expression_g(_r1)     // 2) y0
         > lit(',')
-        > expression_g(_r1)     // 3) t0
+        > expression_g(_r1)     // 3) t0 (data only)
         > lit(',')
-        > expression_g(_r1)     // 4) ts
+        > expression_g(_r1)     // 4) ts (data only)
         > lit(',')
         > expression_g(_r1)     // 5) theta
         > lit(',')

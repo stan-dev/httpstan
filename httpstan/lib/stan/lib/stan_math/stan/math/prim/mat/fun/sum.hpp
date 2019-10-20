@@ -3,21 +3,23 @@
 
 #include <stan/math/prim/mat/fun/Eigen.hpp>
 #include <stan/math/prim/arr/fun/sum.hpp>
+#include <vector>
 
 namespace stan {
 namespace math {
 
 /**
  * Returns the sum of the coefficients of the specified
- * Eigen Matrix, Array or expression.
+ * column vector.
  *
- * @tparam Derived Derived argument type.
- * @param v Specified argument.
- * @return Sum of coefficients of argument.
+ * @tparam T Type of elements in matrix.
+ * @tparam R Row type of matrix.
+ * @tparam C Column type of matrix.
+ * @param v Specified vector.
+ * @return Sum of coefficients of vector.
  */
-template <typename Derived>
-inline typename Eigen::DenseBase<Derived>::Scalar sum(
-    const Eigen::DenseBase<Derived>& v) {
+template <typename T, int R, int C>
+inline T sum(const Eigen::Matrix<T, R, C>& v) {
   return v.sum();
 }
 

@@ -1,14 +1,16 @@
 #ifndef STAN_MATH_PRIM_MAT_PROB_MULTI_GP_CHOLESKY_LPDF_HPP
 #define STAN_MATH_PRIM_MAT_PROB_MULTI_GP_CHOLESKY_LPDF_HPP
 
-#include <stan/math/prim/meta.hpp>
 #include <stan/math/prim/scal/err/check_size_match.hpp>
 #include <stan/math/prim/scal/err/check_finite.hpp>
 #include <stan/math/prim/scal/err/check_positive.hpp>
 #include <stan/math/prim/scal/fun/constants.hpp>
+#include <stan/math/prim/scal/meta/include_summand.hpp>
 #include <stan/math/prim/mat/fun/dot_self.hpp>
 #include <stan/math/prim/mat/fun/log.hpp>
 #include <stan/math/prim/mat/fun/mdivide_left_tri_low.hpp>
+#include <stan/math/prim/mat/fun/multiply.hpp>
+#include <stan/math/prim/mat/fun/row.hpp>
 #include <stan/math/prim/mat/fun/sum.hpp>
 
 namespace stan {
@@ -43,6 +45,7 @@ multi_gp_cholesky_lpdf(
   static const char* function = "multi_gp_cholesky_lpdf";
   typedef
       typename boost::math::tools::promote_args<T_y, T_covar, T_w>::type T_lp;
+  T_lp lp(0.0);
 
   check_size_match(function, "Size of random variable (rows y)", y.rows(),
                    "Size of kernel scales (w)", w.size());
@@ -53,9 +56,8 @@ multi_gp_cholesky_lpdf(
   check_finite(function, "Random variable", y);
 
   if (y.rows() == 0)
-    return 0;
+    return lp;
 
-  T_lp lp(0);
   if (include_summand<propto>::value) {
     lp += NEG_LOG_SQRT_TWO_PI * y.rows() * y.cols();
   }
@@ -69,7 +71,7 @@ multi_gp_cholesky_lpdf(
   }
 
   if (include_summand<propto, T_y, T_w, T_covar>::value) {
-    T_lp sum_lp_vec(0);
+    T_lp sum_lp_vec(0.0);
     for (int i = 0; i < y.rows(); i++) {
       Eigen::Matrix<T_y, Eigen::Dynamic, 1> y_row(y.row(i));
       Eigen::Matrix<

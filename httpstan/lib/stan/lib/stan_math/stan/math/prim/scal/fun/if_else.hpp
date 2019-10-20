@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_IF_ELSE_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_IF_ELSE_HPP
 
-#include <stan/math/prim/meta.hpp>
 #include <boost/math/tools/promotion.hpp>
 
 namespace stan {

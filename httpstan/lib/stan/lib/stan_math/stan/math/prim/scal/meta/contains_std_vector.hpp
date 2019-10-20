@@ -5,11 +5,6 @@
 #include <type_traits>
 
 namespace stan {
-/**
- * Extends std::false_type as a std::vector type
- * cannot be a scalar primitive type.
- * @tparam Ts Types to test
- */
 template <typename... Ts>
 struct contains_std_vector : std::false_type {};
 }  // namespace stan

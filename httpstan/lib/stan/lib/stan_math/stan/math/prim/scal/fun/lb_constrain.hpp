@@ -1,11 +1,10 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_LB_CONSTRAIN_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_LB_CONSTRAIN_HPP
 
-#include <stan/math/prim/meta.hpp>
 #include <boost/math/tools/promotion.hpp>
 #include <stan/math/prim/scal/fun/identity_constrain.hpp>
-#include <stan/math/prim/scal/fun/constants.hpp>
 #include <cmath>
+#include <limits>
 
 namespace stan {
 namespace math {
@@ -33,7 +32,7 @@ template <typename T, typename L>
 inline typename boost::math::tools::promote_args<T, L>::type lb_constrain(
     const T& x, const L& lb) {
   using std::exp;
-  if (lb == NEGATIVE_INFTY)
+  if (lb == -std::numeric_limits<double>::infinity())
     return identity_constrain(x);
   return exp(x) + lb;
 }
@@ -58,7 +57,7 @@ template <typename T, typename L>
 inline typename boost::math::tools::promote_args<T, L>::type lb_constrain(
     const T& x, const L& lb, T& lp) {
   using std::exp;
-  if (lb == NEGATIVE_INFTY)
+  if (lb == -std::numeric_limits<double>::infinity())
     return identity_constrain(x, lp);
   lp += x;
   return exp(x) + lb;

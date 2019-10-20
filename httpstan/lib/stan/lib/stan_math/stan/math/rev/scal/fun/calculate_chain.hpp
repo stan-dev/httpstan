@@ -1,8 +1,7 @@
 #ifndef STAN_MATH_REV_SCAL_FUN_CALCULATE_CHAIN_HPP
 #define STAN_MATH_REV_SCAL_FUN_CALCULATE_CHAIN_HPP
 
-#include <stan/math/rev/meta.hpp>
-#include <cmath>
+#include <valarray>
 
 namespace stan {
 namespace math {

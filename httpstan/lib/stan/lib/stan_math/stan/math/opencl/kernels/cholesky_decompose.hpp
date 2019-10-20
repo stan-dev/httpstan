@@ -3,7 +3,6 @@
 #ifdef STAN_OPENCL
 
 #include <stan/math/opencl/kernel_cl.hpp>
-#include <stan/math/opencl/buffer_types.hpp>
 
 namespace stan {
 namespace math {
@@ -20,8 +19,8 @@ static const char *cholesky_decompose_kernel_code = STRINGIFY(
      * multiprocessor. The kernels is used as a part of a blocked
      * cholesky decompose.
      *
-     * @param[in, out] A The input matrix and the result of the cholesky
-     *  decomposition
+     * @param[in] A The input matrix
+     * @param[in, out] B The result of cholesky decompositon of A.
      * @param rows The number of rows for A and B.
      * @note Code is a <code>const char*</code> held in
      * <code>cholesky_decompose_kernel_code.</code>
@@ -29,27 +28,36 @@ static const char *cholesky_decompose_kernel_code = STRINGIFY(
      *  This kernel uses the helper macros available in helpers.cl.
      *
      */
-    __kernel void cholesky_decompose(__global double *A, int rows) {
-      const int local_index = get_local_id(0);
-      // The following code is the sequential version of the inplace
+    __kernel void cholesky_decompose(__global double *A, __global double *B,
+                                     int rows) {
+      int local_index = get_local_id(0);
+      // Fill B with zeros
+      // B is square so checking row length is fine for both i and j
+      if (local_index < rows) {
+        for (int k = 0; k < rows; k++) {
+          B(local_index, k) = 0;
+        }
+      }
+      // The following code is the sequential version of the non-inplace
       // cholesky decomposition. Only the innermost loops are parallelized. The
       // rows are processed sequentially. This loop process all the rows:
       for (int j = 0; j < rows; j++) {
+        // First thread calculates the diagonal element
         if (local_index == 0) {
-          double sum = 0.0;
+          double sum = 0;
           for (int k = 0; k < j; k++) {
-            sum = sum + A(j, k) * A(j, k);
+            sum += B(j, k) * B(j, k);
           }
-          A(j, j) = sqrt(A(j, j) - sum);
+          B(j, j) = sqrt(A(j, j) - sum);
         }
         barrier(CLK_LOCAL_MEM_FENCE);
-        if (local_index < j) {
-          A(local_index, j) = 0.0;
-        } else if (local_index > j) {
-          double sum = 0.0;
-          for (int k = 0; k < j; k++)
-            sum = sum + A(local_index, k) * A(j, k);
-          A(local_index, j) = (A(local_index, j) - sum) / A(j, j);
+        // Calculates the rest of the row
+        if (local_index >= (j + 1) && local_index < rows) {
+          double inner_sum = 0;
+          for (int k = 0; k < j; k++) {
+            inner_sum += B(local_index, k) * B(j, k);
+          }
+          B(local_index, j) = (1.0 / B(j, j) * (A(local_index, j) - inner_sum));
         }
         barrier(CLK_LOCAL_MEM_FENCE);
       }
@@ -62,8 +70,8 @@ static const char *cholesky_decompose_kernel_code = STRINGIFY(
  * See the docs for \link kernels/cholesky_decompose.hpp cholesky_decompose()
  * \endlink
  */
-const kernel_cl<in_out_buffer, int> cholesky_decompose(
-    "cholesky_decompose", {indexing_helpers, cholesky_decompose_kernel_code});
+const local_range_kernel<cl::Buffer, cl::Buffer, int> cholesky_decompose(
+    "cholesky_decompose", cholesky_decompose_kernel_code);
 
 }  // namespace opencl_kernels
 }  // namespace math

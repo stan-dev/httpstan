@@ -2,10 +2,9 @@
 #define STAN_MATH_PRIM_SCAL_FUN_OFFSET_MULTIPLIER_CONSTRAIN_HPP
 
 #include <boost/math/tools/promotion.hpp>
-#include <stan/math/prim/meta.hpp>
 #include <stan/math/prim/scal/fun/identity_constrain.hpp>
-#include <stan/math/prim/scal/fun/multiply_log.hpp>
-#include <stan/math/prim/scal/fun/fma.hpp>
+#include <stan/math/prim/scal/fun/abs.hpp>
+#include <stan/math/prim/scal/meta/size_of.hpp>
 #include <stan/math/prim/scal/err/check_positive_finite.hpp>
 #include <stan/math/prim/scal/err/check_finite.hpp>
 #include <cmath>
@@ -47,7 +46,7 @@ offset_multiplier_constrain(const T& x, const M& mu, const S& sigma) {
     return mu + x;
   }
   check_positive_finite("offset_multiplier_constrain", "multiplier", sigma);
-  return fma(sigma, x, mu);
+  return mu + sigma * x;
 }
 
 /**
@@ -87,8 +86,8 @@ offset_multiplier_constrain(const T& x, const M& mu, const S& sigma, T& lp) {
     return mu + x;
   }
   check_positive_finite("offset_multiplier_constrain", "multiplier", sigma);
-  lp += multiply_log(size_of(x), sigma);
-  return fma(sigma, x, mu);
+  lp += size_of(x) * log(sigma);
+  return mu + sigma * x;
 }
 
 }  // namespace math

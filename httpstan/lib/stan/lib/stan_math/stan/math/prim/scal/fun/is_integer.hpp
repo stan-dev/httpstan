@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_IS_INTEGER_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_IS_INTEGER_HPP
 
-#include <stan/math/prim/meta.hpp>
 #include <cmath>
 
 namespace stan {

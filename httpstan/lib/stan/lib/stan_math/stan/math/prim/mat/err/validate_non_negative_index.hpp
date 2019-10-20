@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_PRIM_MAT_ERR_VALIDATE_NON_NEGATIVE_INDEX_HPP
 #define STAN_MATH_PRIM_MAT_ERR_VALIDATE_NON_NEGATIVE_INDEX_HPP
 
-#include <stan/math/prim/meta.hpp>
 #include <sstream>
 #include <stdexcept>
 #include <string>

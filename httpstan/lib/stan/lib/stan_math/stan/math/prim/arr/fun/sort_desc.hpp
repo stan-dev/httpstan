@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_PRIM_ARR_FUN_SORT_DESC_HPP
 #define STAN_MATH_PRIM_ARR_FUN_SORT_DESC_HPP
 
-#include <stan/math/prim/meta.hpp>
 #include <stan/math/prim/scal/err/check_not_nan.hpp>
 #include <algorithm>
 #include <functional>

@@ -4,6 +4,10 @@
 #include <stan/math/prim/mat/fun/Eigen.hpp>
 #include <stan/math/prim/mat/err/check_multiplicable.hpp>
 #include <stan/math/prim/mat/err/check_square.hpp>
+#include <stan/math/prim/mat/err/check_symmetric.hpp>
+#include <stan/math/prim/mat/fun/dot_product.hpp>
+#include <stan/math/prim/mat/fun/multiply.hpp>
+#include <stan/math/prim/mat/fun/transpose.hpp>
 
 namespace stan {
 namespace math {
@@ -15,7 +19,7 @@ inline Eigen::Matrix<T, CB, CB> quad_form(const Eigen::Matrix<T, RA, CA>& A,
                                           const Eigen::Matrix<T, RB, CB>& B) {
   check_square("quad_form", "A", A);
   check_multiplicable("quad_form", "A", A, "B", B);
-  return B.transpose() * A * B;
+  return multiply(transpose(B), multiply(A, B));
 }
 
 template <int RA, int CA, int RB, typename T>
@@ -23,7 +27,7 @@ inline T quad_form(const Eigen::Matrix<T, RA, CA>& A,
                    const Eigen::Matrix<T, RB, 1>& B) {
   check_square("quad_form", "A", A);
   check_multiplicable("quad_form", "A", A, "B", B);
-  return B.dot(A * B);
+  return dot_product(B, multiply(A, B));
 }
 
 }  // namespace math

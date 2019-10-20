@@ -4,6 +4,9 @@
 #include <stan/math/prim/arr/err/check_nonzero_size.hpp>
 #include <stan/math/prim/mat/fun/Eigen.hpp>
 #include <stan/math/prim/mat/fun/log_sum_exp.hpp>
+#include <cmath>
+#include <sstream>
+#include <stdexcept>
 
 namespace stan {
 namespace math {
@@ -39,8 +42,14 @@ namespace math {
 template <typename T>
 inline Eigen::Matrix<T, Eigen::Dynamic, 1> log_softmax(
     const Eigen::Matrix<T, Eigen::Dynamic, 1>& v) {
+  using std::exp;
+  using std::log;
   check_nonzero_size("log_softmax", "v", v);
-  return v.array() - log_sum_exp(v);
+  Eigen::Matrix<T, Eigen::Dynamic, 1> theta(v.size());
+  T z = log_sum_exp(v);
+  for (int i = 0; i < v.size(); ++i)
+    theta(i) = v(i) - z;
+  return theta;
 }
 
 }  // namespace math

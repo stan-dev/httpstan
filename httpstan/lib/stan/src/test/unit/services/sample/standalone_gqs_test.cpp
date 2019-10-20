@@ -1,3 +1,4 @@
+#include <Eigen/Dense>
 #include <boost/algorithm/string.hpp>
 #include <gtest/gtest.h>
 #include <iostream>
