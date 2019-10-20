@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_INV_LOGIT_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_INV_LOGIT_HPP
 
-#include <stan/math/prim/meta.hpp>
 #include <stan/math/prim/scal/fun/constants.hpp>
 #include <cmath>
 
@@ -54,7 +53,7 @@ inline double inv_logit(double a) {
       return exp_a;
     return exp_a / (1 + exp_a);
   }
-  return inv(1 + exp(-a));
+  return 1 / (1 + exp(-a));
 }
 
 }  // namespace math

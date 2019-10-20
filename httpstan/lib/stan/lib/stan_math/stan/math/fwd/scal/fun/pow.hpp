@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_FWD_SCAL_FUN_POW_HPP
 #define STAN_MATH_FWD_SCAL_FUN_POW_HPP
 
-#include <stan/math/fwd/meta.hpp>
 #include <stan/math/fwd/core.hpp>
 
 #include <stan/math/fwd/scal/fun/sqrt.hpp>

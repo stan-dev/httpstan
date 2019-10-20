@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_REV_SCAL_FUN_LOG_INV_LOGIT_DIFF_HPP
 #define STAN_MATH_REV_SCAL_FUN_LOG_INV_LOGIT_DIFF_HPP
 
-#include <stan/math/rev/meta.hpp>
 #include <stan/math/rev/core.hpp>
 #include <stan/math/prim/scal/fun/log_inv_logit_diff.hpp>
 #include <stan/math/prim/scal/fun/inv_logit.hpp>
@@ -11,7 +10,7 @@
 namespace stan {
 namespace math {
 
-/*
+/**
  * Returns the natural logarithm of the difference of the
  * inverse logits of the specified arguments and its gradients.
  *
@@ -28,12 +27,12 @@ namespace math {
     \frac{\partial }{\partial x} = -\frac{e^y}{e^x-e^y}-\frac{e^y}{e^y+1}
    \f]
  *
- * @tparam T1 Type of x argument
- * @tparam T2 Type of y argument
- * @param a Argument
- * @param b Argument
+ * @tparam T1 Type of x argument.
+ * @tparam T2 Type of y argument.
+ * @param x Argument.
+ * @param y Argument.
  * @return Result of log difference of inverse logits of arguments
- *          and gradients
+ *          and gradients.
  */
 namespace internal {
 class log_inv_logit_diff_vv_vari : public op_vv_vari {

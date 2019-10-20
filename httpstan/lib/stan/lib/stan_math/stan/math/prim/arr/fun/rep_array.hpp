@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_PRIM_ARR_FUN_REP_ARRAY_HPP
 #define STAN_MATH_PRIM_ARR_FUN_REP_ARRAY_HPP
 
-#include <stan/math/prim/meta.hpp>
 #include <stan/math/prim/scal/err/check_nonnegative.hpp>
 #include <vector>
 

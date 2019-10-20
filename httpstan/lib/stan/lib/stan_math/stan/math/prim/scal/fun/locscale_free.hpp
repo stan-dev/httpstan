@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_LOCSCALE_FREE_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_LOCSCALE_FREE_HPP
 
-#include <stan/math/prim/meta.hpp>
 #include <stan/math/prim/scal/fun/identity_free.hpp>
 #include <stan/math/prim/scal/err/check_positive_finite.hpp>
 #include <stan/math/prim/scal/err/check_finite.hpp>

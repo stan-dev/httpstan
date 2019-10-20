@@ -3,8 +3,6 @@
 
 #include <stan/math/prim/mat/fun/Eigen.hpp>
 #include <vector>
-#include <numeric>
-#include <functional>
 
 namespace stan {
 namespace math {
@@ -25,7 +23,9 @@ inline std::vector<T> cumulative_sum(const std::vector<T>& x) {
   std::vector<T> result(x.size());
   if (x.size() == 0)
     return result;
-  std::partial_sum(x.begin(), x.end(), result.begin(), std::plus<T>());
+  result[0] = x[0];
+  for (size_t i = 1; i < result.size(); ++i)
+    result[i] = x[i] + result[i - 1];
   return result;
 }
 
@@ -48,8 +48,9 @@ inline Eigen::Matrix<T, R, C> cumulative_sum(const Eigen::Matrix<T, R, C>& m) {
   Eigen::Matrix<T, R, C> result(m.rows(), m.cols());
   if (m.size() == 0)
     return result;
-  std::partial_sum(m.data(), m.data() + m.size(), result.data(),
-                   std::plus<T>());
+  result(0) = m(0);
+  for (int i = 1; i < result.size(); ++i)
+    result(i) = m(i) + result(i - 1);
   return result;
 }
 }  // namespace math

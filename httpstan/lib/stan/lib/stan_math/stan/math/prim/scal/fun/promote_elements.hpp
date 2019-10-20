@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_PROMOTE_ELEMENTS_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_PROMOTE_ELEMENTS_HPP
 
-#include <stan/math/prim/meta.hpp>
 namespace stan {
 namespace math {
 

@@ -3,6 +3,7 @@
 
 #include <stan/math/prim/arr/fun/common_type.hpp>
 #include <stan/math/prim/mat/fun/Eigen.hpp>
+#include <boost/math/tools/promotion.hpp>
 
 namespace stan {
 namespace math {

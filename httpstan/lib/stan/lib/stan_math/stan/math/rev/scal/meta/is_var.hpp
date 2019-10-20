@@ -5,10 +5,7 @@
 #include <stan/math/rev/core.hpp>
 
 namespace stan {
-/**
- * Defines a public enum named value and sets it to true(1)
- * when instantiated with the stan::math::var type.
- */
+
 template <>
 struct is_var<stan::math::var> {
   enum { value = true };

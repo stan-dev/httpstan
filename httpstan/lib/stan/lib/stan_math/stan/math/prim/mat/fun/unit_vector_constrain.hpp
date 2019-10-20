@@ -5,6 +5,7 @@
 #include <stan/math/prim/mat/err/check_vector.hpp>
 #include <stan/math/prim/mat/fun/Eigen.hpp>
 #include <stan/math/prim/mat/fun/dot_self.hpp>
+#include <stan/math/prim/scal/err/check_positive.hpp>
 #include <stan/math/prim/scal/err/check_positive_finite.hpp>
 #include <cmath>
 

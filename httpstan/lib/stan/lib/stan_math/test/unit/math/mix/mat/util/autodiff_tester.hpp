@@ -102,8 +102,7 @@ void expect_near(const std::string& msg, const Eigen::Matrix<T, R, C>& x1,
 template <typename F>
 void test_value(const F& f, const Eigen::VectorXd& x, double fx) {
   if (is_nan(fx))
-    EXPECT_TRUE(is_nan(f(x)))
-        << "test_value is_nan(" << f(x) << ")" << std::endl;
+    EXPECT_TRUE(is_nan(f(x))) << "test_value is_nan(" << f(x) << std::endl;
   else
     expect_near("test_value fx == f(x)", fx, f(x));
 }
@@ -115,7 +114,7 @@ void test_value(const F& f, const Eigen::VectorXd& x, double fx) {
  */
 template <typename F>
 void test_gradient(const F& f, const Eigen::VectorXd& x, double fx,
-                   bool test_derivs = true) {
+                   bool test_derivs) {
   Eigen::VectorXd grad_ad;
   double fx_ad = fx;
   gradient<F>(f, x, fx_ad, grad_ad);
@@ -136,7 +135,7 @@ void test_gradient(const F& f, const Eigen::VectorXd& x, double fx,
  */
 template <typename F>
 void test_gradient_fvar(const F& f, const Eigen::VectorXd& x, double fx,
-                        bool test_derivs = true) {
+                        bool test_derivs) {
   Eigen::VectorXd grad_ad;
   double fx_ad = fx;
   gradient<double, F>(f, x, fx_ad, grad_ad);
@@ -157,7 +156,7 @@ void test_gradient_fvar(const F& f, const Eigen::VectorXd& x, double fx,
  */
 template <typename F>
 void test_hessian_fvar(const F& f, const Eigen::VectorXd& x, double fx,
-                       bool test_derivs = true) {
+                       bool test_derivs) {
   double fx_ad;
   Eigen::VectorXd grad_ad;
   Eigen::MatrixXd H_ad;
@@ -181,7 +180,7 @@ void test_hessian_fvar(const F& f, const Eigen::VectorXd& x, double fx,
  */
 template <typename F>
 void test_hessian(const F& f, const Eigen::VectorXd& x, double fx,
-                  bool test_derivs = true) {
+                  bool test_derivs) {
   double fx_ad;
   Eigen::VectorXd grad_ad;
   Eigen::MatrixXd H_ad;
@@ -205,7 +204,7 @@ void test_hessian(const F& f, const Eigen::VectorXd& x, double fx,
  */
 template <typename F>
 void test_grad_hessian(const F& f, const Eigen::VectorXd& x, double fx,
-                       bool test_derivs = true) {
+                       bool test_derivs) {
   double fx_ad;
   Eigen::MatrixXd H_ad;
   std::vector<Eigen::MatrixXd> grad_H_ad;

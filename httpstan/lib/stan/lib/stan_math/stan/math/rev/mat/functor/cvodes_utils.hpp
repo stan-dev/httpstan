@@ -1,7 +1,6 @@
 #ifndef STAN_MATH_REV_MAT_FUNCTOR_CVODES_UTILS_HPP
 #define STAN_MATH_REV_MAT_FUNCTOR_CVODES_UTILS_HPP
 
-#include <stan/math/rev/meta.hpp>
 #include <cvodes/cvodes.h>
 #include <sstream>
 #include <stdexcept>

@@ -1,6 +1,7 @@
 #ifndef STAN_MATH_PRIM_SCAL_META_VECTORBUILDER_HELPER_HPP
 #define STAN_MATH_PRIM_SCAL_META_VECTORBUILDER_HELPER_HPP
 
+#include <stan/math/prim/scal/meta/contains_vector.hpp>
 #include <stdexcept>
 
 namespace stan {

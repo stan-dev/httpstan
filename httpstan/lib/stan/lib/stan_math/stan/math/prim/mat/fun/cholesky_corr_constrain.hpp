@@ -26,7 +26,10 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> cholesky_corr_constrain(
   Matrix<T, Dynamic, Dynamic> x(K, K);
   if (K == 0)
     return x;
-  x.setZero();
+  T zero(0);
+  for (int j = 1; j < K; ++j)
+    for (int i = 0; i < j; ++i)
+      x(i, j) = zero;
   x(0, 0) = 1;
   int k = 0;
   for (int i = 1; i < K; ++i) {
@@ -57,7 +60,10 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> cholesky_corr_constrain(
   Matrix<T, Dynamic, Dynamic> x(K, K);
   if (K == 0)
     return x;
-  x.setZero();
+  T zero(0);
+  for (int j = 1; j < K; ++j)
+    for (int i = 0; i < j; ++i)
+      x(i, j) = zero;
   x(0, 0) = 1;
   int k = 0;
   for (int i = 1; i < K; ++i) {

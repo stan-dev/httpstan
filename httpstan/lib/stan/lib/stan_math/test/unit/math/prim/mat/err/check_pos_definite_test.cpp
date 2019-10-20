@@ -4,8 +4,6 @@
 #include <limits>
 #include <string>
 
-using stan::math::check_pos_definite;
-
 const char* function = "function";
 class ErrorHandlingMatrix : public ::testing::Test {
  public:
@@ -15,6 +13,8 @@ class ErrorHandlingMatrix : public ::testing::Test {
 };
 
 TEST_F(ErrorHandlingMatrix, checkPosDefinite) {
+  using stan::math::check_pos_definite;
+
   y.resize(1, 1);
   y << 1;
   EXPECT_NO_THROW(check_pos_definite(function, "y", y));
@@ -39,6 +39,7 @@ TEST_F(ErrorHandlingMatrix, checkPosDefinite) {
 }
 
 TEST_F(ErrorHandlingMatrix, checkPosDefinite_not_square) {
+  using stan::math::check_pos_definite;
   std::stringstream expected_msg;
 
   y.resize(3, 4);
@@ -58,6 +59,7 @@ TEST_F(ErrorHandlingMatrix, checkPosDefinite_not_square) {
 }
 
 TEST_F(ErrorHandlingMatrix, checkPosDefinite_0_size) {
+  using stan::math::check_pos_definite;
   std::string expected_msg;
 
   expected_msg
@@ -77,6 +79,7 @@ TEST_F(ErrorHandlingMatrix, checkPosDefinite_0_size) {
 }
 
 TEST_F(ErrorHandlingMatrix, checkPosDefinite_non_symmetric) {
+  using stan::math::check_pos_definite;
   std::string expected_msg;
 
   y.resize(3, 3);
@@ -95,6 +98,7 @@ TEST_F(ErrorHandlingMatrix, checkPosDefinite_non_symmetric) {
 }
 
 TEST_F(ErrorHandlingMatrix, checkPosDefinite_non_pos_definite) {
+  using stan::math::check_pos_definite;
   std::stringstream expected_msg1_mat;
   std::stringstream expected_msg1_llt;
   std::stringstream expected_msg1_ldlt;
@@ -150,6 +154,7 @@ TEST_F(ErrorHandlingMatrix, checkPosDefinite_non_pos_definite) {
 
 TEST_F(ErrorHandlingMatrix, checkPosDefinite_nan) {
   double nan = std::numeric_limits<double>::quiet_NaN();
+  using stan::math::check_pos_definite;
 
   y.resize(1, 1);
   y << nan;
