@@ -33,6 +33,7 @@ def test_function_arguments(api_url: str) -> None:
         model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
         expected = [
+            "init",
             "random_seed",
             "chain",
             "init_radius",

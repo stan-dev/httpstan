@@ -63,7 +63,7 @@ async def call(
             kwargs[arg] = typing.cast(
                 typing.Any, arguments.lookup_default(arguments.Method[method.upper()], arg)
             )
-    function_wrapper_partial = functools.partial(function_wrapper, data, queue_wrapper, **kwargs)
+    function_wrapper_partial = functools.partial(function_wrapper, queue_wrapper, data, **kwargs)
 
     loop = asyncio.get_event_loop()
     future = loop.run_in_executor(None, function_wrapper_partial)  # type: ignore

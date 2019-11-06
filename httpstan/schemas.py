@@ -81,6 +81,7 @@ class Data(marshmallow.Schema):
 class CreateFitRequest(marshmallow.Schema):
     function = fields.String(required=True, validate=validate.OneOf(SERVICES_FUNCTION_NAMES))
     data = fields.Nested(Data(), missing={})
+    init = fields.Nested(Data(), missing={})
 
 
 class Fit(marshmallow.Schema):
