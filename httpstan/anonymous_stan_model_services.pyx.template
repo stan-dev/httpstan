@@ -134,7 +134,7 @@ def dims(dict data):
     return dims_
 
 
-def hmc_nuts_diag_e_adapt_wrapper(dict data, SPSCQueue queue,
+def hmc_nuts_diag_e_adapt_wrapper(SPSCQueue queue, dict data, dict init,
                                   int random_seed, int chain, double init_radius,
                                   int num_warmup, int num_samples, int num_thin, libcpp.bool save_warmup,
                                   int refresh, double stepsize, double stepsize_jitter, int max_depth,
@@ -143,13 +143,16 @@ def hmc_nuts_diag_e_adapt_wrapper(dict data, SPSCQueue queue,
     cdef int return_code
     cdef stan.array_var_context * var_context_ptr = make_array_var_context(data)
     cdef boost.spsc_queue[string] * queue_ptr = queue.queue_ptr
-    cdef stan.var_context * init_var_context = new stan.empty_var_context()
+    cdef stan.var_context * init_var_context
     cdef stan_model * model = new stan_model(deref(var_context_ptr), <unsigned int> random_seed)
     cdef stan.interrupt interrupt
     cdef stan.logger * logger = new stan.queue_logger(queue_ptr, b'logger:')
     cdef stan.writer * init_writer = new stan.queue_writer(queue_ptr, b'init_writer:')
     cdef stan.writer * sample_writer = new stan.queue_writer(queue_ptr, b'sample_writer:')
     cdef stan.writer * diagnostic_writer = new stan.queue_writer(queue_ptr, b'diagnostic_writer:')
+    if not isinstance(init, dict):
+        raise ValueError("Unexpected value for `init`. Should be an empty dict or a dict with initial parameter values.")
+    init_var_context = make_array_var_context(init)
     with nogil:
         return_code = stan.hmc_nuts_diag_e_adapt(deref(model), deref(init_var_context), random_seed, chain, init_radius,
                                                  num_warmup, num_samples, num_thin, save_warmup,
