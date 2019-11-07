@@ -70,11 +70,12 @@ def lookup_default(method: Method, arg: str) -> typing.Union[float, int]:
         item = next(filter(lambda item: item["name"] == arg, defaults_for_method))
     except StopIteration:
         raise ValueError(f"No argument `{arg}` is associated with `{method}`.")
-    type = _pythonize_cmdstan_type(item["type"])
-    if type == bool:
+    python_type = _pythonize_cmdstan_type(item["type"])
+    if python_type == bool:
         # bool needs special handling because bool('0') == True
-        return item["default"] != "0"
-    return type(item["default"])
+        return int(item["default"] != "0")
+    assert python_type in {int, float}
+    return typing.cast(typing.Union[float, int], python_type(item["default"]))
 
 
 def function_arguments(function_name: str, model_module: types.ModuleType) -> typing.List[str]:

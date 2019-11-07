@@ -11,7 +11,7 @@ import json
 import logging
 import re
 import sqlite3
-from typing import Optional, Sequence
+from typing import Optional, Sequence, cast
 
 import aiohttp.web
 import webargs.aiohttpparser
@@ -30,7 +30,7 @@ def _make_error(message: str, status: int, details: Optional[Sequence] = None) -
     status_dict = {"code": status, "status": http.HTTPStatus(status).phrase, "message": message}
     if details is not None:
         status_dict["details"] = details
-    return schemas.Status().load(status_dict)
+    return cast(dict, schemas.Status().load(status_dict))
 
 
 async def handle_health(request: aiohttp.web.Request) -> aiohttp.web.Response:
@@ -146,10 +146,11 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
     model_name = f'models/{request.match_info["model_id"]}'
     data = args["data"]
 
-    module_bytes, _ = await httpstan.cache.load_model_extension_module(
-        model_name, request.app["db"]
-    )
-    if module_bytes is None:
+    try:
+        module_bytes, _ = await httpstan.cache.load_model_extension_module(
+            model_name, request.app["db"]
+        )
+    except KeyError:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
 
@@ -231,10 +232,11 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     kwargs = await request.json()
     kwargs.update(kwargs_schema)
 
-    module_bytes, _ = await httpstan.cache.load_model_extension_module(
-        model_name, request.app["db"]
-    )
-    if module_bytes is None:
+    try:
+        module_bytes, _ = await httpstan.cache.load_model_extension_module(
+            model_name, request.app["db"]
+        )
+    except KeyError:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)

@@ -83,7 +83,12 @@ class WriterParser:
         handler = getattr(self, f"parse_{writer_name}")
         result = handler(values)
         self.previous_message = message
-        return result
+        # in order to satisfy type checker we must return a known type:
+        # either None or WriterMessage.
+        # See https://github.com/python/mypy/issues/1693 for discussion
+        if result is None:
+            return result
+        return typing.cast(callbacks_writer_pb2.WriterMessage, result)
 
     def parse_sample_writer(
         self, values: list
@@ -123,11 +128,13 @@ class WriterParser:
                 feature.double_list.value.append(value)
         return message
 
-    def parse_diagnostic_writer(self, values: list) -> None:
+    def parse_diagnostic_writer(
+        self, values: list
+    ) -> typing.Optional[callbacks_writer_pb2.WriterMessage]:
         """Convert raw writer message into protobuf message."""
         if self.diagnostic_fields is None:
             self.diagnostic_fields = values
-            return
+            return None
         message = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("DIAGNOSTIC"))
         if isinstance(values[0], str):
             # after sampling, we get messages such as "Elapsed Time: ..."

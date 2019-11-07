@@ -8,7 +8,7 @@ import json
 import logging
 import os
 import sqlite3
-from typing import Tuple
+from typing import Tuple, cast
 
 import aiohttp.web
 import appdirs
@@ -202,4 +202,4 @@ async def load_operation(name: str, db: sqlite3.Connection) -> dict:
     if not row:
         raise KeyError(f"Operation `{name}` not found.")
     (value,) = row
-    return json.loads(value.decode())
+    return cast(dict, json.loads(value.decode()))
