@@ -1,4 +1,3 @@
 [tool.black]
 line-length = 100
-target-version = ['py36']
-exclude = '.eggs/|doc/|httpstan/lib/stan/|\.pyi'
+exclude = '.*_pb2|httpstan/lib'
