@@ -67,3 +67,4 @@ releasenotes/build
 *.cpp
 doc/source/openapi.json
 *_pb2.py
+*_pb2.pyi

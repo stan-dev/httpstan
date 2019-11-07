@@ -25,7 +25,7 @@ async def call(
     model_module: types.ModuleType,
     data: dict,
     messages_file: typing.IO[bytes],
-    logger_callback: typing.Callable = None,
+    logger_callback: typing.Optional[typing.Callable] = None,
     **kwargs: dict,
 ) -> None:
     """Call stan::services function.
@@ -66,7 +66,7 @@ async def call(
     function_wrapper_partial = functools.partial(function_wrapper, queue_wrapper, data, **kwargs)
 
     loop = asyncio.get_event_loop()
-    future = loop.run_in_executor(None, function_wrapper_partial)  # type: ignore
+    future = loop.run_in_executor(None, function_wrapper_partial)
     parser = httpstan.callbacks_writer_parser.WriterParser()
     # `varint_encoder` is used here as part of a simple strategy for storing
     # a sequence of protocol buffer messages. Each message is prefixed by the

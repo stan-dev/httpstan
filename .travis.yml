@@ -16,7 +16,7 @@ before_install:
   - python --version
   - if [[ -n $CC ]]; then $CC --version; fi
 install:
-  - pip install cython tox coveralls grpcio-tools
+  - pip install cython tox coveralls grpcio-tools mypy-protobuf
   - make  # generate required C++ files
 script:
   - travis_wait 60 tox

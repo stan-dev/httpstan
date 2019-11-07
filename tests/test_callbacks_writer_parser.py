@@ -1,6 +1,7 @@
 """Test parser for output of stan::services functions."""
 import json
 import re
+from typing import List, Optional
 
 from numpy.testing import assert_almost_equal
 
@@ -29,6 +30,7 @@ def test_callbacks_writer_parser_sample_writer_adapt() -> None:
     )
     parser = httpstan.callbacks_writer_parser.WriterParser()
     observed = [parser.parse(message) for message in messages]
+    expected: List[Optional[callbacks_writer_pb2.WriterMessage]]
     expected = [None]
     for message in messages[1:]:
         message_pb = callbacks_writer_pb2.WriterMessage(topic=TopicEnum.Value("SAMPLE"))

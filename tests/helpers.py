@@ -11,7 +11,7 @@ def get_model_name(api_url: str, program_code: str) -> str:
     """Compile and retrieve model name."""
     resp = requests.post(f"{api_url}/models", json={"program_code": program_code})
     assert resp.status_code == 201, (api_url, resp.content)
-    model_name = resp.json()["name"]
+    model_name = typing.cast(str, resp.json()["name"])
     assert "compiler_output" in resp.json()
     return model_name
 
