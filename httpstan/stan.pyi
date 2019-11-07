@@ -1,2 +1,3 @@
 """Stub file for stan module."""
+
 def version() -> str: ...

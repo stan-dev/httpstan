@@ -6,7 +6,7 @@ import numpy as np
 
 
 def _split_data(
-    data: dict
+    data: dict,
 ) -> Tuple[List[str], List[float], List[List[int]], List[str], List[int], List[List[int]]]:
     """Prepare data for use in an array_var_context constructor.
 

@@ -70,7 +70,7 @@ def test_fits_random_seed(api_url: str) -> None:
     """Simple test of sampling with fixed random seed."""
 
     async def draws(
-        random_seed: typing.Optional[int] = None
+        random_seed: typing.Optional[int] = None,
     ) -> typing.List[typing.Union[int, float]]:
         model_name = helpers.get_model_name(api_url, program_code)
         fits_url = f"{api_url}/models/{model_name.split('/')[-1]}/fits"
