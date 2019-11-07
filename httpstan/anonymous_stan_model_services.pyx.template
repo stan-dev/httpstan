@@ -134,12 +134,29 @@ def dims(dict data):
     return dims_
 
 
-def hmc_nuts_diag_e_adapt_wrapper(SPSCQueue queue, dict data, dict init,
-                                  int random_seed, int chain, double init_radius,
-                                  int num_warmup, int num_samples, int num_thin, libcpp.bool save_warmup,
-                                  int refresh, double stepsize, double stepsize_jitter, int max_depth,
-                                  double delta, double gamma, double kappa, double t0, int init_buffer,
-                                  int term_buffer, int window):
+def hmc_nuts_diag_e_adapt_wrapper(
+    SPSCQueue queue,
+    dict data,
+    dict init,
+    int random_seed,
+    int chain,
+    double init_radius,
+    int num_warmup,
+    int num_samples,
+    int num_thin,
+    libcpp.bool save_warmup,
+    int refresh,
+    double stepsize,
+    double stepsize_jitter,
+    int max_depth,
+    double delta,
+    double gamma,
+    double kappa,
+    double t0,
+    int init_buffer,
+    int term_buffer,
+    int window,
+):
     cdef int return_code
     cdef stan.array_var_context * var_context_ptr = make_array_var_context(data)
     cdef boost.spsc_queue[string] * queue_ptr = queue.queue_ptr
@@ -154,12 +171,34 @@ def hmc_nuts_diag_e_adapt_wrapper(SPSCQueue queue, dict data, dict init,
         raise ValueError("Unexpected value for `init`. Should be an empty dict or a dict with initial parameter values.")
     init_var_context = make_array_var_context(init)
     with nogil:
-        return_code = stan.hmc_nuts_diag_e_adapt(deref(model), deref(init_var_context), random_seed, chain, init_radius,
-                                                 num_warmup, num_samples, num_thin, save_warmup,
-                                                 refresh, stepsize, stepsize_jitter, max_depth,
-                                                 delta, gamma, kappa, t0, init_buffer, term_buffer, window,
-                                                 interrupt, deref(logger), deref(init_writer),
-                                                 deref(sample_writer), deref(diagnostic_writer))
+        return_code = stan.hmc_nuts_diag_e_adapt(
+            deref(model),
+            deref(init_var_context),
+            random_seed,
+            chain,
+            init_radius,
+            num_warmup,
+            num_samples,
+            num_thin,
+            save_warmup,
+            refresh,
+            stepsize,
+            stepsize_jitter,
+            max_depth,
+            delta,
+            gamma,
+            kappa,
+            t0,
+            init_buffer,
+            term_buffer,
+            window,
+            interrupt,
+            deref(logger),
+            deref(init_writer),
+            deref(sample_writer),
+            deref(diagnostic_writer),
+        )
+
     del model
     del init_var_context
     del logger
