@@ -66,4 +66,6 @@ releasenotes/build
 *.c
 *.cpp
 doc/source/openapi.json
+doc/source/httpstan.rst
+doc/source/httpstan.services.rst
 *_pb2.py
