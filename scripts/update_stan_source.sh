@@ -11,10 +11,10 @@ if [[ $# -ne 1 ]] ; then
     exit 1
 fi
 
-TAG="$@"
-VERSION=$( echo "$TAG" | sed 's/^v//' )
+TAG="$1"
+VERSION=${TAG//v/}
 echo "Updating Stan source to tag: ${TAG}"
-read -p "Ok to continue (y/n)? " answer
+read -r -p "Ok to continue (y/n)? " answer
 case ${answer:0:1} in
     y|Y )
         echo "Continuing..."
