@@ -91,8 +91,25 @@ def test_bernoulli_params_out_of_bounds(api_url: str) -> None:
     asyncio.get_event_loop().run_until_complete(main())
 
 
-def test_bernoulli_invalid_arg(api_url: str) -> None:
-    """Test sampling from Bernoulli model with invalid arg."""
+def test_bernoulli_unacceptable_arg(api_url: str) -> None:
+    """Test sampling from Bernoulli model with an unacceptable arg."""
+
+    async def main() -> None:
+        model_name = helpers.get_model_name(api_url, program_code)
+        fits_url = f"{api_url}/models/{model_name.split('/')[-1]}/fits"
+        payload = {
+            "function": "invalid abcdef",
+            "data": "string, not a dictionary",
+        }
+        resp = requests.post(fits_url, json=payload)
+        assert resp.status_code == 422
+        assert "data" in resp.json()
+
+    asyncio.get_event_loop().run_until_complete(main())
+
+
+def test_bernoulli_unknown_arg(api_url: str) -> None:
+    """Test sampling from Bernoulli model with an unknown arg."""
 
     async def main() -> None:
         model_name = helpers.get_model_name(api_url, program_code)
@@ -100,24 +117,21 @@ def test_bernoulli_invalid_arg(api_url: str) -> None:
         payload = {
             "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
             "data": data,
-            "invalid_arg": 9,
+            "unknown_arg": 9,
         }
         resp = requests.post(fits_url, json=payload)
-        assert resp.status_code == 201
-        operation_name = resp.json()["name"]
-        # wait until fit is finished
-        while not requests.get(f"{api_url}/{operation_name}").json()["done"]:
-            await asyncio.sleep(0.1)
-        operation = requests.get(f"{api_url}/{operation_name}").json()
-        error = operation["result"]
-        assert "message" in error
-        assert "got an unexpected keyword argument" in error["message"]
+        assert resp.status_code == 422
+        assert "unknown_arg" in resp.json()
 
     asyncio.get_event_loop().run_until_complete(main())
 
 
 def test_bernoulli_out_of_bounds(api_url: str) -> None:
-    """Test sampling from Bernoulli model with out of bounds data."""
+    """Test sampling from Bernoulli model with out of bounds data.
+
+    This error cannot be detected via schema validation.
+
+    """
 
     async def main() -> None:
         model_name = helpers.get_model_name(api_url, program_code)

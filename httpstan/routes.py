@@ -2,13 +2,15 @@
 
 Routes for the HTTP server are defined here.
 """
-import json
+from typing import Callable
 
 import apispec
+import apispec.ext.marshmallow
+import apispec.utils
+import apispec.yaml_utils
 import aiohttp.web
 
 import httpstan
-import httpstan.schemas as schemas
 import httpstan.views as views
 
 
@@ -27,22 +29,32 @@ def setup_routes(app: aiohttp.web.Application) -> None:
     app.router.add_get("/v1/operations/{operation_id}", views.handle_get_operation)
 
 
-def openapi_spec() -> str:
+class DocPlugin(apispec.BasePlugin):
+    def init_spec(self, spec: apispec.APISpec) -> None:
+        super().init_spec(spec)
+
+    def operation_helper(self, operations: dict, view: Callable, **kwargs: dict) -> None:
+        """Operation helper that parses docstrings for operations. Adds a
+        ``func`` parameter to `apispec.APISpec.path`.
+        """
+        doc_operations = apispec.yaml_utils.load_operations_from_docstring(view.__doc__)
+        operations.update(doc_operations)
+
+
+def openapi_spec() -> apispec.APISpec:
     """Return OpenAPI (fka Swagger) spec for API."""
     spec = apispec.APISpec(
-        title="httpstan API", version=httpstan.__version__, plugins=["apispec.ext.marshmallow"]
+        title="httpstan HTTP-based REST API",
+        version=httpstan.__version__,
+        openapi_version="2.0",
+        # plugin order, MarshmallowPlugin resolves schema references created by DocPlugin
+        plugins=[DocPlugin(), apispec.ext.marshmallow.MarshmallowPlugin()],
     )
-    spec.add_path(path="/v1/health", view=views.handle_health)
-    spec.add_path(path="/v1/models", view=views.handle_models)
-    spec.add_path(path="/v1/models/{model_id}/params", view=views.handle_show_params)
-    spec.add_path(path="/v1/models/{model_id}/fits", view=views.handle_create_fit)
-    spec.add_path(path="/v1/models/{model_id}/fits/{fit_id}", view=views.handle_get_fit)
-    spec.add_path(path="/v1/operations/{operation_id}", view=views.handle_get_operation)
-    spec.definition("CreateModelRequest", schema=schemas.CreateModelRequest)
-    spec.definition("CreateFitRequest", schema=schemas.CreateFitRequest)
-    spec.definition("Status", schema=schemas.Status)
-    spec.definition("Fit", schema=schemas.Fit)
-    spec.definition("Model", schema=schemas.Model)
-    spec.definition("Operation", schema=schemas.Operation)
-    spec.definition("Parameter", schema=schemas.Parameter)
-    return json.dumps(spec.to_dict())
+    spec.path(path="/v1/health", view=views.handle_health)
+    spec.path(path="/v1/models", view=views.handle_models)
+    spec.path(path="/v1/models/{model_id}/params", view=views.handle_show_params)
+    spec.path(path="/v1/models/{model_id}/fits", view=views.handle_create_fit)
+    spec.path(path="/v1/models/{model_id}/fits/{fit_id}", view=views.handle_get_fit)
+    spec.path(path="/v1/operations/{operation_id}", view=views.handle_get_operation)
+    apispec.utils.validate_spec(spec)
+    return spec
