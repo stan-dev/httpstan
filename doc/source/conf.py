@@ -10,14 +10,14 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinxcontrib.redoc',
-    #'sphinx.ext.intersphinx',
+    'sphinxcontrib.openapi',
 ]
 
 redoc = [
     {
         'name': 'httpstan API',
         'page': 'api',
-        'spec': 'openapi.json',
+        'spec': 'openapi.yaml',
     },
 ]
 

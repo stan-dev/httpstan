@@ -38,7 +38,10 @@ async def handle_health(request: aiohttp.web.Request) -> aiohttp.web.Response:
 
     ---
     get:
-        description: Check if service is running.
+      description: Check if service is running.
+      responses:
+        "200":
+          description: OK
     """
     return aiohttp.web.Response(text="httpstan is running.")
 
@@ -48,30 +51,37 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
 
     ---
     post:
-        description: Compile a Stan model
-        consumes:
-            - application/json
-        produces:
-            - application/json
-        parameters:
-            - in: body
-              name: body
-              description: Stan program code to compile
-              required: true
-              schema:
-                 $ref: '#/definitions/CreateModelRequest'
-        responses:
-            201:
-              description: Identifier for compiled Stan model and compiler output.
-              schema:
-                 $ref: '#/definitions/Model'
-            400:
-              description: Error associated with compile request.
-              schema:
-                 $ref: '#/definitions/Status'
+      description: Compile a Stan model
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: Stan program code to compile
+          required: true
+          schema: CreateModelRequest
+      responses:
+        "201":
+          description: Identifier for compiled Stan model and compiler output.
+          schema: Model
+        "400":
+          description: Error associated with compile request.
+          schema: Status
 
     """
     args = await webargs.aiohttpparser.parser.parse(schemas.CreateModelRequest(), request)
+    # the following block is a hotfix for a webargs issue which
+    # should be resolved in 2019, see https://github.com/marshmallow-code/webargs/issues/267
+    # remove the block as soon as the issue is fixed (behavior should remain the same)
+    import marshmallow.exceptions
+
+    try:
+        schemas.CreateModelRequest().load(await request.json())
+    except marshmallow.exceptions.ValidationError as ex:
+        return aiohttp.web.json_response(ex.messages, status=422)
+
     program_code = args["program_code"]
     model_name = httpstan.models.calculate_model_name(program_code)
     try:
@@ -105,42 +115,44 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
 
     ---
     post:
-        summary: Get parameter names and dimensions.
-        description: >
-            Returns, wrapped in JSON, the output of Stan C++ model class
-            methods: ``constrained_param_names``, ``get_param_names`` and ``get_dims``.
-        consumes:
-            - application/json
-        produces:
-            - application/json
-        parameters:
-            - name: model_id
-              in: path
-              description: ID of Stan model to use
-              required: true
-              type: string
-            - name: body
-              in: body
-              description: >
-                  Data for Stan Model. Needed to calculate param names and dimensions.
-              required: true
-              schema:
-                  type: object
-                  properties:
-                      data:
-                          type: object
-        responses:
-            200:
-              description: Parameters for Stan Model
-              schema:
-                  type: object
-                  properties:
-                      id:
-                          type: string
-                      params:
-                          type: array
-                          items:
-                              $ref: '#/definitions/Parameter'
+      summary: Get parameter names and dimensions.
+      description: >-
+        Returns the output of Stan C++ model class methods:
+        ``constrained_param_names``, ``get_param_names`` and ``get_dims``.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: model_id
+          in: path
+          description: ID of Stan model to use
+          required: true
+          type: string
+        - in: body
+          name: data
+          description: >-
+              Data for Stan Model. Needed to calculate param names and dimensions.
+          required: true
+          schema: Data
+      responses:
+        "200":
+          description: Parameters for Stan Model
+          schema:
+            type: object
+            properties:
+              id:
+                type: string
+              params:
+                type: array
+                items: Parameter
+        "400":
+          description: Error associated with request.
+          schema: Status
+        "404":
+          description: Model not found.
+          schema: Status
+
     """
     args = await webargs.aiohttpparser.parser.parse(schemas.ShowParamsRequest(), request)
     model_name = f'models/{request.match_info["model_id"]}'
@@ -192,45 +204,51 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
 
     ---
     post:
-        summary: Call function defined in stan::services.
-        description: >
-            `function` indicates the name of the stan::services function
-            which should be called given the Stan model associated with the id
-            `model_id`.  For example, if sampling using
-            ``stan::services::sample::hmc_nuts_diag_e`` then `function` is the
-            full function name ``stan::services::sample::hmc_nuts_diag_e``.
-        consumes:
-            - application/json
-        produces:
-            - application/json
-        parameters:
-            - name: model_id
-              in: path
-              description: ID of Stan model to use
-              required: true
-              type: string
-            - name: body
-              in: body
-              description: "Full stan::services function name to call with Stan model."
-              required: true
-              schema:
-                 $ref: '#/definitions/CreateFitRequest'
-        responses:
-            201:
-              description: Identifier for completed Stan fit
-              schema:
-                 $ref: '#/definitions/Fit'
-            400:
-              description: Error associated with request.
-              schema:
-                 $ref: '#/definitions/Status'
+      summary: Call function defined in stan::services.
+      description: >-
+        `function` indicates the name of the stan::services function
+        which should be called given the Stan model associated with the id
+        `model_id`.  For example, if sampling using
+        ``stan::services::sample::hmc_nuts_diag_e`` then `function` is the
+        full function name ``stan::services::sample::hmc_nuts_diag_e``.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: model_id
+          in: path
+          description: ID of Stan model to use
+          required: true
+          type: string
+        - name: body
+          in: body
+          description: >-
+            Full stan::services function name and associated arguments to call with Stan model.
+          required: true
+          schema: CreateFitRequest
+      responses:
+        "201":
+          description: Identifier for completed Stan fit
+          schema: Fit
+        "400":
+          description: Error associated with request.
+          schema: Status
+        "404":
+          description: Fit not found.
+          schema: Status
     """
     model_name = f'models/{request.match_info["model_id"]}'
-    # use webargs to make sure `function` is present and data is a mapping (or
-    # absent). Do not discard any other information in the request body.
-    kwargs_schema = await webargs.aiohttpparser.parser.parse(schemas.CreateFitRequest(), request)
-    kwargs = await request.json()
-    kwargs.update(kwargs_schema)
+    args = await webargs.aiohttpparser.parser.parse(schemas.CreateFitRequest(), request)
+    # the following block is a hotfix for a webargs issue which
+    # should be resolved in 2019, see https://github.com/marshmallow-code/webargs/issues/267
+    # remove the block as soon as the issue is fixed (behavior should remain the same)
+    import marshmallow.exceptions
+
+    try:
+        schemas.CreateFitRequest().load(await request.json())
+    except marshmallow.exceptions.ValidationError as ex:
+        return aiohttp.web.json_response(ex.messages, status=422)
 
     try:
         module_bytes, _ = await httpstan.cache.load_model_extension_module(
@@ -241,8 +259,8 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
-    function, data = kwargs.pop("function"), kwargs.pop("data")
-    name = httpstan.fits.calculate_fit_name(function, model_name, data, kwargs)
+    function, data = args.pop("function"), args.pop("data")
+    name = httpstan.fits.calculate_fit_name(function, model_name, data, args)
     try:
         await httpstan.cache.load_fit(name)
     except KeyError:
@@ -329,7 +347,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     logger_callback_partial = functools.partial(logger_callback, operation_dict)
     task = asyncio.ensure_future(
         services_stub.call(
-            function, model_module, data, messages_file, logger_callback_partial, **kwargs
+            function, model_module, data, messages_file, logger_callback_partial, **args
         )
     )
     task.add_done_callback(
@@ -350,29 +368,32 @@ async def handle_get_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
 
     ---
     get:
-        description: Result (e.g., draws) from calling a function defined in stan::services.
-        consumes:
-            - application/json
-        produces:
-            - application/octet-stream
-        parameters:
-            - name: model_id
-              in: path
-              description: ID of Stan model associated with the result
-              required: true
-              type: string
-            - name: fit_id
-              in: path
-              description: ID of Stan result ("fit") desired
-              required: true
-              type: string
-        responses:
-            200:
-              description: Result as a stream of Protocol Buffer messages.
-            404:
-              description: Error associated with request.
-              schema:
-                 $ref: '#/definitions/Status'
+      summary: Get results returned by a function.
+      description: Result (e.g., draws) from calling a function defined in stan::services.
+      consumes:
+        - application/json
+      produces:
+        - application/octet-stream
+      parameters:
+        - name: model_id
+          in: path
+          description: ID of Stan model associated with the result
+          required: true
+          type: string
+        - name: fit_id
+          in: path
+          description: ID of Stan result ("fit") desired
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Result as a stream of Protocol Buffer messages.
+          schema:
+            type: string
+            format: binary
+        "404":
+          description: Fit not found.
+          schema: Status
     """
     model_name = f"models/{request.match_info['model_id']}"
     fit_name = f"{model_name}/fits/{request.match_info['fit_id']}"
@@ -391,26 +412,25 @@ async def handle_get_operation(request: aiohttp.web.Request) -> aiohttp.web.Resp
 
     ---
     get:
-        description: Operation.
-        consumes:
-            - application/json
-        produces:
-            - application/json
-        parameters:
-            - name: operation_id
-              in: path
-              description: ID of Operation
-              required: true
-              type: string
-        responses:
-            200:
-              description: Operation name and metadata.
-              schema:
-                 $ref: '#/definitions/Operation'
-            404:
-              description: Error associated with request.
-              schema:
-                 $ref: '#/definitions/Status'
+      summary: Get Operation details.
+      description: Return Operation details.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: operation_id
+          in: path
+          description: ID of Operation
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Operation name and metadata.
+          schema: Operation
+        "404":
+          description: Operation not found.
+          schema: Status
     """
     operation_name = f"operations/{request.match_info['operation_id']}"
     try:

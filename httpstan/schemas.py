@@ -21,7 +21,8 @@ class Operation(marshmallow.Schema):
     result = fields.Dict()
 
     @marshmallow.validates_schema
-    def validate_result(self, data: dict) -> None:
+    def validate_result(self, data: dict, many: bool, partial: bool) -> None:
+        assert not many and not partial, "Use of `many` and `partial` with schema unsupported."
         if data["done"] and data.get("result") is None:
             raise marshmallow.ValidationError("If `done` then `result` must be set.", "result")
         if not data["done"] and data.get("result"):
@@ -48,12 +49,6 @@ class Model(marshmallow.Schema):
     compiler_output = fields.String(required=True)
 
 
-# TODO(AR): supported functions can be fetched from stub Python files
-SERVICES_FUNCTION_NAMES = frozenset(
-    {"stan::services::sample::hmc_nuts_diag_e", "stan::services::sample::hmc_nuts_diag_e_adapt"}
-)
-
-
 class Data(marshmallow.Schema):
     """Data for a Stan model."""
 
@@ -61,7 +56,9 @@ class Data(marshmallow.Schema):
         unknown = marshmallow.INCLUDE
 
     @marshmallow.validates_schema
-    def validate_values(self, data: dict) -> None:
+    def validate_stan_values(self, data: dict, many: bool, partial: bool) -> None:
+        assert not many and not partial, "Use of `many` and `partial` with schema unsupported."
+
         def is_nested_list_of_numbers(value: typing.Any) -> bool:
             if not isinstance(value, list):
                 return False
@@ -79,9 +76,35 @@ class Data(marshmallow.Schema):
 
 
 class CreateFitRequest(marshmallow.Schema):
-    function = fields.String(required=True, validate=validate.OneOf(SERVICES_FUNCTION_NAMES))
+    """Only one algorithm is currently supported: ``hmc_nuts_diag_e_adapt``.
+
+    Sampler parameters can be found in ``httpstan/stan.pxd``.
+
+    """
+
+    function = fields.String(
+        required=True, validate=validate.Equal("stan::services::sample::hmc_nuts_diag_e_adapt")
+    )
     data = fields.Nested(Data(), missing={})
     init = fields.Nested(Data(), missing={})
+    random_seed = fields.Integer(validate=validate.Range(min=0))
+    chain = fields.Integer(validate=validate.Range(min=0))
+    init_radius = fields.Number()
+    num_warmup = fields.Integer(validate=validate.Range(min=0))
+    num_samples = fields.Integer(validate=validate.Range(min=0))
+    num_thin = fields.Integer(validate=validate.Range(min=0))
+    save_warmup = fields.Boolean()
+    refresh = fields.Integer(validate=validate.Range(min=0))
+    stepsize = fields.Number()
+    stepsize_jitter = fields.Number()
+    max_depth = fields.Integer(validate=validate.Range(min=0))
+    delta = fields.Number()
+    gamma = fields.Number()
+    kappa = fields.Number()
+    t0 = fields.Number()
+    init_buffer = fields.Integer(validate=validate.Range(min=0))
+    term_buffer = fields.Integer(validate=validate.Range(min=0))
+    window = fields.Integer(validate=validate.Range(min=0))
 
 
 class Fit(marshmallow.Schema):

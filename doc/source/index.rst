@@ -11,7 +11,7 @@ Contents:
    installation
    usage
    whats_new
-   openapi
+   http_rest_api
    httpstan
    contributing
    developers
