@@ -12,6 +12,3 @@ requests~=2.13
 
 # required for testing OpenAPI spec, also build requirement
 apispec[yaml,validation]~=3.1
-
-# type checking
-mypy~=0.740

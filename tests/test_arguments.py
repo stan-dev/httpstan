@@ -1,6 +1,7 @@
 """Test services function argument lookups."""
 import asyncio
 
+import httpstan.cache
 import httpstan.models
 import httpstan.services.arguments as arguments
 
@@ -24,7 +25,8 @@ def test_function_arguments(api_url: str) -> None:
 
         # get a reference to the model_module
         app: dict = {}  # mock aiohttp.web.Application
-        await httpstan.cache.init_cache(app)  # setup database, populates app['db']
+        # the following call sets up database, populates app['db']
+        await httpstan.cache.init_cache(app)  # type: ignore
         module_bytes, compiler_output = await httpstan.cache.load_model_extension_module(
             model_name, app["db"]
         )
