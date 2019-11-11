@@ -51,11 +51,8 @@ Install
 Install from Source
 -------------------
 
-A working copy of ``protoc`` is needed to build from source. One way to get this is to install
-``grpcio-tools`` from PyPI with ``python3 -m pip install grpcio-tools``.
-
 ::
-
+    $ python3 -m pip install -r build-requirements.txt
     $ make  # generate required C++ code
     $ python3 setup.py install
 

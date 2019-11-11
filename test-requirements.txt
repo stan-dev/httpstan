@@ -8,17 +8,10 @@ pytest~=5.2
 pytest-cov~=2.8
 sphinx~=2.2 # BSD
 
-# type checking
-mypy~=0.740
-
-# additional packages used by tests
 requests~=2.13
 
-# documentation-related
-sphinxcontrib-apidoc~=0.3
-sphinxcontrib-openapi~=0.5
-sphinxcontrib-redoc~=1.5
+# required for testing OpenAPI spec, also build requirement
+apispec[yaml,validation]~=3.1
 
-# protobuf generation
-grpcio-tools~=1.8
-mypy-protobuf~=1.0
+# type checking
+mypy~=0.740

@@ -1,0 +1,13 @@
+Cython~=0.29
+
+# protobuf generation
+grpcio-tools~=1.8
+mypy-protobuf~=1.0
+
+# required for building OpenAPI spec
+apispec[yaml,validation]~=3.1
+
+# documentation-related
+sphinxcontrib-apidoc~=0.3
+sphinxcontrib-openapi~=0.5
+sphinxcontrib-redoc~=1.5
