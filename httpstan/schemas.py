@@ -47,6 +47,7 @@ class Status(marshmallow.Schema):
 
 class CreateModelRequest(marshmallow.Schema):
     """Schema for request to build a Stan program."""
+
     program_code = fields.String(required=True)
 
 

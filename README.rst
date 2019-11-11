@@ -10,7 +10,7 @@ httpstan
 
 |pypi| |travis| |coveralls|
 
-HTTP-based interface to Stan, a package for Bayesian inference.
+HTTP-based REST interface to Stan, a package for Bayesian inference.
 
 An HTTP 1.1 interface to the Stan_ C++ package, **httpstan** is a shim_ that
 allows users to interact with the Stan C++ library using an HTTP API. The
@@ -18,43 +18,46 @@ package is intended for use as a universal backend for frontends which know how
 to make HTTP requests. The primary audience for this package is developers.
 
 In addition to providing all the functionality of the command-line interface
-to Stan (CmdStan_) over HTTP 1.1, **httpstan** provides:
+to Stan (CmdStan_) over HTTP, **httpstan** provides the following features:
 
 * Automatic caching of compiled Stan models
 * Automatic caching of samples from Stan models
 * Parallel sampling
 
-Documentation lives at `https://httpstan.readthedocs.org <https://httpstan.readthedocs.org>`_.
+Documentation: `https://httpstan.readthedocs.org <https://httpstan.readthedocs.org>`_.
 
-Experimental software!
-======================
-**httpstan** is experimental software. This software is not yet intended for general use.
+Requirements
+============
 
-httpstan currently requires Python version 3.6 or higher.
-
-httpstan only works on Linux and macOS. Windows support is planned.
+- Python version 3.6 or higher.
+- A macOS or Linux operating system. (Windows support is planned.)
 
 Background
 ==========
 
-**httpstan** is a shim_ allowing clients speaking HTTP to call functions in the
-Stan C++ package's ``stan::services`` namespace. **httpstan** was originally
-developed as a "backend" for a Python interface to Stan, PyStan_.
+**httpstan** is a shim_ allowing clients able to make HTTP-based requests to
+call functions in the Stan C++ library's ``stan::services`` namespace.
+**httpstan** was originally developed as a "backend" for a Stan interface
+written in Python, PyStan_.
+
+Stability and maintainability are two overriding goals of this software package.
 
 Install
 =======
+
+.. These instructions occuring in both README.rst and installation.rst
 
 ::
 
     $ python3 -m pip install httpstan
 
-Install from Source
+Build from Source
 -------------------
 
 ::
     $ python3 -m pip install -r build-requirements.txt
     $ make  # generate required C++ code
-    $ python3 setup.py install
+    $ python3 setup.py bdist_wheel
 
 Usage
 =====
@@ -78,26 +81,30 @@ This request will return a model name along with all the compiler output::
 
 (The model ``name`` depends on the platform and the version of Stan.)
 
-To draw samples from this model using default settings, we first make the
-following request::
+Drawing samples from this model using default settings requires two steps: (1)
+launching the sampling operation and (2) retrieving the output of the operation
+(once it has finished).
+
+First we make a request to launch the sampling operation::
 
     curl -X POST -H "Content-Type: application/json" \
         -d '{"function":"stan::services::sample::hmc_nuts_diag_e_adapt"}' \
         http://localhost:8080/v1/models/e1ca9f7ac7/fits
 
 This request instructs ``httpstan`` to draw samples from the normal
-distribution. The function name picks out a specific function in the Stan C++
-library (see the Stan C++ documentation for details).  This request will return
-immediately with a reference to the long-running fit operation::
+distribution described in the model. The function name picks out a specific
+function in the ``stan::services`` namespace found in the Stan C++ library (see
+the Stan C++ documentation for details).  This request will return immediately
+with a reference to a long-running fit operation::
 
     {"done": false, "name": "operations/9f9d701294", "metadata": {"fit": {"name": "models/e1ca9f7ac7/fits/9f9d701294"}}}
 
-Once the operation is completed, the "fit" can be retrieved. The name of the fit,
-``models/e1ca9f7ac7/fits/9f9d701294``, is included in the ``metadata`` field above.
+Once the operation is complete, the "fit" can be retrieved. The name of the fit,
+``models/e1ca9f7ac7/fits/9f9d701294``, is included in the ``metadata`` field of the operation.
 The fit is saved as sequence of Protocol Buffer messages. These messages are strung together
 using `length-prefix encoding
 <https://eli.thegreenplace.net/2011/08/02/length-prefix-framing-for-protocol-buffers>`_.  To
-retrieve these messages, saving them in the file ``myfit.bin``, make the following request::
+retrieve these messages, saving them locally in the file ``myfit.bin``, make the following request::
 
     curl http://localhost:8080/v1/models/e1ca9f7ac7/fits/9f9d701294 > myfit.bin
 
