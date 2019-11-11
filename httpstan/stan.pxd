@@ -28,20 +28,6 @@ cdef extern from "stan/io/var_context.hpp" namespace "stan::io" nogil:
         libcpp.bool remove(const string&)
 
 
-# TODO(AR): eventually remove empty_var_context, only needed for testing
-cdef extern from "stan/io/empty_var_context.hpp" namespace "stan::io" nogil:
-    cdef cppclass empty_var_context(var_context):
-        libcpp.bool contains_r(const string&)
-        libcpp.bool contains_i(const string&)
-        vector[double] vals_r(const string&)
-        vector[size_t] dims_r(const string&)
-        vector[int] vals_i(const string&)
-        vector[size_t] dims_i(const string&)
-        void names_r(vector[string]&)
-        void names_i(vector[string]&)
-        libcpp.bool remove(const string&)
-
-
 cdef extern from "<stan/io/array_var_context.hpp>" namespace "stan::io" nogil:
     cdef cppclass array_var_context(var_context):
         void array_var_context(vector[string]& names_r,
