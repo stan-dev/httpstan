@@ -27,6 +27,3 @@ ifneq ($(UNAME),Windows)
 else
 	@echo not generating stub files on Windows, avoids error about protoc-gen-mypy not being found
 endif
-
-httpstan/%_pb.hpp: protos/%.proto
-	$(PYTHON) -m grpc_tools.protoc -Iprotos --cpp_out=httpstan $<
