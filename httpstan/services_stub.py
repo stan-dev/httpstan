@@ -23,7 +23,6 @@ import httpstan.stan
 async def call(
     function_name: str,
     model_module: types.ModuleType,
-    data: dict,
     messages_file: typing.IO[bytes],
     logger_callback: typing.Optional[typing.Callable] = None,
     **kwargs: dict,
@@ -38,7 +37,6 @@ async def call(
     Arguments:
         function_name: full name of function in stan::services
         model_module (module): Stan model extension module
-        data: dictionary with data with which to populate array_var_context
         messages_file: file into which length-prefixed messages will be written
         logger_callback: Callback function for logger messages, including sampling progress messages
         kwargs: named stan::services function arguments, see CmdStan documentation.
@@ -63,7 +61,7 @@ async def call(
             kwargs[arg] = typing.cast(
                 typing.Any, arguments.lookup_default(arguments.Method[method.upper()], arg)
             )
-    function_wrapper_partial = functools.partial(function_wrapper, queue_wrapper, data, **kwargs)
+    function_wrapper_partial = functools.partial(function_wrapper, queue_wrapper, **kwargs)
 
     loop = asyncio.get_event_loop()
     future = loop.run_in_executor(None, function_wrapper_partial)
