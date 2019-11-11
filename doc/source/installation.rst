@@ -2,18 +2,19 @@
 Installation
 ============
 
-At the command line::
+.. These instructions occuring in both README.rst and installation.rst
 
-::
+**httpstan** requires Python >= 3.6.  macOS and Linux are supported, Windows is not (currently).
+
+At the command line::
 
     $ python3 -m pip install httpstan
 
 Install from Source
 -------------------
 
-A working copy of ``protoc`` is needed to build from source. An easy way to install `protoc` is to install ``grpcio-tools`` from PyPI with ``python3 -m pip install grpcio-tools``.
-
 ::
-
+    $ python3 -m pip install -r build-requirements.txt
     $ make  # generate required C++ code
     $ python3 setup.py install
+
