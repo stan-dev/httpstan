@@ -259,8 +259,8 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
-    function, data = args.pop("function"), args.pop("data")
-    name = httpstan.fits.calculate_fit_name(function, model_name, data, args)
+    function = args.pop("function")
+    name = httpstan.fits.calculate_fit_name(function, model_name, args)
     try:
         await httpstan.cache.load_fit(name)
     except KeyError:
@@ -346,9 +346,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
 
     logger_callback_partial = functools.partial(logger_callback, operation_dict)
     task = asyncio.ensure_future(
-        services_stub.call(
-            function, model_module, data, messages_file, logger_callback_partial, **args
-        )
+        services_stub.call(function, model_module, messages_file, logger_callback_partial, **args)
     )
     task.add_done_callback(
         functools.partial(_services_call_done, operation_dict, messages_file, request.app["db"])
