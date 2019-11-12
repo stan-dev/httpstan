@@ -206,11 +206,17 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     post:
       summary: Call function defined in stan::services.
       description: >-
-        `function` indicates the name of the stan::services function
-        which should be called given the Stan model associated with the id
-        `model_id`.  For example, if sampling using
-        ``stan::services::sample::hmc_nuts_diag_e`` then `function` is the
-        full function name ``stan::services::sample::hmc_nuts_diag_e``.
+        `function` indicates the name of the stan::services function which
+        should be called given the Stan model associated with the id `model_id`.
+        For example, if sampling using
+        ``stan::services::sample::hmc_nuts_diag_e`` then `function` is the full
+        function name ``stan::services::sample::hmc_nuts_diag_e``.  Sampler
+        parameters which are not supplied will be given default values taken
+        from CmdStan.  For example, if
+        ``stan::services::sample::hmc_nuts_diag_e_adapt`` is the function called
+        and the parameter ``num_samples`` is not specified, the value 1000 will
+        be used. For a full list of default values consult the CmdStan
+        documentation.
       consumes:
         - application/json
       produces:

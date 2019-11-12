@@ -20,7 +20,7 @@ import tempfile
 from types import ModuleType
 from typing import Any, Generator, TextIO, Tuple, List, Optional, IO
 
-# IMPORTANT: import setuptools MUST come before any module imports distutils
+# IMPORTANT: `import setuptools` MUST come before any module imports `distutils`
 # background: bugs.python.org/issue23114
 import setuptools
 import Cython
@@ -156,6 +156,8 @@ def import_model_extension_module(model_name: str, module_bytes: bytes) -> Modul
 
     """
     # TODO(AR): This function is a security risk! Bytes should be authenticated.
+    # If an adversary persuades a user to call this function with some malicious
+    # module (encoded), arbitrary code could be executed.
     # In principle this should be easy to do because httpstan will only ever
     # load modules that it has itself produced.
     # NOTE: module suffix can be '.so'/'.pyd'; does not need to be, say,

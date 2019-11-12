@@ -17,7 +17,7 @@ DEFAULTS_LOOKUP = None  # lazy loaded by lookup_default
 def _pythonize_cmdstan_type(type_name: str) -> type:
     """Turn CmdStan C++ type name into Python type.
 
-    For example, "double" becomes `float` (the type).
+    For example, "double" becomes ``float`` (the type).
 
     """
     if type_name == "double":
@@ -72,7 +72,7 @@ def lookup_default(method: Method, arg: str) -> typing.Union[float, int]:
         raise ValueError(f"No argument `{arg}` is associated with `{method}`.")
     python_type = _pythonize_cmdstan_type(item["type"])
     if python_type == bool:
-        # bool needs special handling because bool('0') == True
+        # bool needs special handling because bool("0") == True
         return int(item["default"] != "0")
     assert python_type in {int, float}
     return typing.cast(typing.Union[float, int], python_type(item["default"]))

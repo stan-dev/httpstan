@@ -42,14 +42,14 @@ async def call(
         kwargs: named stan::services function arguments, see CmdStan documentation.
     """
     method, function_basename = function_name.replace("stan::services::", "").split("::", 1)
-    # queue capacity of 10_000 is enough for ~4000 draws. Type ignored because
-    # SPSCQueue is part of a module which is compiled during run time.
+    # queue capacity of 10_000_000 is enough for ~4_000_000 draws. Type ignored
+    # because SPSCQueue is part of a module which is compiled during run time.
     queue_wrapper = model_module.SPSCQueue(capacity=10_000_000)  # type: ignore
     # function_basename will be something like "hmc_nuts_diag_e"
     # function_wrapper will refer to a function like "hmc_nuts_diag_e_wrapper"
     function_wrapper = getattr(model_module, function_basename + "_wrapper")
 
-    # Fetch defaults for missing arguments. This is an important piece!
+    # Fetch defaults for missing arguments. This is an important step!
     # For example, `random_seed`, if not in `kwargs`, will be set.
     function_arguments = arguments.function_arguments(function_basename, model_module)
     # This is clumsy due to the way default values are available. There is no
