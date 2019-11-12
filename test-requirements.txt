@@ -3,8 +3,7 @@
 # process, which may cause wedges in the gate later.
 pytest~=5.2
 pytest-cov~=2.8
-
-requests~=2.13
+pytest-asyncio~=0.10
 
 # required for testing OpenAPI spec, also build requirement
 apispec[yaml,validation]~=3.1
