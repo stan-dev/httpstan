@@ -32,7 +32,12 @@ class Operation(marshmallow.Schema):
 
 
 class Status(marshmallow.Schema):
-    """Error."""
+    """Error.
+
+    Modeled on ``google.rpc.Status``. See
+    https://cloud.google.com/apis/design/errors
+
+    """
 
     code = fields.Integer(required=True)
     status = fields.String(required=True)
@@ -41,6 +46,7 @@ class Status(marshmallow.Schema):
 
 
 class CreateModelRequest(marshmallow.Schema):
+    """Schema for request to build a Stan program."""
     program_code = fields.String(required=True)
 
 
@@ -57,6 +63,11 @@ class Data(marshmallow.Schema):
 
     @marshmallow.validates_schema
     def validate_stan_values(self, data: dict, many: bool, partial: bool) -> None:
+        """Verify ``data`` dictionary will work for Stan.
+
+        Keys should be strings, values must be numbers or (nested) lists of numbers.
+
+        """
         assert not many and not partial, "Use of `many` and `partial` with schema unsupported."
 
         def is_nested_list_of_numbers(value: typing.Any) -> bool:
@@ -71,12 +82,14 @@ class Data(marshmallow.Schema):
                 continue  # scalar value
             elif not is_nested_list_of_numbers(value):
                 raise marshmallow.ValidationError(
-                    f"Values associated with `{key}` must be sequences of numbers."
+                    f"Values associated with `{key}` must be (nested) sequences of numbers."
                 )
 
 
 class CreateFitRequest(marshmallow.Schema):
-    """Only one algorithm is currently supported: ``hmc_nuts_diag_e_adapt``.
+    """Schema for request to start sampling.
+
+    Only one algorithm is currently supported: ``hmc_nuts_diag_e_adapt``.
 
     Sampler parameters can be found in ``httpstan/stan.pxd``.
 

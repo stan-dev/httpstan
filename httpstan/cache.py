@@ -189,7 +189,7 @@ async def dump_operation(name: str, value: bytes, db: sqlite3.Connection) -> Non
 
 
 async def load_operation(name: str, db: sqlite3.Connection) -> dict:
-    """Load serialized Operation.
+    """Load serialized Operation from the cache database.
 
     This function is a coroutine.
 

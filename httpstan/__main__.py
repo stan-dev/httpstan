@@ -2,8 +2,6 @@
 
 ``python3 -m httpstan`` starts a server listening on ``localhost``.
 
-As httpstan is intended for use alongside a frontend, the frontend
-will typically do everything in ``main()`` function.
 """
 import sys
 import time
