@@ -1,24 +1,19 @@
 """Top-level script environment for httpstan.
 
-``python3 -m httpstan`` starts a server listening on ``localhost``.
+``python3 -m httpstan`` starts a server listening on ``127.0.0.1``.
 
 """
-import sys
-import time
+import argparse
 
-import httpstan.main
+import aiohttp.web
+import httpstan.app
 
 
-def main() -> None:
-    server = httpstan.main.Server()
-    server.start()
-    print(f"httpstan serving on {server.host}:{server.port}", file=sys.stderr)
-    try:
-        while True:
-            time.sleep(0.1)
-    finally:
-        server.stop()
-
+parser = argparse.ArgumentParser(description="Launch httpstan HTTP server.")
+parser.add_argument("--host", default="127.0.0.1")
+parser.add_argument("--port", default="8080")
 
 if __name__ == "__main__":
-    main()
+    args = parser.parse_args()
+    app = httpstan.app.make_app()
+    aiohttp.web.run_app(app, host=args.host, port=args.port)

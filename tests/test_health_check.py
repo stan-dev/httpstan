@@ -1,14 +1,13 @@
 """Test health check route."""
-import asyncio
+import aiohttp
+import pytest
 
-import requests
 
-
-def test_health_check(api_url: str) -> None:
+@pytest.mark.asyncio
+async def test_health_check(api_url: str) -> None:
     """Test health check route."""
 
-    async def main() -> None:
-        resp = requests.get(f"{api_url}/health")
-        assert resp.status_code == 200
-
-    asyncio.get_event_loop().run_until_complete(main())
+    health_check_url = f"{api_url}/health"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(health_check_url) as resp:
+            assert resp.status == 200

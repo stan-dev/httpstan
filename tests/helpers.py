@@ -2,34 +2,29 @@
 import asyncio
 import typing
 
+import aiohttp
 import google.protobuf.internal.decoder
 import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
-import requests
 
 
-def get_model_name(api_url: str, program_code: str) -> str:
-    """Compile and retrieve model name."""
-    resp = requests.post(f"{api_url}/models", json={"program_code": program_code})
-    assert resp.status_code == 201, (api_url, resp.content)
-    model_name = typing.cast(str, resp.json()["name"])
-    assert "compiler_output" in resp.json()
+async def get_model_name(api_url: str, program_code: str) -> str:
+    """Compile and retrieve model name.
+
+    This function is a coroutine.
+    """
+    models_url = f"{api_url}/models"
+    payload = {"program_code": program_code}
+    async with aiohttp.ClientSession() as session:
+        async with session.post(models_url, json=payload) as resp:
+            assert resp.status == 201
+            response_payload = await resp.json()
+    model_name = typing.cast(str, response_payload["name"])
+    assert "compiler_output" in response_payload
     return model_name
 
 
-def validate_protobuf_messages(fit_bytes: bytes) -> None:
-    """Superficially validate samples from a Stan model."""
-    varint_decoder = google.protobuf.internal.decoder._DecodeVarint32  # type: ignore
-    next_pos, pos = 0, 0
-    while pos < len(fit_bytes):
-        msg = callbacks_writer_pb2.WriterMessage()
-        next_pos, pos = varint_decoder(fit_bytes, pos)
-        msg.ParseFromString(fit_bytes[pos : pos + next_pos])
-        assert msg
-        pos += next_pos
-
-
-def extract_draws(fit_bytes: bytes, param_name: str) -> typing.List[typing.Union[int, float]]:
-    """Extract all draws for parameter from stream response.
+def extract(param_name: str, fit_bytes: bytes) -> typing.List[typing.Union[int, float]]:
+    """Extract all draws for parameter from protobuf stream response.
 
     Only works with a single parameter.
 
@@ -49,6 +44,7 @@ def extract_draws(fit_bytes: bytes, param_name: str) -> typing.List[typing.Union
         msg = callbacks_writer_pb2.WriterMessage()
         next_pos, pos = varint_decoder(fit_bytes, pos)
         msg.ParseFromString(fit_bytes[pos : pos + next_pos])
+        assert msg
         pos += next_pos
         if msg.topic == callbacks_writer_pb2.WriterMessage.Topic.Value("SAMPLE"):
             for value_wrapped in msg.feature:
@@ -62,14 +58,13 @@ def extract_draws(fit_bytes: bytes, param_name: str) -> typing.List[typing.Union
     return draws
 
 
-async def sample_then_extract(
-    host: str, port: int, program_code: str, fit_payload: dict, param_name: str
-) -> typing.List[typing.Union[int, float]]:
-    """Combines common steps in tests.
+async def sample(api_url: str, program_code: str, fit_payload: dict) -> dict:
+    """Start sampling operation, returning `Operation`.
+
+    This function is a coroutine.
 
     Arguments:
-        host: host
-        port: port
+        api_url: REST API endpoint
         program_code: Stan program code
         fit_payload: Python dict, to be converted into JSON
         param_name : (flat) parameter name
@@ -78,29 +73,52 @@ async def sample_then_extract(
         Draws of `param_name`.
 
     """
-    api_url = f"http://{host}:{port}/v1"
-    resp = requests.post(f"{api_url}/models", json={"program_code": program_code})
-    assert resp.status_code == 201
-    model_name = resp.json()["name"]
-    del resp
+    model_name = await get_model_name(api_url, program_code)
+    payload = fit_payload
+    fits_url = f"{api_url}/{model_name}/fits"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(fits_url, json=payload) as resp:
+            assert resp.status == 201
+            operation = await resp.json()
+            operation_name = operation["name"]
+            assert operation_name is not None
+            assert operation_name.startswith("operations/")
 
-    resp = requests.post(f"{api_url}/{model_name}/fits", json=fit_payload)
-    assert resp.status_code == 201
-    operation = resp.json()
-    operation_name = operation["name"]
-    assert operation_name is not None
-    assert operation_name.startswith("operations/"), (f"{api_url}/{model_name}/fits", operation)
+        operation_url = f"{api_url}/{operation_name}"
+        # wait until fit is finished
+        while True:
+            async with session.get(operation_url) as resp:
+                operation = await resp.json()
+                if operation["done"]:
+                    break
+                await asyncio.sleep(0.1)
 
-    fit_name = operation["metadata"]["fit"]["name"]
+    return typing.cast(dict, operation)
 
-    resp = requests.get(f"{api_url}/{operation_name}")
-    assert resp.status_code == 200
 
-    # wait until fit is finished
-    while not requests.get(f"{api_url}/{operation_name}").json()["done"]:
-        await asyncio.sleep(0.1)
+async def sample_then_extract(
+    api_url: str, program_code: str, fit_payload: dict, param_name: str
+) -> typing.List[typing.Union[int, float]]:
+    """Combines common steps in tests.
 
-    resp = requests.get(f"{api_url}/{fit_name}")
-    assert resp.status_code == 200, resp.json()
-    fit_bytes = resp.content
-    return extract_draws(fit_bytes, param_name)
+    This function is a coroutine.
+
+    Arguments:
+        api_url: REST API endpoint
+        program_code: Stan program code
+        fit_payload: Python dict, to be converted into JSON
+        param_name : (flat) parameter name
+
+    Returns:
+        Draws of `param_name`.
+
+    """
+    operation = await sample(api_url, program_code, fit_payload)
+    fit_name = operation["result"]["name"]
+    async with aiohttp.ClientSession() as session:
+        fit_url = f"{api_url}/{fit_name}"
+        async with session.get(fit_url) as resp:
+            assert resp.status == 200
+            assert resp.headers["Content-Type"] == "application/octet-stream"
+            fit_bytes = await resp.read()
+    return extract(param_name, fit_bytes)

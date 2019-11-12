@@ -1,8 +1,8 @@
 """Test sampling from Eight Schools model."""
-import asyncio
 import typing
 
-import requests
+import aiohttp
+import pytest
 
 import helpers
 
@@ -35,71 +35,43 @@ schools_data = {
 }
 
 
-def test_eight_schools(api_url: str) -> None:
+@pytest.mark.asyncio
+async def test_eight_schools(api_url: str) -> None:
     """Test sampling from Eight Schools model with defaults."""
-
-    async def main() -> None:
-        model_name = helpers.get_model_name(api_url, program_code)
-        fits_url = f"{api_url}/models/{model_name.split('/')[-1]}/fits"
-        payload = {
-            "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
-            "data": schools_data,
-        }
-        resp = requests.post(fits_url, json=payload)
-        assert resp.status_code == 201, resp.content
-        assert resp.headers["Content-Type"].split(";")[0] == "application/json"
-
-        operation = resp.json()
-        operation_name = operation["name"]
-        assert operation_name is not None
-        assert operation_name.startswith("operations/")
-        assert not operation["done"]
-
-        fit_name = operation["metadata"]["fit"]["name"]
-
-        resp = requests.get(f"{api_url}/{operation_name}")
-        assert resp.status_code == 200, f"{api_url}/{operation_name}"
-        assert not resp.json()["done"], resp.json()
-
-        # wait until fit is finished
-        while not requests.get(f"{api_url}/{operation_name}").json()["done"]:
-            await asyncio.sleep(0.1)
-
-        fit_url = f"{api_url}/{fit_name}"
-        resp = requests.get(fit_url, json=payload)
-        assert resp.status_code == 200
-        assert resp.headers["Content-Type"] == "application/octet-stream"
-        fit_bytes = resp.content
-        helpers.validate_protobuf_messages(fit_bytes)
-
-    asyncio.get_event_loop().run_until_complete(main())
+    payload = {
+        "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
+        "data": schools_data,
+    }
+    param_name = "mu"
+    mu = await helpers.sample_then_extract(api_url, program_code, payload, param_name)
+    assert len(mu) == 1_000
 
 
-def test_eight_schools_params(api_url: str) -> None:
+@pytest.mark.asyncio
+async def test_eight_schools_params(api_url: str) -> None:
     """Test getting parameters from Eight Schools model."""
 
-    async def main() -> None:
-        model_name = helpers.get_model_name(api_url, program_code)
-        models_params_url = f"{api_url}/models/{model_name.split('/')[-1]}/params"
-        resp = requests.post(models_params_url, json={"data": schools_data})
-        assert resp.status_code == 200
-        response_payload = resp.json()
-        assert "name" in response_payload and response_payload["name"] == model_name
-        assert "params" in response_payload and len(response_payload["params"])
-        params = response_payload["params"]
-        param = params[0]
-        assert param["name"] == "mu"
-        assert param["dims"] == []
-        assert param["constrained_names"] == ["mu"]
-        param = params[1]
-        assert param["name"] == "tau"
-        assert param["dims"] == []
-        assert param["constrained_names"] == ["tau"]
-        param = params[2]
-        assert param["name"] == "eta"
-        assert param["dims"] == [schools_data["J"]]
-        assert param["constrained_names"] == [
-            f"eta.{i}" for i in range(1, typing.cast(int, schools_data["J"]) + 1)
-        ]
-
-    asyncio.get_event_loop().run_until_complete(main())
+    model_name = await helpers.get_model_name(api_url, program_code)
+    models_params_url = f"{api_url}/{model_name}/params"
+    payload = {"data": schools_data}
+    async with aiohttp.ClientSession() as session:
+        async with session.post(models_params_url, json=payload) as resp:
+            assert resp.status == 200
+            response_payload = await resp.json()
+            assert "name" in response_payload and response_payload["name"] == model_name
+            assert "params" in response_payload and len(response_payload["params"])
+            params = response_payload["params"]
+            param = params[0]
+            assert param["name"] == "mu"
+            assert param["dims"] == []
+            assert param["constrained_names"] == ["mu"]
+            param = params[1]
+            assert param["name"] == "tau"
+            assert param["dims"] == []
+            assert param["constrained_names"] == ["tau"]
+            param = params[2]
+            assert param["name"] == "eta"
+            assert param["dims"] == [schools_data["J"]]
+            assert param["constrained_names"] == [
+                f"eta.{i}" for i in range(1, typing.cast(int, schools_data["J"]) + 1)
+            ]

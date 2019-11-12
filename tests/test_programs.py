@@ -1,41 +1,39 @@
 """Test Stan model compilation."""
-import asyncio
 import random
-import requests
 import string
 from time import time
 
-import httpstan
+import aiohttp
+import pytest
 
+import httpstan.models
 import helpers
 
 program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 
 
-def test_models(api_url: str) -> None:
+@pytest.mark.asyncio
+async def test_models(api_url: str) -> None:
     """Test compilation of an extension module."""
 
-    async def main() -> None:
-        models_url = f"{api_url}/models"
-        resp = requests.post(models_url, json={"program_code": program_code})
-        assert resp.status_code == 201
-        assert "name" in resp.json()
+    models_url = f"{api_url}/models"
+    payload = {"program_code": program_code}
+    async with aiohttp.ClientSession() as session:
+        async with session.post(models_url, json=payload) as resp:
+            assert resp.status == 201
+            response_payload = await resp.json()
+            assert "name" in response_payload
 
-    asyncio.get_event_loop().run_until_complete(main())
 
-
-def test_calculate_model_name(api_url: str) -> None:
+@pytest.mark.asyncio
+async def test_calculate_model_name(api_url: str) -> None:
     """Test model name calculation."""
-
-    async def main() -> None:
-        model_name = helpers.get_model_name(api_url, program_code)
-        assert len(model_name.split("/")[-1]) == 10
-        assert model_name == httpstan.models.calculate_model_name(program_code)
-
-    asyncio.get_event_loop().run_until_complete(main())
+    model_name = await helpers.get_model_name(api_url, program_code)
+    assert model_name == httpstan.models.calculate_model_name(program_code)
 
 
-def test_model_cache(api_url: str) -> None:
+@pytest.mark.asyncio
+async def test_model_cache(api_url: str) -> None:
     """Test model cache."""
     # use random string, so the module name is new and compilation happens
 
@@ -45,18 +43,12 @@ def test_model_cache(api_url: str) -> None:
         ["parameters {real ", random_string, ";} model { ", random_string, " ~ std_normal();}"]
     )
 
-    async def main() -> None:
-        models_url = f"{api_url}/models"
-        resp = requests.post(models_url, json={"program_code": program_code})
-        assert resp.status_code == 201
-        assert "name" in resp.json()
-
     ts1 = time()
-    asyncio.get_event_loop().run_until_complete(main())
+    await helpers.get_model_name(api_url, program_code)
     duration_compilation = time() - ts1
 
     ts2 = time()
-    asyncio.get_event_loop().run_until_complete(main())
+    await helpers.get_model_name(api_url, program_code)
     duration_cache = time() - ts2
 
     # force duration_cache > 0
