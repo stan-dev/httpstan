@@ -35,8 +35,14 @@ def _split_data(
 
     """
     data = data.copy()
-    names_r, values_r, dim_r = [], [], []  # type: List[str], List[float], List[List[int]]
-    names_i, values_i, dim_i = [], [], []  # type: List[str], List[int], List[List[int]]
+
+    names_r: List[str] = []
+    values_r: List[float] = []
+    dim_r: List[List[int]] = []
+
+    names_i: List[str] = []
+    values_i: List[int] = []
+    dim_i: List[List[int]] = []
 
     for k, v in data.items():
         if np.issubdtype(np.asarray(v).dtype, np.floating):
