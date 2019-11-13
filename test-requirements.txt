@@ -1,12 +1,8 @@
 # The order of packages is significant, because pip processes them in the order
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
-flake8~=3.3
-flake8-bugbear~=18.2
-
 pytest~=5.2
 pytest-cov~=2.8
-sphinx~=2.2 # BSD
 
 requests~=2.13
 

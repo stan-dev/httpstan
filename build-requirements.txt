@@ -8,6 +8,7 @@ mypy-protobuf~=1.0
 apispec[yaml,validation]~=3.1
 
 # documentation-related
+sphinx~=2.2 # BSD
 sphinxcontrib-apidoc~=0.3
 sphinxcontrib-openapi~=0.5
 sphinxcontrib-redoc~=1.5
