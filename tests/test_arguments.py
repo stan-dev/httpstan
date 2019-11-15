@@ -27,12 +27,11 @@ async def test_function_arguments(api_url: str) -> None:
     app: dict = {}  # mock aiohttp.web.Application
     # the following call sets up database, populates app['db']
     await httpstan.cache.init_cache(app)  # type: ignore
-    module_bytes, compiler_output = await httpstan.cache.load_model_extension_module(
+    model_module, compiler_output = await httpstan.models.import_model_extension_module(
         model_name, app["db"]
     )
-    assert module_bytes is not None
+    assert model_module is not None
     assert compiler_output is not None
-    model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
     expected = [
         "data",

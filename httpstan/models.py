@@ -15,6 +15,7 @@ import pathlib
 import platform
 import shutil
 import string
+import sqlite3
 import sys
 import tempfile
 from types import ModuleType
@@ -28,6 +29,7 @@ import Cython.Build
 import Cython.Build.Inline
 import pkg_resources
 
+import httpstan.cache
 import httpstan.compile
 import httpstan.stan
 
@@ -141,25 +143,25 @@ def _import_module(module_name: str, module_path: str) -> ModuleType:
     return module
 
 
-def import_model_extension_module(model_name: str, module_bytes: bytes) -> ModuleType:
-    """Load Stan model extension module from binary representation.
+async def import_model_extension_module(
+    model_name: str, db: sqlite3.Connection
+) -> Tuple[ModuleType, str]:
 
-    This function presents a security risk! It will load a Python module which
-    can execute arbitrary Python code.
+    """Load Stan model extension module from binary representation.
 
     Arguments:
         model_name
-        module_bytes
 
     Returns:
         module: loaded module handle.
+        str: Compiler output.
+
+    Raises:
+        KeyError: Model not found.
 
     """
-    # TODO(AR): This function is a security risk! Bytes should be authenticated.
-    # If an adversary persuades a user to call this function with some malicious
-    # module (encoded), arbitrary code could be executed.
-    # In principle this should be easy to do because httpstan will only ever
-    # load modules that it has itself produced.
+    # may raise KeyError
+    module_bytes, compiler_output = await httpstan.cache.load_model_extension_module(model_name, db)
     # NOTE: module suffix can be '.so'/'.pyd'; does not need to be, say,
     # '.cpython-36m-x86_64-linux-gnu.so'.  The module's filename (minus any
     # suffix) does matter: Python calls an initialization function using the
@@ -176,7 +178,7 @@ def import_model_extension_module(model_name: str, module_bytes: bytes) -> Modul
             fh.write(module_bytes)
         module_path = temporary_directory
         assert module_name == os.path.splitext(module_filename)[0]
-        return _import_module(module_name, module_path)
+        return _import_module(module_name, module_path), compiler_output
 
 
 @functools.lru_cache()
