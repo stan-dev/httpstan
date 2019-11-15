@@ -159,14 +159,12 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
     data = args["data"]
 
     try:
-        module_bytes, _ = await httpstan.cache.load_model_extension_module(
+        model_module, _ = await httpstan.models.import_model_extension_module(
             model_name, request.app["db"]
         )
     except KeyError:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
-
-    model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
     # ``param_names`` and ``dims`` are defined in ``anonymous_stan_model_services.pyx.template``.
     # Apart from converting C++ types into corresponding Python types, they do no processing of the
@@ -257,13 +255,12 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         return aiohttp.web.json_response(ex.messages, status=422)
 
     try:
-        module_bytes, _ = await httpstan.cache.load_model_extension_module(
+        model_module, _ = await httpstan.models.import_model_extension_module(
             model_name, request.app["db"]
         )
     except KeyError:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
-    model_module = httpstan.models.import_model_extension_module(model_name, module_bytes)
 
     function = args.pop("function")
     name = httpstan.fits.calculate_fit_name(function, model_name, args)
