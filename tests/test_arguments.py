@@ -2,6 +2,7 @@
 
 import pytest
 
+import httpstan.app
 import httpstan.cache
 import httpstan.models
 import httpstan.services.arguments as arguments
@@ -24,9 +25,9 @@ async def test_function_arguments(api_url: str) -> None:
     model_name = await helpers.get_model_name(api_url, program_code)
 
     # get a reference to the model_module
-    app: dict = {}  # mock aiohttp.web.Application
     # the following call sets up database, populates app['db']
-    await httpstan.cache.init_cache(app)  # type: ignore
+    app = httpstan.app.make_app()
+    await httpstan.cache.init_cache(app)
     model_module, compiler_output = await httpstan.models.import_model_extension_module(
         model_name, app["db"]
     )

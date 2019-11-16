@@ -32,4 +32,4 @@ Building Documentation
 
 ::
 
-    scripts/build_docs.sh
+    python3 -m sphinx -W doc/source doc/build

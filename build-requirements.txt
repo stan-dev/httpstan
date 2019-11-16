@@ -6,9 +6,11 @@ mypy-protobuf~=1.0
 
 # required for building OpenAPI spec
 apispec[yaml,validation]~=3.1
+marshmallow~=3.2  # needed for apidocs
 
 # documentation-related
 sphinx~=2.2 # BSD
 sphinxcontrib-apidoc~=0.3
 sphinxcontrib-openapi~=0.5
 sphinxcontrib-redoc~=1.5
+sphinx-rtd-theme~=0.4
