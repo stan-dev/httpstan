@@ -11,6 +11,7 @@ matrix:
     - env: TOXENV=flake8
     - env: TOXENV=format
     - env: TOXENV=mypy
+    - env: TOXENV=docs
     - env: TOXENV=coverage
 before_install:
   - python --version
