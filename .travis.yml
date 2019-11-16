@@ -12,7 +12,6 @@ matrix:
     - env: TOXENV=format
     - env: TOXENV=mypy
     - env: TOXENV=docs
-    - env: TOXENV=coverage
 before_install:
   - python --version
   - if [[ -n $CC ]]; then $CC --version; fi
