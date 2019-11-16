@@ -27,3 +27,8 @@ Building Documentation
 ::
 
     python3 -m sphinx -T -W doc build/html
+
+Accounts with Continuous Integration, PyPI, and Readthedocs
+===========================================================
+
+- readthedocs: riddell-stan
