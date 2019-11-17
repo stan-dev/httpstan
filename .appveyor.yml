@@ -1,0 +1,14 @@
+os: Visual Studio 2019
+platform: x64
+environment:
+  matrix:
+    - PYTHON_HOME: 'C:\Python37'
+install:
+  - set PATH=%PYTHON_HOME%;%PATH%
+  - python --version
+
+build: false
+
+# disable tests for now
+test_script:
+  - python --version

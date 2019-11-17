@@ -1,0 +1,54 @@
+[tool.poetry]
+name = "httpstan"
+version = "1.1.0"
+description = "HTTP-based interface to Stan, a package for Bayesian inference."
+authors = [
+  "Allen Riddell <riddella@indiana.edu>",
+  "Ari Hartikainen <ahartikainen@users.noreply.github.com>",
+]
+license = "ISC"
+build = "build.py"
+
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: ISC License (ISCL)",
+  "Programming Language :: Cython",
+]
+exclude = [
+# unused parts of the stan source
+  "httpstan/lib/stan/make",
+  "httpstan/lib/stan/src/docs",
+  "httpstan/lib/stan/src/doxygen",
+  "httpstan/lib/stan/src/test",
+  # unused parts of the stan math source
+  "httpstan/lib/stan/lib/stan_math/doxygen",
+  "httpstan/lib/stan/lib/stan_math/lib/cpplint_*",
+  "httpstan/lib/stan/lib/stan_math/lib/eigen_*/unsupported/doc",
+  "httpstan/lib/stan/lib/stan_math/lib/gtest_*",
+  "httpstan/lib/stan/lib/stan_math/make",
+  "httpstan/lib/stan/lib/stan_math/test",
+]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+aiohttp = "^3.6"
+appdirs = "^1.4"
+webargs = "^5.5"
+marshmallow = "^3.2"
+numpy = "^1.7"
+Cython = "^0.29"
+protobuf = "^3.3"
+ujson = "^1.3"
+
+[tool.poetry.dev-dependencies]
+pytest-cov = "^2.8"
+pytest-asyncio = "^0.10"
+apispec = {version = "^3.1", extras = ["yaml", "validation"]}
+
+[build-system]
+requires = ["poetry>=0.12", "Cython>=0.29"]
+build-backend = "poetry.masonry.api"
+
+[tool.black]
+line-length = 100
+exclude = '.*_pb2|httpstan/lib'
