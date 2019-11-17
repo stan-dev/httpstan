@@ -1,0 +1,116 @@
+// Messages describing output of writers defined in ``stan::callbacks``.
+syntax = "proto3";
+
+package stan;
+
+// WriterMessage is a data format for all messages written by the callback
+// writers defined in stan::callbacks.  These writers are used by the functions
+// defined in stan::services. For example, stan::services::sample::hmc_nuts_diag_e
+// uses one logger and three writers:
+// * `logger` Logger for informational and error messages
+// * `init_writer` Writer callback for unconstrained inits
+// * `sample_writer` Writer for draws
+// * `diagnostic_writer` Writer for diagnostic information
+//
+// WriterMessage is a format which is flexible enough to accommodates these
+// different uses while still providing a highly predictable structure.
+//
+// A WriterMessage contains a key-value store (features), where each key
+// (string) maps to a Feature message (which is either a list of strings, a
+// list of doubles, or a list of integers).
+//
+// A WriterMessage also has a string field `topic` which provides information
+// about what the WriterMessage concerns or what produced it. For example, the
+// `topic` associated with a WriterMessage written by `sample_writer` in the function
+// above might be the string "sample".
+//
+// A WriterMessage created by `sample_writer` in the above example might look like this:
+//
+// topic: "sample"
+// feature {
+//   key: "divergent__"
+//   value {
+//     int_list {
+//       value: 0
+//     }
+//   }
+// }
+// feature {
+//   key: "lp__"
+//   value {
+//     double_list {
+//       value: -0.259381
+//     }
+//   }
+// }
+// feature {
+//   key: "y"
+//   value {
+//     double_list {
+//       value: 0.720251
+//     }
+//   }
+// }
+//
+// Written to JSON with ``google.protobuf.json_format.MessageToJson`` (Python):
+//
+// {
+//   "topic": "sample",
+//   "feature": {
+//     "divergent__": {
+//       "intList": {
+//         "value": [
+//           "0"
+//         ]
+//       }
+//     },
+//     "lp__": {
+//       "doubleList": {
+//         "value": [
+//           -0.259381
+//         ]
+//       }
+//     },
+//     "y": {
+//       "doubleList": {
+//         "value": [
+//           0.720251
+//         ]
+//       }
+//     }
+//   }
+// }
+
+message WriterMessage {
+
+  message StringList {
+    repeated string value = 1;
+  }
+  message DoubleList {
+    repeated double value = 1;
+  }
+  message IntList {
+    repeated int64 value = 1;
+  }
+
+  message Feature {
+    string name = 1;
+    oneof kind {
+      StringList string_list = 2;
+      DoubleList double_list = 3;
+      IntList int_list = 4;
+    }
+  };
+
+  enum Topic {
+    UNKNOWN = 0;
+    LOGGER = 1;          // logger messages
+    INITIALIZATION = 2;  // unconstrained inits
+    SAMPLE = 3;          // draws
+    DIAGNOSTIC = 4;      // diagnostic information
+  }
+
+  Topic topic = 1;
+
+  repeated Feature feature = 2;
+};

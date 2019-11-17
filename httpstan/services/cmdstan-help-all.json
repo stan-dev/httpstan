@@ -1,0 +1,275 @@
+{
+  "method": {
+    "sample": [
+      {
+        "name": "num_samples",
+        "type": "int",
+        "default": "1000"
+      },
+      {
+        "name": "num_warmup",
+        "type": "int",
+        "default": "1000"
+      },
+      {
+        "name": "save_warmup",
+        "type": "boolean",
+        "default": "0"
+      },
+      {
+        "name": "thin",
+        "type": "int",
+        "default": "1"
+      },
+      {
+        "name": "engaged",
+        "type": "boolean",
+        "default": "1"
+      },
+      {
+        "name": "gamma",
+        "type": "double",
+        "default": "0.05"
+      },
+      {
+        "name": "delta",
+        "type": "double",
+        "default": "0.8"
+      },
+      {
+        "name": "kappa",
+        "type": "double",
+        "default": "0.75"
+      },
+      {
+        "name": "t0",
+        "type": "double",
+        "default": "10"
+      },
+      {
+        "name": "init_buffer",
+        "type": "unsigned int",
+        "default": "75"
+      },
+      {
+        "name": "term_buffer",
+        "type": "unsigned int",
+        "default": "50"
+      },
+      {
+        "name": "window",
+        "type": "unsigned int",
+        "default": "25"
+      },
+      {
+        "name": "algorithm",
+        "type": "list element",
+        "default": "hmc"
+      },
+      {
+        "name": "engine",
+        "type": "list element",
+        "default": "nuts"
+      },
+      {
+        "name": "int_time",
+        "type": "double",
+        "default": "2 * pi"
+      },
+      {
+        "name": "max_depth",
+        "type": "int",
+        "default": "10"
+      },
+      {
+        "name": "metric",
+        "type": "list element",
+        "default": "diag_e"
+      },
+      {
+        "name": "metric_file",
+        "type": "string",
+        "default": "\"\""
+      },
+      {
+        "name": "stepsize",
+        "type": "double",
+        "default": "1"
+      },
+      {
+        "name": "stepsize_jitter",
+        "type": "double",
+        "default": "0"
+      }
+    ],
+    "optimize": {
+      "bfgs": [
+        {
+          "name": "init_alpha",
+          "type": "double",
+          "default": "0.001"
+        },
+        {
+          "name": "tol_obj",
+          "type": "double",
+          "default": "9.9999999999999998e-13"
+        },
+        {
+          "name": "tol_rel_obj",
+          "type": "double",
+          "default": "10000"
+        },
+        {
+          "name": "tol_grad",
+          "type": "double",
+          "default": "1e-08"
+        },
+        {
+          "name": "tol_rel_grad",
+          "type": "double",
+          "default": "10000000"
+        },
+        {
+          "name": "tol_param",
+          "type": "double",
+          "default": "1e-08"
+        }
+      ],
+      "lbfgs": [
+        {
+          "name": "init_alpha",
+          "type": "double",
+          "default": "0.001"
+        },
+        {
+          "name": "tol_obj",
+          "type": "double",
+          "default": "9.9999999999999998e-13"
+        },
+        {
+          "name": "tol_rel_obj",
+          "type": "double",
+          "default": "10000"
+        },
+        {
+          "name": "tol_grad",
+          "type": "double",
+          "default": "1e-08"
+        },
+        {
+          "name": "tol_rel_grad",
+          "type": "double",
+          "default": "10000000"
+        },
+        {
+          "name": "tol_param",
+          "type": "double",
+          "default": "1e-08"
+        },
+        {
+          "name": "history_size",
+          "type": "int",
+          "default": "5"
+        }
+      ],
+      "newton": [
+        {
+          "name": "iter",
+          "type": "int",
+          "default": "2000"
+        },
+        {
+          "name": "save_iterations",
+          "type": "boolean",
+          "default": "0"
+        }
+      ]
+    },
+    "variational": [
+      {
+        "name": "algorithm",
+        "type": "list element",
+        "default": "meanfield"
+      },
+      {
+        "name": "iter",
+        "type": "int",
+        "default": "10000"
+      },
+      {
+        "name": "grad_samples",
+        "type": "int",
+        "default": "1"
+      },
+      {
+        "name": "elbo_samples",
+        "type": "int",
+        "default": "100"
+      },
+      {
+        "name": "eta",
+        "type": "double",
+        "default": "1"
+      },
+      {
+        "name": "engaged",
+        "type": "boolean",
+        "default": "1"
+      },
+      {
+        "name": "iter",
+        "type": "int",
+        "default": "50"
+      },
+      {
+        "name": "tol_rel_obj",
+        "type": "double",
+        "default": "0.01"
+      },
+      {
+        "name": "eval_elbo",
+        "type": "int",
+        "default": "100"
+      },
+      {
+        "name": "output_samples",
+        "type": "int",
+        "default": "1000"
+      }
+    ],
+    "diagnose": [
+      {
+        "name": "test",
+        "type": "list element",
+        "default": "gradient"
+      },
+      {
+        "name": "epsilon",
+        "type": "double",
+        "default": "1e-6"
+      },
+      {
+        "name": "error",
+        "type": "double",
+        "default": "1e-6"
+      }
+    ]
+  },
+  "output": [
+    {
+      "name": "file",
+      "type": "string",
+      "default": "output.csv"
+    },
+    {
+      "name": "diagnostic_file",
+      "type": "string",
+      "default": "\"\""
+    },
+    {
+      "name": "refresh",
+      "type": "int",
+      "default": "100"
+    }
+  ]
+}
