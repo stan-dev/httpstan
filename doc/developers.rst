@@ -32,4 +32,4 @@ Building Documentation
 
 ::
 
-    python3 -m sphinx -W doc/source doc/build
+    python3 -m sphinx -T -W doc build/html
