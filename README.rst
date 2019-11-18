@@ -13,7 +13,7 @@ httpstan
 HTTP-based REST interface to Stan, a package for Bayesian inference.
 
 An HTTP 1.1 interface to the Stan_ C++ package, **httpstan** is a shim_ that
-allows users to interact with the Stan C++ library using an HTTP API. The
+allows users to interact with the Stan C++ library using a REST API. The
 package is intended for use as a universal backend for frontends which know how
 to make HTTP requests. The primary audience for this package is developers.
 
@@ -55,6 +55,7 @@ Build from Source
 -------------------
 
 ::
+
     $ python3 -m pip install -r build-requirements.txt
     $ make  # generate required C++ code
     $ python3 setup.py bdist_wheel
@@ -133,6 +134,15 @@ Contribute
 ==========
 
 Contribution guidelines are described in ``CONTRIBUTE.rst``.
+
+Citation
+========
+
+We appreciate citations as they let us discover what people have been doing
+with the software. Citations also provide evidence of use which can help in
+obtaining grant funding.
+
+Allen Riddell, and Ari Hartikainen. 2019. Stan-Dev/Httpstan: V1.0.0. *Zenodo*. <https://doi.org/10.5281/zenodo.3546351>.
 
 License
 =======

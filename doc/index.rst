@@ -5,7 +5,7 @@ httpstan
 Release v\ |version| (:doc:`Changelog <changelog>`)
 
 An HTTP 1.1 interface to the Stan_ C++ package, **httpstan** is a shim_ that
-allows users to interact with the Stan C++ library using an HTTP API. The
+allows users to interact with the Stan C++ library using a REST API. The
 package is intended for use as a universal backend for frontends which know how
 to make HTTP requests. The primary audience for this package is developers.
 
@@ -88,6 +88,15 @@ decoded message should resemble the following::
       }
     }
 
+Citation
+========
+
+We appreciate citations as they let us discover what people have been doing
+with the software. Citations also provide evidence of use which can help in
+obtaining grant funding.
+
+Allen Riddell, and Ari Hartikainen. 2019. Stan-Dev/Httpstan: V1.0.0. *Zenodo*. <https://doi.org/10.5281/zenodo.3546351>.
+
 
 User Guide
 ==========
@@ -105,14 +114,6 @@ User Guide
    contributing
    developers
    license
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
 
 .. _shim: https://en.wikipedia.org/wiki/Shim_%28computing%29
