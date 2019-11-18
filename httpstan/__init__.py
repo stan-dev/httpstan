@@ -10,4 +10,4 @@ import pbr.version
 
 
 logging.getLogger("httpstan").addHandler(logging.NullHandler())
-__version__ = pbr.version.VersionInfo("httpstan").version_string()
+__version__ = pbr.version.VersionInfo("httpstan").release_string()
