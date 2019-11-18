@@ -65,8 +65,8 @@ releasenotes/build
 # project-specific
 *.c
 *.cpp
-doc/source/openapi.yaml
-doc/source/httpstan.rst
-doc/source/httpstan.services.rst
+doc/openapi.yaml
+doc/httpstan.rst
+doc/httpstan.services.rst
 *_pb2.py
 *_pb2.pyi

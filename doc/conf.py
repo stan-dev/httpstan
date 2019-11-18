@@ -2,13 +2,14 @@ import os
 import sys
 import unittest.mock
 
-sys.path.insert(0, os.path.abspath("../.."))
+sys.path.insert(0, os.path.abspath(".."))
 import httpstan
 
-# Use mock for extension modules so we do not need to build httpstan in order to
-# run Sphinx.
+# Use mock for extension and generated modules modules so we do not need to
+# build httpstan in order to run Sphinx.
 sys.modules["httpstan.stan"] = unittest.mock.MagicMock()
 sys.modules["httpstan.compile"] = unittest.mock.MagicMock()
+sys.modules["httpstan.callbacks_writer_pb2"] = unittest.mock.MagicMock()
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -45,13 +46,13 @@ version = release = httpstan.__version__
 
 def run_apidoc(_):
 
-    output_path = os.path.join("doc", "source")
+    output_path = source_dir = os.path.dirname(os.path.realpath(__file__))
     # excluding ``httpstan/views.py`` as Sphinx cannot process the OpenAPI YAML
     # excluding ``httpstan/routes.py`` as useless without ``views.py``
     ignored_files = [
-        "setup.py",
-        "httpstan/views.py",
-        "httpstan/routes.py",
+        os.path.join(source_dir, "..", "setup.py"),
+        os.path.join(source_dir, "..", "httpstan", "views.py"),
+        os.path.join(source_dir, "..", "httpstan", "routes.py"),
     ]
     argv = [
         "--ext-autodoc",
@@ -59,7 +60,7 @@ def run_apidoc(_):
         "--no-toc",
         "-o",
         output_path,
-        os.path.join("..", project.lower()),
+        os.path.join(source_dir, "..", project.lower()),
     ] + ignored_files
 
     from sphinx.ext import apidoc
@@ -68,12 +69,14 @@ def run_apidoc(_):
 
 
 def make_openapi_spec(_):
-
-    output_path = os.path.join("doc", "source", "openapi.yaml")
+    print("conf.py: Generating openapi spec... ", end="")
+    source_dir = os.path.dirname(os.path.realpath(__file__))
+    output_path = os.path.join(source_dir, "openapi.yaml")
     from httpstan import openapi
 
     with open(output_path, "w") as fh:
         fh.write(openapi.openapi_spec().to_yaml())
+    print("done.")
 
 
 def setup(app):
