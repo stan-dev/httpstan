@@ -1,8 +1,14 @@
 import os
 import sys
+import unittest.mock
 
 sys.path.insert(0, os.path.abspath("../.."))
 import httpstan
+
+# Use mock for extension modules so we do not need to build httpstan in order to
+# run Sphinx.
+sys.modules["httpstan.stan"] = unittest.mock.MagicMock()
+sys.modules["httpstan.compile"] = unittest.mock.MagicMock()
 
 extensions = [
     "sphinx.ext.autodoc",
