@@ -108,7 +108,7 @@ User Guide
 
    installation
    rest_api
-   httpstan
+   autoapi/index
    changelog
    contributing
    developers

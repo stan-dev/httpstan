@@ -5,14 +5,8 @@ import unittest.mock
 sys.path.insert(0, os.path.abspath(".."))
 import httpstan
 
-# Use mock for extension and generated modules modules so we do not need to
-# build httpstan in order to run Sphinx.
-sys.modules["httpstan.stan"] = unittest.mock.MagicMock()
-sys.modules["httpstan.compile"] = unittest.mock.MagicMock()
-sys.modules["httpstan.callbacks_writer_pb2"] = unittest.mock.MagicMock()
-
 extensions = [
-    "sphinx.ext.autodoc",
+    "autoapi.extension",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
@@ -36,42 +30,30 @@ intersphinx_mapping = {
 
 version = release = httpstan.__version__
 
+autoapi_dirs = [os.path.join('..', 'httpstan')]
+autoapi_ignore = [
+    '*/lib*',
+    '*/views.py',
+    '*/openapi.py',
+    '*/httpstan.callbacks_writer_pb2.py',
+]
+
 ################################################################################
-# apidoc and openapi spec
+# openapi spec
 ################################################################################
-
-# the following "hook" arranges for the equivalent of the following to be run:
-# sphinx-apidoc --ext-autodoc --force --no-toc -o doc/source httpstan httpstan/views.py httpstan/routes.py
-
-
-def run_apidoc(_):
-
-    output_path = source_dir = os.path.dirname(os.path.realpath(__file__))
-    # excluding ``httpstan/views.py`` as Sphinx cannot process the OpenAPI YAML
-    # excluding ``httpstan/routes.py`` as useless without ``views.py``
-    ignored_files = [
-        os.path.join(source_dir, "..", "setup.py"),
-        os.path.join(source_dir, "..", "httpstan", "views.py"),
-        os.path.join(source_dir, "..", "httpstan", "routes.py"),
-    ]
-    argv = [
-        "--ext-autodoc",
-        "--force",
-        "--no-toc",
-        "-o",
-        output_path,
-        os.path.join(source_dir, "..", project.lower()),
-    ] + ignored_files
-
-    from sphinx.ext import apidoc
-
-    apidoc.main(argv)
-
 
 def make_openapi_spec(_):
     print("conf.py: Generating openapi spec... ", end="")
     source_dir = os.path.dirname(os.path.realpath(__file__))
     output_path = os.path.join(source_dir, "openapi.yaml")
+
+
+    # Use mock for extension and generated modules modules so we do not need to
+    # build httpstan in order to run Sphinx.
+    sys.modules["httpstan.stan"] = unittest.mock.MagicMock()
+    sys.modules["httpstan.compile"] = unittest.mock.MagicMock()
+    sys.modules["httpstan.callbacks_writer_pb2"] = unittest.mock.MagicMock()
+
     from httpstan import openapi
 
     with open(output_path, "w") as fh:
@@ -80,7 +62,6 @@ def make_openapi_spec(_):
 
 
 def setup(app):
-    app.connect("builder-inited", run_apidoc)
     app.connect("builder-inited", make_openapi_spec)
 
 
