@@ -142,7 +142,7 @@ We appreciate citations as they let us discover what people have been doing
 with the software. Citations also provide evidence of use which can help in
 obtaining grant funding.
 
-Allen Riddell, and Ari Hartikainen. 2019. Stan-Dev/Httpstan: V1.0.0. *Zenodo*. <https://doi.org/10.5281/zenodo.3546351>.
+Allen Riddell, and Ari Hartikainen. 2019. Stan-Dev/Httpstan: V1.0.0. *Zenodo*. `<https://doi.org/10.5281/zenodo.3546351>`_.
 
 License
 =======

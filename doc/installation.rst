@@ -14,6 +14,7 @@ Install from Source
 -------------------
 
 ::
+
     $ python3 -m pip install -r build-requirements.txt
     $ make  # generate required C++ code
     $ python3 setup.py install

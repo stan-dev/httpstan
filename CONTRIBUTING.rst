@@ -37,15 +37,15 @@ Contributors to httpstan agree to abide by the "Contributor Covenant Code of Con
 .. _Collective Code Construction Contract (C4): https://rfc.zeromq.org/spec:42/C4/
 
 HTTP-based REST API
-===================
+-------------------
 
 Users interact with ``httpstan`` using an HTTP-based REST API. This API uses
-conventions described in the `API Design Guide
+conventions described in the document `API Design Guide
 <https://cloud.google.com/apis/design/>`_.  Contributors interested in changing
 the behavior of the REST API should consult this document.
 
 Coding Style
-============
+------------
 
 httpstan code is `PEP 8`_ compliant. The project uses the code formatter black_ with a maximum
 line-length of 99 characters.
