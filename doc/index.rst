@@ -24,8 +24,8 @@ localhost, port 8080::
 
     python3 -m httpstan
 
-An HTTP-based REST API is now available with the endpoint: <http://localhost:8080/v1/>. See
-the `REST API documentation <rest_api>`_ for a description of the resources available.
+An HTTP-based REST API is now available with the endpoint: `<http://localhost:8080/v1/>`_. The page
+:doc:`rest_api` has a complete description of the resources available.
 
 In a different terminal, make a POST request to
 ``http://localhost:8080/v1/models`` with Stan program code to compile the
@@ -95,7 +95,7 @@ We appreciate citations as they let us discover what people have been doing
 with the software. Citations also provide evidence of use which can help in
 obtaining grant funding.
 
-Allen Riddell, and Ari Hartikainen. 2019. Stan-Dev/Httpstan: V1.0.0. *Zenodo*. <https://doi.org/10.5281/zenodo.3546351>.
+Allen Riddell, and Ari Hartikainen. 2019. Stan-Dev/Httpstan: V1.0.0. *Zenodo*. `<https://doi.org/10.5281/zenodo.3546351>`_.
 
 
 User Guide
@@ -110,9 +110,9 @@ User Guide
    rest_api
    httpstan
    changelog
-   authors
    contributing
    developers
+   authors
    license
 
 

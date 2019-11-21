@@ -147,7 +147,7 @@ async def import_model_extension_module(
     model_name: str, db: sqlite3.Connection
 ) -> Tuple[ModuleType, str]:
 
-    """Load Stan model extension module from binary representation.
+    """Load an existing Stan model extension module.
 
     Arguments:
         model_name
