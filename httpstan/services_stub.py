@@ -78,7 +78,7 @@ async def call(
                 break
             await asyncio.sleep(0.1)
             continue
-        parsed = parser.parse(message.decode())
+        parsed = parser.parse(message)
         # parsed is None if the message was a blank line or a header with param names
         if parsed:
             if logger_callback and parsed.topic == callbacks_writer_pb2.WriterMessage.Topic.Value(
