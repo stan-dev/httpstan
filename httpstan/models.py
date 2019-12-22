@@ -273,6 +273,7 @@ def _build_extension_module(
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
             os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "boost_1.69.0"),
+            "/usr/include/google/protobuf",
             os.path.join(
                 httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "sundials_4.1.0", "include"
             ),
@@ -297,6 +298,8 @@ def _build_extension_module(
             sources=[pyx_filepath.as_posix()],
             define_macros=stan_macros,
             include_dirs=include_dirs,
+            library_dirs=["/usr/lib/x86_64-linux-gnu"],
+            libraries=['protobuf'],
             extra_compile_args=extra_compile_args,
         )
         build_extension = Cython.Build.Inline._get_build_extension()
