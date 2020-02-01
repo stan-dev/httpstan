@@ -286,6 +286,8 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     ) -> None:
         """Called when services call (i.e., an operation) is done.
 
+        This needs to handle both successful and exception-raising calls.
+
         Arguments:
             operation: Operation dict
             messages_file: Open file handle passed to services call
@@ -295,6 +297,9 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         """
         # either the call succeeded or it raised an exception.
         operation["done"] = True
+        asyncio.ensure_future(
+            httpstan.cache.dump_fit(operation["metadata"]["fit"]["name"], messages_file.getvalue())
+        )
         exc = future.exception()
         if exc:
             # e.g., "hmc_nuts_diag_e_adapt_wrapper() got an unexpected keyword argument, ..."
@@ -302,22 +307,16 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
             message, status = f"Error calling services function: `{exc}`", 400
             logger.critical(message)
             operation["result"] = _make_error(message, status=status)
-            operation = schemas.Operation().load(operation)
-            asyncio.ensure_future(
-                httpstan.cache.dump_operation(operation["name"], json.dumps(operation).encode(), db)
-            )
         else:
             logger.info(f"Operation `{operation['name']}` finished.")
             operation["result"] = schemas.Fit().load(operation["metadata"]["fit"])
-            operation = schemas.Operation().load(operation)
-            asyncio.ensure_future(
-                httpstan.cache.dump_fit(
-                    operation["metadata"]["fit"]["name"], messages_file.getvalue()
-                )
-            )
-            asyncio.ensure_future(
-                httpstan.cache.dump_operation(operation["name"], json.dumps(operation).encode(), db)
-            )
+
+        # store the updated Operation
+        operation = schemas.Operation().load(operation)
+        asyncio.ensure_future(
+            httpstan.cache.dump_operation(operation["name"], json.dumps(operation).encode(), db)
+        )
+
         messages_file.close()
 
     operation_name = f'operations/{name.split("/")[-1]}'

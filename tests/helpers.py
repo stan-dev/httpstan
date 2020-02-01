@@ -23,6 +23,29 @@ async def get_model_name(api_url: str, program_code: str) -> str:
     return model_name
 
 
+def decode_messages(fit_bytes: bytes) -> typing.List[callbacks_writer_pb2.WriterMessage]:
+    """Decode serialized messages.
+
+    Arguments:
+        fit_bytes: Encoded messages
+
+    Returns:
+        Decoded messages
+
+    """
+    varint_decoder = google.protobuf.internal.decoder._DecodeVarint32  # type: ignore
+    next_pos, pos = 0, 0
+    messages = []
+    while pos < len(fit_bytes):
+        msg = callbacks_writer_pb2.WriterMessage()
+        next_pos, pos = varint_decoder(fit_bytes, pos)
+        msg.ParseFromString(fit_bytes[pos : pos + next_pos])
+        assert msg
+        pos += next_pos
+        messages.append(msg)
+    return messages
+
+
 def extract(param_name: str, fit_bytes: bytes) -> typing.List[typing.Union[int, float]]:
     """Extract all draws for parameter from protobuf stream response.
 
@@ -37,15 +60,8 @@ def extract(param_name: str, fit_bytes: bytes) -> typing.List[typing.Union[int, 
 
     """
     draws = []
-
-    varint_decoder = google.protobuf.internal.decoder._DecodeVarint32  # type: ignore
-    next_pos, pos = 0, 0
-    while pos < len(fit_bytes):
-        msg = callbacks_writer_pb2.WriterMessage()
-        next_pos, pos = varint_decoder(fit_bytes, pos)
-        msg.ParseFromString(fit_bytes[pos : pos + next_pos])
+    for msg in decode_messages(fit_bytes):
         assert msg
-        pos += next_pos
         if msg.topic == callbacks_writer_pb2.WriterMessage.Topic.Value("SAMPLE"):
             for value_wrapped in msg.feature:
                 if param_name == value_wrapped.name:
@@ -96,6 +112,28 @@ async def sample(api_url: str, program_code: str, fit_payload: dict) -> dict:
     return typing.cast(dict, operation)
 
 
+async def fit_bytes(api_url: str, fit_name: str) -> bytes:
+    """Return all messages (as bytes) associated with a fit.
+
+    This function is a coroutine.
+
+    Arguments:
+        api_url: REST API endpoint
+        fit_name : Fit name
+
+    Returns:
+        bytes: Serialized output from Stan C++ call, saved as `fit_name`.
+
+    """
+    async with aiohttp.ClientSession() as session:
+        fit_url = f"{api_url}/{fit_name}"
+        async with session.get(fit_url) as resp:
+            assert resp.status == 200
+            assert resp.headers["Content-Type"] == "application/octet-stream"
+            fit_bytes = await resp.read()
+    return typing.cast(bytes, fit_bytes)
+
+
 async def sample_then_extract(
     api_url: str, program_code: str, fit_payload: dict, param_name: str
 ) -> typing.List[typing.Union[int, float]]:
@@ -115,10 +153,6 @@ async def sample_then_extract(
     """
     operation = await sample(api_url, program_code, fit_payload)
     fit_name = operation["result"]["name"]
-    async with aiohttp.ClientSession() as session:
-        fit_url = f"{api_url}/{fit_name}"
-        async with session.get(fit_url) as resp:
-            assert resp.status == 200
-            assert resp.headers["Content-Type"] == "application/octet-stream"
-            fit_bytes = await resp.read()
-    return extract(param_name, fit_bytes)
+    fit_bytes_ = await fit_bytes(api_url, fit_name)
+    assert isinstance(fit_bytes_, bytes)
+    return extract(param_name, fit_bytes_)
