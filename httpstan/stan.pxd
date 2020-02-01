@@ -79,4 +79,4 @@ cdef extern from "stan/services/sample/hmc_nuts_diag_e_adapt.hpp" namespace "sta
                                      double delta, double gamma, double kappa, double t0, unsigned int init_buffer,
                                      unsigned int term_buffer, unsigned int window,
                                      interrupt& interrupt, logger& logger, writer& init_writer,
-                                     writer& sample_writer, writer& diagnostic_writer)
+                                     writer& sample_writer, writer& diagnostic_writer) except +
