@@ -16,8 +16,10 @@ before_install:
   - python --version
   - if [[ -n $CC ]]; then $CC --version; fi
 install:
-  - pip install tox
-  - pip install -r build-requirements.txt
-  - make  # generate required C++ files
+  - pip install "poetry<2,>=1.0" tox
+  - pip install "grpcio-tools~=1.8" "mypy-protobuf~=1.0"
+  - make  # generate Python protobuf files
 script:
-  - travis_wait 60 tox
+  # NOTE: this first step will only test against Python 3.7. Need to generalize for Python 3.8
+  - if [[ ${TOXENV:0:2} = "py" ]]; then poetry install -v && poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 tests; fi
+  - if [[ ${TOXENV:0:2} != "py" ]]; then tox; fi
