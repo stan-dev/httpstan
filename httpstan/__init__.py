@@ -6,8 +6,6 @@ Configures logging and exposes httpstan.__version__.
 """
 import logging
 
-import pbr.version
-
 
 logging.getLogger("httpstan").addHandler(logging.NullHandler())
-__version__ = pbr.version.VersionInfo("httpstan").release_string()
+__version__ = "1.1.0"

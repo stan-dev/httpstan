@@ -2,7 +2,7 @@ os: Visual Studio 2015
 platform: x64
 environment:
   global:
-    MINICONDA: "C:\\Miniconda36-x64"
+    MINICONDA: "C:\\Miniconda37-x64"
   matrix:
     - PYTHON_VERSION: 3.7
 
@@ -15,29 +15,19 @@ install:
   - activate test-env
   - conda install libpython m2w64-toolchain -c msys2 -q
   - gcc --version
-  # Install the build dependencies of the project.
-  - pip install -q -r build-requirements.txt
   - mingw32-make --version
-  # Install the other dependencies of the project.
-  - pip install -q -r requirements.txt
-  - pip install -q -r test-requirements.txt
-
-  - ECHO "Starting to build the wheel"
-  # generate required cpp files
+  - python --version
+  # generate required protobuf files
+  - pip install "grpcio-tools~=1.8" "mypy-protobuf~=1.0"
   - mingw32-make
-  # build the wheel and install it
-  - python setup.py --quiet bdist_wheel
-  - ps: "ls dist"
+  # install the build dependencies of the project.
+  - pip install --user pipx
+  - python -m pipx install poetry
+  # install the package
+  - python -m pipx run poetry install -v
 
-  - ECHO "Install generated wheel to test it"
-  # Install the generated wheel package to test it
-  - pip install -q --pre --no-index --find-links dist/ httpstan
-
-# Not a .NET project, we build pystan in the install step instead
+# Not a .NET project, we build httpstan in the install step instead
 build: false
 
 test_script:
-  - mkdir empty_folder
-  - cd empty_folder
-  - python -c "import httpstan"
-  - python -m pytest -v ../tests/test_bernoulli.py::test_bernoulli_params
+  - python -m pipx run poetry run pytest -v tests/test_bernoulli.py::test_bernoulli_params

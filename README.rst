@@ -52,13 +52,16 @@ Install
     $ python3 -m pip install httpstan
 
 Build from Source
--------------------
+-----------------
+
+These instructions are experimental. We are using ``poetry`` to build our
+package.
 
 ::
 
-    $ python3 -m pip install -r build-requirements.txt
+    $ python3 -m pip install poetry
     $ make  # generate required C++ code
-    $ python3 setup.py bdist_wheel
+    $ python3 -m poetry install -v
 
 Usage
 =====
