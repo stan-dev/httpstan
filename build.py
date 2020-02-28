@@ -13,7 +13,7 @@ include_dirs = [
 ]
 extra_compile_args = [
     "-O3",
-    "-std=c++1y",
+    "-std=c++14",
     # MinGW fix, https://github.com/python/cpython/pull/11283
     "-D_hypot=hypot",
 ]
