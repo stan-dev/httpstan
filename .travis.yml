@@ -5,8 +5,12 @@ language: python
 python: 3.7
 matrix:
   include:
-    - env: TOXENV=py37
-    - env: TOXENV=py37 CC=clang
+    - python: 3.7
+    - python: 3.7
+      env: CC=clang
+    - python: 3.8
+    - python: 3.8
+      env: CC=clang
     - env: TOXENV=flake8
     - env: TOXENV=format
     - env: TOXENV=mypy
@@ -20,6 +24,9 @@ install:
   - pip install "grpcio-tools~=1.8" "mypy-protobuf~=1.0"
   - make  # generate Python protobuf files
 script:
-  # NOTE: this first step will only test against Python 3.7. Need to generalize for Python 3.8
-  - if [[ ${TOXENV:0:2} = "py" ]]; then poetry install -v && poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 tests; fi
-  - if [[ ${TOXENV:0:2} != "py" ]]; then tox; fi
+  - |
+      if [[ -n $TOXENV ]]; then
+        tox
+      else
+        poetry install -v && poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 tests
+      fi
