@@ -1,5 +1,8 @@
 // Messages describing output of writers defined in ``stan::callbacks``.
 syntax = "proto3";
+// LITE_RUNTIME is required for httpstan because httpstan will reload the
+// libprotobuf(-lite) library.  See protobuf issue #4126 for details.
+option optimize_for = LITE_RUNTIME;
 
 package stan;
 

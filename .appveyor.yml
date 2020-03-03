@@ -7,6 +7,9 @@ environment:
     - PYTHON_VERSION: 3.7
 
 install:
+  # install protobuf libraries
+  - vcpkg install protobuf protobuf:x64-windows
+
   - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
@@ -18,7 +21,8 @@ install:
   - mingw32-make --version
   - python --version
   # generate required protobuf files
-  - pip install "grpcio-tools~=1.8" "mypy-protobuf~=1.0"
+  - choco install protoc
+  - pip install "mypy-protobuf~=1.0"
   - mingw32-make
   # install the build dependencies of the project.
   - pip install --user pipx

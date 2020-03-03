@@ -17,7 +17,6 @@ import aiohttp.web
 import webargs.aiohttpparser
 
 import httpstan.cache
-import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 import httpstan.fits
 import httpstan.models
 import httpstan.schemas as schemas
@@ -334,12 +333,14 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     # if a task is cancelled before finishing a warning will be issued (see
     # `on_cleanup` signal handler in main.py).
     # Note: Python 3.7 and later, `ensure_future` is `create_task`
-    def logger_callback(operation: dict, message: callbacks_writer_pb2.WriterMessage) -> None:
-        value = message.feature[0].string_list.value[0]
-        if not value.startswith("Iteration:"):
+    def logger_callback(operation: dict, message: bytes) -> None:
+        # Hack: Use the raw protobuf-encoded message here. Raw message looks like this:
+        # b"\x08\x01\x120\x12.\n,info:Iteration:  500 / 2000 [ 25%]  (Warmup)"
+        # Using the raw message avoids having to deserialize the message.
+        # Deserializing it would be costly and require importing the protobuf Python module.
+        if b"info:Iteration" not in message:
             return
-        # example: "Iteration:  700 / 2000 [ 35%]  (Warmup)"
-        operation["metadata"]["progress"] = value
+        operation["metadata"]["progress"] = message.split(b"info:", 1)[1].decode()
         asyncio.ensure_future(
             httpstan.cache.dump_operation(
                 operation_name, json.dumps(operation_dict).encode(), request.app["db"]

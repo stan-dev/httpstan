@@ -33,6 +33,7 @@ import httpstan.cache
 import httpstan.compile
 import httpstan.stan
 
+PACKAGE_DIR = pathlib.Path(__file__).resolve(strict=True).parents[0]
 logger = logging.getLogger("httpstan")
 
 
@@ -265,17 +266,16 @@ def _build_extension_module(
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
             with open(filepath, "w") as fh:
                 fh.write(code)
+
         httpstan_dir = os.path.dirname(__file__)
+        callbacks_writer_pb_filepath = pathlib.Path(httpstan_dir) / "callbacks_writer.pb.cc"
         include_dirs = [
             httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
             temporary_directory.as_posix(),
-            os.path.join(httpstan_dir, "lib", "stan", "src"),
-            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math"),
-            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "eigen_3.3.3"),
-            os.path.join(httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "boost_1.69.0"),
-            os.path.join(
-                httpstan_dir, "lib", "stan", "lib", "stan_math", "lib", "sundials_4.1.0", "include"
-            ),
+            os.path.join(httpstan_dir, "include"),
+            os.path.join(httpstan_dir, "include", "lib", "eigen_3.3.3"),
+            os.path.join(httpstan_dir, "include", "lib", "boost_1.69.0"),
+            os.path.join(httpstan_dir, "include", "lib", "sundials_4.1.0", "include"),
         ]
 
         stan_macros: List[Tuple[str, Optional[str]]] = [
@@ -291,13 +291,19 @@ def _build_extension_module(
                 extra_compile_args.append("-D_hypot=hypot")
 
         cython_include_path = [os.path.dirname(httpstan_dir)]
+        # Note: `library_dirs` is only relevant for linking. It does not tell an extension
+        # where to find shared libraries during execution. There are two ways for an
+        # extension module to find shared libraries: LD_LIBRARY_PATH and rpath.
         extension = setuptools.Extension(
             module_name,
             language="c++",
-            sources=[pyx_filepath.as_posix()],
+            sources=[pyx_filepath.as_posix(), callbacks_writer_pb_filepath.as_posix()],
             define_macros=stan_macros,
             include_dirs=include_dirs,
+            library_dirs=[f"{PACKAGE_DIR / 'lib'}"],
+            libraries=["protobuf-lite"],
             extra_compile_args=extra_compile_args,
+            extra_link_args=[f"-Wl,-rpath,{PACKAGE_DIR / 'lib'}"],
         )
         build_extension = Cython.Build.Inline._get_build_extension()
 
