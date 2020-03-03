@@ -14,10 +14,7 @@ import typing
 
 import google.protobuf.internal.encoder
 
-import httpstan.callbacks_writer_parser
-import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
 import httpstan.services.arguments as arguments
-import httpstan.stan
 
 
 async def call(
@@ -65,7 +62,6 @@ async def call(
 
     loop = asyncio.get_event_loop()
     future = loop.run_in_executor(None, function_wrapper_partial)
-    parser = httpstan.callbacks_writer_parser.WriterParser()
     # `varint_encoder` is used here as part of a simple strategy for storing
     # a sequence of protocol buffer messages. Each message is prefixed by the
     # length of a message. This works and is Google's recommended approach.
@@ -78,16 +74,20 @@ async def call(
                 break
             await asyncio.sleep(0.1)
             continue
-        parsed = parser.parse(message.decode())
-        # parsed is None if the message was a blank line or a header with param names
-        if parsed:
-            if logger_callback and parsed.topic == callbacks_writer_pb2.WriterMessage.Topic.Value(
-                "LOGGER"
-            ):
-                logger_callback(parsed)
-            message_bytes = parsed.SerializeToString()
-            varint_encoder(messages_file.write, len(message_bytes))
-            messages_file.write(message_bytes)
+        # Only trigger callback if message has topic LOGGER. Topic is an
+        # Enum:
+        # enum Topic {
+        #   UNKNOWN = 0;
+        #   LOGGER = 1;          // logger messages
+        #   INITIALIZATION = 2;  // unconstrained inits
+        #   SAMPLE = 3;          // draws
+        #   DIAGNOSTIC = 4;      // diagnostic information
+        # }
+        # b'\0x08\x01' is how messages with Topic 1 (LOGGER) start
+        if logger_callback and message.startswith(b"\x08\x01"):
+            logger_callback(message)
+        varint_encoder(messages_file.write, len(message))
+        messages_file.write(message)
     messages_file.flush()
     # `result()` method will raise exceptions, if any
     future.result()  # type: ignore

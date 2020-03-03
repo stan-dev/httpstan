@@ -6,6 +6,14 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include "callbacks_writer.pb.h"
+
+/**
+ * NOTE: httpstan makes an unorthodox use of `message_prefix`!
+ * 
+ * See discussion in httpstan/queue_writer.hpp
+ *
+ */
 
 namespace stan {
   namespace callbacks {
@@ -46,7 +54,18 @@ namespace stan {
        */
       void debug(const std::string& message) {
         std::stringstream ss;
-        ss << message_prefix_ << message << std::endl;
+
+        stan::WriterMessage writer_message;
+        writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+
+        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+        string_list->add_value(std::string("debug:") + message);
+        feature->set_allocated_string_list(string_list);
+
+        std::string partial;
+        writer_message.SerializeToString(&partial);
+        ss << partial;
         output_->push(ss.str());
       }
 
@@ -57,55 +76,154 @@ namespace stan {
        */
       void debug(const std::stringstream& message) {
         std::stringstream ss;
-        ss << message_prefix_ << message.str() << std::endl;
+
+        stan::WriterMessage writer_message;
+        writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+
+        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+        string_list->add_value(std::string("debug:") + message.str());
+        feature->set_allocated_string_list(string_list);
+
+        std::string partial;
+        writer_message.SerializeToString(&partial);
+        ss << partial;
         output_->push(ss.str());
       }
 
       void info(const std::string& message) {
         std::stringstream ss;
-        ss << message_prefix_ << message << std::endl;
+
+        stan::WriterMessage writer_message;
+        writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+
+        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+        string_list->add_value(std::string("info:") + message);
+        feature->set_allocated_string_list(string_list);
+
+        std::string partial;
+        writer_message.SerializeToString(&partial);
+        ss << partial;
         output_->push(ss.str());
       }
 
       void info(const std::stringstream& message) {
         std::stringstream ss;
-        ss << message_prefix_ << message.str() << std::endl;
+
+        stan::WriterMessage writer_message;
+        writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+
+        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+        string_list->add_value(std::string("info:") + message.str());
+        feature->set_allocated_string_list(string_list);
+
+        std::string partial;
+        writer_message.SerializeToString(&partial);
+        ss << partial;
         output_->push(ss.str());
       }
 
       void warn(const std::string& message) {
         std::stringstream ss;
-        ss << message_prefix_ << message << std::endl;
+
+        stan::WriterMessage writer_message;
+        writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+
+        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+        string_list->add_value(std::string("warn:") + message);
+        feature->set_allocated_string_list(string_list);
+
+        std::string partial;
+        writer_message.SerializeToString(&partial);
+        ss << partial;
         output_->push(ss.str());
       }
 
       void warn(const std::stringstream& message) {
         std::stringstream ss;
-        ss << message_prefix_ << message.str() << std::endl;
+
+        stan::WriterMessage writer_message;
+        writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+
+        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+        string_list->add_value(std::string("warn:") + message.str());
+        feature->set_allocated_string_list(string_list);
+
+        std::string partial;
+        writer_message.SerializeToString(&partial);
+        ss << partial;
         output_->push(ss.str());
       }
 
       void error(const std::string& message) {
         std::stringstream ss;
-        ss << message_prefix_ << message << std::endl;
+
+        stan::WriterMessage writer_message;
+        writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+
+        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+        string_list->add_value(std::string("error:") + message);
+        feature->set_allocated_string_list(string_list);
+
+        std::string partial;
+        writer_message.SerializeToString(&partial);
+        ss << partial;
         output_->push(ss.str());
       }
 
       void error(const std::stringstream& message) {
         std::stringstream ss;
-        ss << message_prefix_ << message.str() << std::endl;
+
+        stan::WriterMessage writer_message;
+        writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+
+        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+        string_list->add_value(std::string("error:") + message.str());
+        feature->set_allocated_string_list(string_list);
+
+        std::string partial;
+        writer_message.SerializeToString(&partial);
+        ss << partial;
         output_->push(ss.str());
       }
 
       void fatal(const std::string& message) {
         std::stringstream ss;
-        ss << message_prefix_ << message << std::endl;
+
+        stan::WriterMessage writer_message;
+        writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+
+        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+        string_list->add_value(std::string("fatal:") + message);
+        feature->set_allocated_string_list(string_list);
+
+        std::string partial;
+        writer_message.SerializeToString(&partial);
+        ss << partial;
         output_->push(ss.str());
       }
 
       void fatal(const std::stringstream& message) {
         std::stringstream ss;
-        ss << message_prefix_ << message.str() << std::endl;
+
+        stan::WriterMessage writer_message;
+        writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+
+        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+        string_list->add_value(std::string("fatal:") + message.str());
+        feature->set_allocated_string_list(string_list);
+
+        std::string partial;
+        writer_message.SerializeToString(&partial);
+        ss << partial;
         output_->push(ss.str());
       }
 

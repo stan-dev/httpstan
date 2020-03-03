@@ -265,7 +265,9 @@ def _build_extension_module(
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
             with open(filepath, "w") as fh:
                 fh.write(code)
+
         httpstan_dir = os.path.dirname(__file__)
+        callbacks_writer_pb_filepath = pathlib.Path(httpstan_dir) / "callbacks_writer.pb.cc"
         include_dirs = [
             httpstan_dir,  # for queue_writer.hpp and queue_logger.hpp
             temporary_directory.as_posix(),
@@ -294,9 +296,10 @@ def _build_extension_module(
         extension = setuptools.Extension(
             module_name,
             language="c++",
-            sources=[pyx_filepath.as_posix()],
+            sources=[pyx_filepath.as_posix(), callbacks_writer_pb_filepath.as_posix()],
             define_macros=stan_macros,
             include_dirs=include_dirs,
+            libraries=["protobuf-lite"],
             extra_compile_args=extra_compile_args,
         )
         build_extension = Cython.Build.Inline._get_build_extension()

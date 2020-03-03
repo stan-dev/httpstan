@@ -68,3 +68,5 @@ releasenotes/build
 doc/openapi.yaml
 *_pb2.py
 *_pb2.pyi
+*.pb.cc
+*.pb.h

@@ -72,6 +72,7 @@ cdef extern from "queue_logger.hpp" namespace "stan::callbacks" nogil:
 
 cdef extern from "stan/services/sample/hmc_nuts_diag_e_adapt.hpp" namespace "stan::services::sample" nogil:
     # Note: if function arguments or argument names change, update schemas in httpstan.schemas
+    # Note: This function can raise a C++ exception (e.g., initialization failed)
     int hmc_nuts_diag_e_adapt[Model](Model& model, var_context& init,
                                      unsigned int random_seed, unsigned int chain, double init_radius,
                                      int num_warmup, int num_samples, int num_thin, libcpp.bool save_warmup,
