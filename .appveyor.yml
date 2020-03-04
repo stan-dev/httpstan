@@ -1,0 +1,29 @@
+os: Visual Studio 2019
+platform: x64
+environment:
+  matrix:
+    - PYTHON_VERSION: 3.7
+      PYTHON_HOME: 'C:\Python37'
+install:
+  - set PATH=%PYTHON_HOME%;%PATH%
+  - echo %PATH%
+  - python --version
+  # install protobuf libraries
+  - vcpkg install protobuf protobuf:x64-windows
+  - choco install protoc
+  - echo %INCLUDE%
+  - echo %LIB%
+  # generate required protobuf files
+  - choco install make
+  - make
+  # install the build dependencies of the project.
+  - python -m pip install --user pipx
+  - python -m pipx install poetry
+  # install the package
+  - python -m pipx run poetry install -v
+
+# Not a .NET project, we build httpstan in the install step instead
+build: false
+
+test_script:
+  - python -m pipx run poetry run pytest -v tests/test_bernoulli.py::test_bernoulli_params
