@@ -1,37 +1,14 @@
-os: Visual Studio 2015
+os: Visual Studio 2019
 platform: x64
 environment:
-  global:
-    MINICONDA: "C:\\Miniconda37-x64"
   matrix:
-    - PYTHON_VERSION: 3.7
-
+    - PYTHON_HOME: 'C:\Python37'
 install:
-  # install protobuf libraries
-  - vcpkg install protobuf protobuf:x64-windows
-
-  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%PATH%
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  - conda info -a
-  - conda create -q -n test-env python=%PYTHON_VERSION%
-  - activate test-env
-  - conda install libpython m2w64-toolchain -c msys2 -q
-  - gcc --version
-  - mingw32-make --version
+  - set PATH=%PYTHON_HOME%;%PATH%
   - python --version
-  # generate required protobuf files
-  - choco install protoc
-  - pip install "mypy-protobuf~=1.0"
-  - mingw32-make
-  # install the build dependencies of the project.
-  - pip install --user pipx
-  - python -m pipx install poetry
-  # install the package
-  - python -m pipx run poetry install -v
 
-# Not a .NET project, we build httpstan in the install step instead
 build: false
 
+# disable tests for now
 test_script:
-  - python -m pipx run poetry run pytest -v tests/test_bernoulli.py::test_bernoulli_params
+  - python --version
