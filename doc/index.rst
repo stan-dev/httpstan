@@ -111,9 +111,10 @@ User Guide
    autoapi/index
    changelog
    contributing
-   developers
+   development_setup
    authors
    license
+   developers
 
 
 .. _shim: https://en.wikipedia.org/wiki/Shim_%28computing%29
