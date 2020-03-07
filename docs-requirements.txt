@@ -32,4 +32,3 @@ numpy~=1.7
 Cython~=0.29
 protobuf~=3.3
 setuptools>=28.8
-ujson~=1.3
