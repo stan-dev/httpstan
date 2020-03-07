@@ -13,13 +13,6 @@ How to make a release
 - Push the new tag to the repository.
 - In the ``httpstan-wheels`` repository, update the version number to match the new version.
 
-Updating Stan Source
-====================
-
-::
-
-    scripts/update_stan_source.sh
-
 Updating CmdStan Sampler Parameter Defaults
 ===========================================
 
