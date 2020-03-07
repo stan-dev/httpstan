@@ -10,12 +10,7 @@ include_dirs = [
     "httpstan/include/lib/boost_1.69.0",
     "httpstan/include/lib/sundials_4.1.0/include",
 ]
-extra_compile_args = [
-    "-O3",
-    "-std=c++14",
-    # MinGW fix, https://github.com/python/cpython/pull/11283
-    "-D_hypot=hypot",
-]
+extra_compile_args = ["-O3", "-std=c++14"]
 
 
 extensions = [
