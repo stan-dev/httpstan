@@ -286,9 +286,6 @@ def _build_extension_module(
 
         if extra_compile_args is None:
             extra_compile_args = ["-O3", "-std=c++14"]
-            if platform.system() == "Windows":
-                # -D_hypot=hypot, MinGW fix, https://github.com/python/cpython/pull/11283
-                extra_compile_args.append("-D_hypot=hypot")
 
         cython_include_path = [os.path.dirname(httpstan_dir)]
         # Note: `library_dirs` is only relevant for linking. It does not tell an extension
