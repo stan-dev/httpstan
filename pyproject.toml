@@ -14,19 +14,16 @@ classifiers = [
   "License :: OSI Approved :: ISC License (ISCL)",
   "Programming Language :: Cython",
 ]
-exclude = [
-# unused parts of the stan source
-  "httpstan/lib/stan/make",
-  "httpstan/lib/stan/src/docs",
-  "httpstan/lib/stan/src/doxygen",
-  "httpstan/lib/stan/src/test",
-  # unused parts of the stan math source
-  "httpstan/lib/stan/lib/stan_math/doxygen",
-  "httpstan/lib/stan/lib/stan_math/lib/cpplint_*",
-  "httpstan/lib/stan/lib/stan_math/lib/eigen_*/unsupported/doc",
-  "httpstan/lib/stan/lib/stan_math/lib/gtest_*",
-  "httpstan/lib/stan/lib/stan_math/make",
-  "httpstan/lib/stan/lib/stan_math/test",
+include = [
+  # poetry automatically excludes paths mentioned in .gitignore, selectively add back
+  "httpstan/*.cpp",
+  "httpstan/*_pb2.py",
+  "httpstan/*_pb2.pyi",
+  "httpstan/*.pb.cc",
+  "httpstan/*.pb.h",
+  "httpstan/lib/libprotobuf-lite.*",  # .gitignore excludes httpstan/lib
+  "httpstan/include/**/*",
+  "doc/openapi.yaml",
 ]
 
 [tool.poetry.dependencies]

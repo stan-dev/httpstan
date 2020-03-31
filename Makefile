@@ -54,3 +54,10 @@ httpstan/include/lib/boost_1.69.0 httpstan/include/lib/eigen_3.3.3 httpstan/incl
 	cp -r build/math-2.19.1/lib/sundials_4.1.0 httpstan/include/lib/sundials_4.1.0
 	@echo delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
 	find httpstan/include/lib -iname '*.py' -delete
+	@echo deleting unused boost and eigen files. This step can be removed when httpstan uses Stan 2.20 or higher.
+	find httpstan/include/lib/boost_1.69.0/doc -delete
+	find httpstan/include/lib/boost_1.69.0/libs -delete
+	find httpstan/include/lib/boost_1.69.0/more -delete
+	find httpstan/include/lib/boost_1.69.0/status -delete
+	find httpstan/include/lib/boost_1.69.0/tools -delete
+	find httpstan/include/lib/eigen_3.3.3/unsupported/doc -delete
