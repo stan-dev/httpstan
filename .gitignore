@@ -63,12 +63,11 @@ releasenotes/build
 .pytest_cache
 
 # project-specific
-*.c
-*.cpp
-doc/openapi.yaml
-*_pb2.py
-*_pb2.pyi
-*.pb.cc
-*.pb.h
+httpstan/*.cpp
+httpstan/*_pb2.py
+httpstan/*_pb2.pyi
+httpstan/*.pb.cc
+httpstan/*.pb.h
 httpstan/lib
 httpstan/include
+doc/openapi.yaml
