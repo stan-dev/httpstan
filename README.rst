@@ -136,7 +136,7 @@ decoded message should resemble the following::
 Contribute
 ==========
 
-Contribution guidelines are described in ``CONTRIBUTE.rst``.
+Contribution guidelines are described in ``CONTRIBUTING.rst``.
 
 Citation
 ========

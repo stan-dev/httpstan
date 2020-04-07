@@ -121,7 +121,7 @@ Enforcement
 Instances of abusive, harassing, or otherwise unacceptable behavior may
 be reported by contacting the project team at riddella@indiana.edu.
 Alternatively, you may use the NumFOCUS Code of Conduct reporting tool
-available at <https://numfocus.org/code-of-conduct>.
+available at https://numfocus.org/code-of-conduct.
 All complaints will be reviewed and investigated and will result in a
 response that is deemed necessary and appropriate to the circumstances.
 The project team is obligated to maintain confidentiality with regard to

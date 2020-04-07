@@ -10,8 +10,8 @@ How to make a release
 =====================
 
 - Update ``CHANGELOG.rst``. Create Pull Request. Wait for PR to be merged.
-- Tag (with signature): ``git tag -u CB808C34B3BFFD03EFD2751597A78E5BFA431C9A -s 1.2.3``, replacing ``1.2.3`` with the appropriate version.
-- Push the new tag to the repository.
+- Tag (with signature): ``git tag -u CB808C34B3BFFD03EFD2751597A78E5BFA431C9A -s 1.2.3``, replacing ``1.2.3`` with the version.
+- Push the new tag to the repository: ``git push origin 1.2.3``, replacing ``origin`` with the remote and ``1.2.3`` with the version.
 - In the ``httpstan-wheels`` repository, update the version number to match the new version.
 
 Updating CmdStan Sampler Parameter Defaults
