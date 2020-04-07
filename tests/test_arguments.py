@@ -28,9 +28,7 @@ async def test_function_arguments(api_url: str) -> None:
     # the following call sets up database, populates app['db']
     app = httpstan.app.make_app()
     await httpstan.cache.init_cache(app)
-    model_module, compiler_output = await httpstan.models.import_model_extension_module(
-        model_name, app["db"]
-    )
+    model_module, compiler_output = await httpstan.models.import_model_extension_module(model_name, app["db"])
     assert model_module is not None
     assert compiler_output is not None
 

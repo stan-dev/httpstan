@@ -39,9 +39,7 @@ async def test_model_cache(api_url: str) -> None:
 
     random_string = "".join(random.choices(string.ascii_letters, k=random.randint(10, 30)))
 
-    program_code = "".join(
-        ["parameters {real ", random_string, ";} model { ", random_string, " ~ std_normal();}"]
-    )
+    program_code = "".join(["parameters {real ", random_string, ";} model { ", random_string, " ~ std_normal();}"])
 
     ts1 = time()
     await helpers.get_model_name(api_url, program_code)
