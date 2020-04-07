@@ -14,7 +14,8 @@ build/protobuf-3.11.3:
 	curl --silent --location https://github.com/protocolbuffers/protobuf/releases/download/v3.11.3/protobuf-cpp-3.11.3.tar.gz | tar -C build -zxf -
 
 httpstan/include/google/protobuf httpstan/lib/libprotobuf-lite.so httpstan/bin/protoc: build/protobuf-3.11.3
-	cd build/protobuf-3.11.3 && ./configure --prefix="$(shell pwd)/httpstan" && make -j 8 install
+	@echo compiling with -D_GLIBCXX_USE_CXX11_ABI=0 for manylinux2014 wheel compatibility
+	cd build/protobuf-3.11.3 && ./configure --prefix="$(shell pwd)/httpstan" CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && make -j 8 install
 	@echo deleting unused files which are installed by make install
 
 httpstan/%.pb.cc: protos/%.proto httpstan/bin/protoc
