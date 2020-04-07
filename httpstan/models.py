@@ -271,6 +271,8 @@ def _build_extension_module(
             ("BOOST_DISABLE_ASSERTS", None),
             ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
             ("STAN_THREADS", None),
+            # the following is needed on linux for compatibility with libraries built with the manylinux2014 image
+            ("_GLIBCXX_USE_CXX11_ABI", "0"),
         ]
 
         if extra_compile_args is None:
