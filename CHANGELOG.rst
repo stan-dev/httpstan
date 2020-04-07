@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+1.1.0 (6 Apr 2020)
++++++++++++++++++++
+
+* Write protobuf messages in C++, significant speedup.
+
 1.0.0 (18 Nov 2019)
 +++++++++++++++++++
 

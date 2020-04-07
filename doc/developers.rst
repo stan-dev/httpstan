@@ -9,6 +9,7 @@ The signing key for httpstan has id ``CB808C34B3BFFD03EFD2751597A78E5BFA431C9A``
 How to make a release
 =====================
 
+- Update ``CHANGELOG.rst``. Create Pull Request. Wait for PR to be merged.
 - Tag (with signature): ``git tag -u CB808C34B3BFFD03EFD2751597A78E5BFA431C9A -s 1.2.3``, replacing ``1.2.3`` with the appropriate version.
 - Push the new tag to the repository.
 - In the ``httpstan-wheels`` repository, update the version number to match the new version.
