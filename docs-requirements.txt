@@ -3,32 +3,18 @@
 # these are placed here (rather than in pyproject.toml) because we want to be able
 # to build the documentation without installing the package (which is time-consuming)
 
-# build requirements
+aiohttp~=3.6
+webargs~=5.5
+appdirs~=1.4
 Cython~=0.29
+protobuf~=3.3
 
-# protobuf generation
-grpcio-tools~=1.8
-mypy-protobuf~=1.0
+sphinx~=2.2 # BSD
+sphinx-autoapi~=1.2
+sphinx-rtd-theme~=0.4
+sphinxcontrib-openapi~=0.5
+sphinxcontrib-redoc~=1.5
 
 # required for building OpenAPI spec
 apispec[yaml,validation]~=3.1
 marshmallow~=3.2  # needed for apidocs
-
-# documentation-related
-sphinx~=2.2 # BSD
-sphinx-autoapi~=1.2
-sphinxcontrib-openapi~=0.5
-sphinxcontrib-redoc~=1.5
-sphinx-rtd-theme~=0.4
-
-
-# package requirements
-pbr~=5.4 # Apache-2.0
-aiohttp~=3.6
-appdirs~=1.4
-webargs~=5.5
-marshmallow~=3.2
-numpy~=1.7
-Cython~=0.29
-protobuf~=3.3
-setuptools>=28.8
