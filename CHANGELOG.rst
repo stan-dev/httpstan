@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+1.1.1 (7 Apr 2020)
++++++++++++++++++++
+
+* ABI compatibility fix for the manylinux2014 wheel.
+
 1.1.0 (6 Apr 2020)
 +++++++++++++++++++
 
