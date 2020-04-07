@@ -45,9 +45,7 @@ def lookup_default(method: Method, arg: str) -> typing.Union[float, int]:
     """
     global DEFAULTS_LOOKUP
     if DEFAULTS_LOOKUP is None:
-        DEFAULTS_LOOKUP = json.loads(
-            pkg_resources.resource_string(__name__, "cmdstan-help-all.json").decode()
-        )
+        DEFAULTS_LOOKUP = json.loads(pkg_resources.resource_string(__name__, "cmdstan-help-all.json").decode())
     # special handling for random_seed, argument name differs from CmdStan name
     if arg == "random_seed":
         # CmdStan generates an unsigned integer using boost::posix_time (line 80 of command.hpp)

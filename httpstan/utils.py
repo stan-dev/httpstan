@@ -5,9 +5,7 @@ from typing import Tuple  # noqa: flake8 bug, #118
 import numpy as np
 
 
-def _split_data(
-    data: dict,
-) -> Tuple[List[str], List[float], List[List[int]], List[str], List[int], List[List[int]]]:
+def _split_data(data: dict,) -> Tuple[List[str], List[float], List[List[int]], List[str], List[int], List[List[int]]]:
     """Prepare data for use in an array_var_context constructor.
 
     array_var_context is a C++ class defined in Stan. See
