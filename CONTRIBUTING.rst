@@ -47,8 +47,8 @@ the behavior of the REST API should consult this document.
 Coding Style
 ------------
 
-httpstan code is `PEP 8`_ compliant. The project uses the code formatter black_ with a maximum
-line-length of 99 characters.
+Unless otherwise specified, httpstan code is `PEP 8`_ compliant. The project uses the code formatter black_ with a maximum
+line length of 119 characters. Documentation, comments, and docstrings should be wrapped at 79 characters, even though PEP 8 suggests 72.
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008/
 .. _black: https://pypi.org/project/black/

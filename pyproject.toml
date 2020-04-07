@@ -46,5 +46,5 @@ requires = ["poetry>=0.12", "Cython>=0.29"]
 build-backend = "poetry.masonry.api"
 
 [tool.black]
-line-length = 100
+line-length = 119
 exclude = '.*_pb2|httpstan/lib'
