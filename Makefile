@@ -18,15 +18,14 @@ httpstan/include/google/protobuf httpstan/lib/libprotobuf-lite.so httpstan/bin/p
 	@echo deleting unused files which are installed by make install
 
 httpstan/%.pb.cc: protos/%.proto httpstan/bin/protoc
-	LD_LIBRARY_PATH=httpstan/lib httpstan/bin/protoc -Iprotos --cpp_out=httpstan $<
+	LD_LIBRARY_PATH="httpstan/lib:${LD_LIBRARY_PATH}" httpstan/bin/protoc -Iprotos --cpp_out=httpstan $<
 
 httpstan/%_pb2.py: protos/%.proto httpstan/bin/protoc
-	LD_LIBRARY_PATH=httpstan/lib httpstan/bin/protoc -Iprotos --python_out=httpstan $<
+	LD_LIBRARY_PATH="httpstan/lib:${LD_LIBRARY_PATH}" httpstan/bin/protoc -Iprotos --python_out=httpstan $<
 
 # requires protoc-gen-mypy:
 httpstan/%_pb2.pyi: protos/%.proto httpstan/bin/protoc
-	LD_LIBRARY_PATH=httpstan/lib httpstan/bin/protoc -Iprotos --mypy_out=httpstan $<
-
+	LD_LIBRARY_PATH="httpstan/lib:${LD_LIBRARY_PATH}" httpstan/bin/protoc -Iprotos --mypy_out=httpstan $<
 
 build/stan-2.19.1:
 	mkdir -p build
