@@ -128,10 +128,7 @@ async def test_bernoulli_parallel(api_url: str) -> None:
 
     # launch `num_chains` sample operations in parallel
     num_chains = 3
-    tasks_coros = [
-        asyncio.ensure_future(helpers.sample(api_url, program_code, payload))
-        for _ in range(num_chains)
-    ]
+    tasks_coros = [asyncio.ensure_future(helpers.sample(api_url, program_code, payload)) for _ in range(num_chains)]
     operations = [await coro for coro in tasks_coros]
     for operation in operations:
         fit_name = operation["result"]["name"]

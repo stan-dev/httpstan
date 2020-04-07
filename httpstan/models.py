@@ -117,13 +117,9 @@ async def compile_model_extension_module(program_code: str) -> Tuple[bytes, str]
     cpp_code = await asyncio.get_event_loop().run_in_executor(
         None, httpstan.compile.compile, program_code, stan_model_name
     )
-    pyx_code_template = pkg_resources.resource_string(
-        __name__, "anonymous_stan_model_services.pyx.template"
-    ).decode()
+    pyx_code_template = pkg_resources.resource_string(__name__, "anonymous_stan_model_services.pyx.template").decode()
     logger.info(f"building extension module with stan model name `{stan_model_name}`.")
-    module_bytes, compiler_output = _build_extension_module(
-        stan_model_name, cpp_code, pyx_code_template
-    )
+    module_bytes, compiler_output = _build_extension_module(stan_model_name, cpp_code, pyx_code_template)
     return module_bytes, compiler_output
 
 
@@ -144,9 +140,7 @@ def _import_module(module_name: str, module_path: str) -> ModuleType:
     return module
 
 
-async def import_model_extension_module(
-    model_name: str, db: sqlite3.Connection
-) -> Tuple[ModuleType, str]:
+async def import_model_extension_module(model_name: str, db: sqlite3.Connection) -> Tuple[ModuleType, str]:
 
     """Load an existing Stan model extension module.
 
@@ -184,10 +178,7 @@ async def import_model_extension_module(
 
 @functools.lru_cache()
 def _build_extension_module(
-    module_name: str,
-    cpp_code: str,
-    pyx_code_template: str,
-    extra_compile_args: Optional[List[str]] = None,
+    module_name: str, cpp_code: str, pyx_code_template: str, extra_compile_args: Optional[List[str]] = None,
 ) -> Tuple[bytes, str]:
     """Build extension module and return its name and binary representation.
 
@@ -260,9 +251,7 @@ def _build_extension_module(
         temporary_directory = pathlib.Path(temp_dir)
         cpp_filepath = temporary_directory / f"{module_name}.hpp"
         pyx_filepath = temporary_directory / f"{module_name}.pyx"
-        pyx_code = string.Template(pyx_code_template).substitute(
-            cpp_filename=cpp_filepath.as_posix()
-        )
+        pyx_code = string.Template(pyx_code_template).substitute(cpp_filename=cpp_filepath.as_posix())
         for filepath, code in zip([cpp_filepath, pyx_filepath], [cpp_code, pyx_code]):
             with open(filepath, "w") as fh:
                 fh.write(code)
@@ -313,9 +302,7 @@ def _build_extension_module(
             orig_stdout = _redirect_stdout()
             orig_stderr = _redirect_stderr_to(stream)
         try:
-            build_extension.extensions = Cython.Build.cythonize(
-                [extension], include_path=cython_include_path
-            )
+            build_extension.extensions = Cython.Build.cythonize([extension], include_path=cython_include_path)
             build_extension.build_temp = build_extension.build_lib = temporary_directory.as_posix()
             build_extension.run()
         finally:

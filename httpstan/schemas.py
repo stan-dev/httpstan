@@ -26,9 +26,7 @@ class Operation(marshmallow.Schema):
         if data["done"] and data.get("result") is None:
             raise marshmallow.ValidationError("If `done` then `result` must be set.", "result")
         if not data["done"] and data.get("result"):
-            raise marshmallow.ValidationError(
-                "If not `done` then `result` must be empty.", "result"
-            )
+            raise marshmallow.ValidationError("If not `done` then `result` must be empty.", "result")
 
 
 class Status(marshmallow.Schema):
@@ -74,9 +72,7 @@ class Data(marshmallow.Schema):
         def is_nested_list_of_numbers(value: typing.Any) -> bool:
             if not isinstance(value, list):
                 return False
-            return all(
-                isinstance(val, numbers.Number) or is_nested_list_of_numbers(val) for val in value
-            )
+            return all(isinstance(val, numbers.Number) or is_nested_list_of_numbers(val) for val in value)
 
         for key, value in data.items():
             if isinstance(value, numbers.Number):
@@ -96,9 +92,7 @@ class CreateFitRequest(marshmallow.Schema):
 
     """
 
-    function = fields.String(
-        required=True, validate=validate.Equal("stan::services::sample::hmc_nuts_diag_e_adapt")
-    )
+    function = fields.String(required=True, validate=validate.Equal("stan::services::sample::hmc_nuts_diag_e_adapt"))
     data = fields.Nested(Data(), missing={})
     init = fields.Nested(Data(), missing={})
     random_seed = fields.Integer(validate=validate.Range(min=0))

@@ -84,22 +84,16 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
     program_code = args["program_code"]
     model_name = httpstan.models.calculate_model_name(program_code)
     try:
-        module_bytes, compiler_output = await httpstan.cache.load_model_extension_module(
-            model_name, request.app["db"]
-        )
+        module_bytes, compiler_output = await httpstan.cache.load_model_extension_module(model_name, request.app["db"])
     except KeyError:
         logger.info(f"Compiling Stan model, `{model_name}`.")
         try:
-            module_bytes, compiler_output = await httpstan.models.compile_model_extension_module(
-                program_code
-            )
+            module_bytes, compiler_output = await httpstan.models.compile_model_extension_module(program_code)
         except Exception as exc:
             message, status = f"Failed to compile module: {exc}", 400
             logger.critical(message)
             return aiohttp.web.json_response(_make_error(message, status=status), status=status)
-        await httpstan.cache.dump_model_extension_module(
-            model_name, module_bytes, compiler_output, request.app["db"]
-        )
+        await httpstan.cache.dump_model_extension_module(model_name, module_bytes, compiler_output, request.app["db"])
     else:
         logger.info(f"Found Stan model in cache (`{model_name}`).")
     response_dict = schemas.Model().load({"name": model_name, "compiler_output": compiler_output})
@@ -158,9 +152,7 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
     data = args["data"]
 
     try:
-        model_module, _ = await httpstan.models.import_model_extension_module(
-            model_name, request.app["db"]
-        )
+        model_module, _ = await httpstan.models.import_model_extension_module(model_name, request.app["db"])
     except KeyError:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
@@ -183,16 +175,10 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
     constrained_param_names = [name.decode() for name in constrained_param_names_bytes]
     params = []
     for name, dims_ in zip(param_names, dims):
-        constrained_names = tuple(
-            filter(lambda s: re.match(fr"^{name}\.\S+|^{name}\Z", s), constrained_param_names)
-        )
+        constrained_names = tuple(filter(lambda s: re.match(fr"^{name}\.\S+|^{name}\Z", s), constrained_param_names))
         assert isinstance(dims_, list)
         assert constrained_names, constrained_names
-        params.append(
-            schemas.Parameter().load(
-                {"name": name, "dims": dims_, "constrained_names": constrained_names}
-            )
-        )
+        params.append(schemas.Parameter().load({"name": name, "dims": dims_, "constrained_names": constrained_names}))
     return aiohttp.web.json_response({"name": model_name, "params": params})
 
 
@@ -254,9 +240,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         return aiohttp.web.json_response(ex.messages, status=422)
 
     try:
-        model_module, _ = await httpstan.models.import_model_extension_module(
-            model_name, request.app["db"]
-        )
+        model_module, _ = await httpstan.models.import_model_extension_module(model_name, request.app["db"])
     except KeyError:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
@@ -296,9 +280,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         """
         # either the call succeeded or it raised an exception.
         operation["done"] = True
-        asyncio.ensure_future(
-            httpstan.cache.dump_fit(operation["metadata"]["fit"]["name"], messages_file.getvalue())
-        )
+        asyncio.ensure_future(httpstan.cache.dump_fit(operation["metadata"]["fit"]["name"], messages_file.getvalue()))
         exc = future.exception()
         if exc:
             # e.g., "hmc_nuts_diag_e_adapt_wrapper() got an unexpected keyword argument, ..."
@@ -312,19 +294,13 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
 
         # store the updated Operation
         operation = schemas.Operation().load(operation)
-        asyncio.ensure_future(
-            httpstan.cache.dump_operation(operation["name"], json.dumps(operation).encode(), db)
-        )
+        asyncio.ensure_future(httpstan.cache.dump_operation(operation["name"], json.dumps(operation).encode(), db))
 
         messages_file.close()
 
     operation_name = f'operations/{name.split("/")[-1]}'
     operation_dict = schemas.Operation().load(
-        {
-            "name": operation_name,
-            "done": False,
-            "metadata": {"fit": schemas.Fit().load({"name": name})},
-        }
+        {"name": operation_name, "done": False, "metadata": {"fit": schemas.Fit().load({"name": name})}}
     )
     messages_file = io.BytesIO()
 
@@ -342,25 +318,19 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
             return
         operation["metadata"]["progress"] = message.split(b"info:", 1)[1].decode()
         asyncio.ensure_future(
-            httpstan.cache.dump_operation(
-                operation_name, json.dumps(operation_dict).encode(), request.app["db"]
-            )
+            httpstan.cache.dump_operation(operation_name, json.dumps(operation_dict).encode(), request.app["db"])
         )
 
     logger_callback_partial = functools.partial(logger_callback, operation_dict)
     task = asyncio.ensure_future(
         services_stub.call(function, model_module, messages_file, logger_callback_partial, **args)
     )
-    task.add_done_callback(
-        functools.partial(_services_call_done, operation_dict, messages_file, request.app["db"])
-    )
+    task.add_done_callback(functools.partial(_services_call_done, operation_dict, messages_file, request.app["db"]))
     # keep track of all operations, used by an `on_cleanup` signal handler.
     request.app["operations"].add(operation_name)
 
     # return the operation
-    await httpstan.cache.dump_operation(
-        operation_name, json.dumps(operation_dict).encode(), request.app["db"]
-    )
+    await httpstan.cache.dump_operation(operation_name, json.dumps(operation_dict).encode(), request.app["db"])
     return aiohttp.web.json_response(operation_dict, status=201)
 
 
