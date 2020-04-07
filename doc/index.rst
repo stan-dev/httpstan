@@ -9,7 +9,7 @@ allows users to interact with the Stan C++ library using a REST API. The
 package is intended for use as a universal backend for frontends which know how
 to make HTTP requests. The primary audience for this package is developers.
 
-In addition to providing all the functionality of the command-line interface
+In addition to providing the essential functionality of the command-line interface
 to Stan (CmdStan_) over HTTP, **httpstan** provides the following features:
 
 * Automatic caching of compiled Stan models
