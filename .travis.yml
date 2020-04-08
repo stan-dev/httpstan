@@ -6,11 +6,15 @@ python: 3.7
 matrix:
   include:
     - python: 3.7
+      name: Python37gcc
     - python: 3.7
       env: CC=clang
+      name: Python37clang
     - python: 3.8
+      name: Python38gcc
     - python: 3.8
       env: CC=clang
+      name: Python38clang
     - env: TOXENV=flake8
     - env: TOXENV=format
     - env: TOXENV=mypy
@@ -29,4 +33,6 @@ script:
         tox
       else
         poetry install -v && poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 tests
+        cat codecov.yml | curl --data-binary @- https://codecov.io/validate
+        bash <(curl -s https://codecov.io/bash) -n="${name}"
       fi
