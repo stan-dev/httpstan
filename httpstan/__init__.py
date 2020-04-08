@@ -8,4 +8,4 @@ import logging
 
 
 logging.getLogger("httpstan").addHandler(logging.NullHandler())
-__version__ = "1.1.0"
+__version__ = "1.1.1"
