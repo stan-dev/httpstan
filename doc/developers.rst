@@ -9,6 +9,7 @@ The signing key for httpstan has id ``CB808C34B3BFFD03EFD2751597A78E5BFA431C9A``
 How to make a release
 =====================
 
+- Verify that the correct version is shown in ``pyproject.toml``, ``httpstan/__init__.py``, and ``tests/test_httpstan.py``.
 - Update ``CHANGELOG.rst``. Create Pull Request. Wait for PR to be merged.
 - Tag (with signature): ``git tag -u CB808C34B3BFFD03EFD2751597A78E5BFA431C9A -s 1.2.3``, replacing ``1.2.3`` with the version.
 - Push the new tag to the repository: ``git push origin 1.2.3``, replacing ``origin`` with the remote and ``1.2.3`` with the version.
