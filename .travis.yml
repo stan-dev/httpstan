@@ -6,26 +6,36 @@ python: 3.7
 matrix:
   include:
     - python: 3.7
-      name: Python37gcc
     - python: 3.7
       env: CC=clang
-      name: Python37clang
     - python: 3.8
-      name: Python38gcc
     - python: 3.8
       env: CC=clang
-      name: Python38clang
+    - os: osx
+      osx_image: xcode11.3
+      language: generic
     - env: TOXENV=flake8
     - env: TOXENV=format
     - env: TOXENV=mypy
     - env: TOXENV=docs
 cache: pip
 before_install:
+  - |
+    if [ ${TRAVIS_OS_NAME} = "osx" ]; then
+      python3 -m venv venv
+      source venv/bin/activate
+    fi
   - python --version
   - if [[ -n $CC ]]; then $CC --version; fi
 install:
   - pip install "poetry<2,>=1.0" tox
   - pip install "mypy-protobuf~=1.0"
+  # this customization is just for `find` on macOS, can be removed after Stan 2.22 is used. See `Makefile` for details
+  - |
+    if [[ $TRAVIS_OS_NAME = "osx" ]]; then
+      brew install findutils
+      export PATH="/usr/local/opt/findutils/libexec/gnubin:$PATH"
+    fi
   - make  # generate Python protobuf files
 script:
   - |
