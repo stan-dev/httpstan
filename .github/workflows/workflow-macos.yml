@@ -1,0 +1,60 @@
+name: macOS
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    name: httpstan pytest
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8]
+        compiler: [clang]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install gnu-findutils
+        run: |
+          brew install findutils
+          echo 'export PATH="/usr/local/opt/findutils/libexec/gnubin:$PATH"' >> ~/home/.bash_profile
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install  "poetry<2,>=1.0" "mypy-protobuf~=1.0" pytest
+      - name: Build dependencies
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          PATH="/usr/local/opt/findutils/libexec/gnubin:$PATH"
+          make
+      - name: Install and run tests
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          poetry install -v && poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 tests
+      - name: Validate codecov yaml and upload codecov
+        run: |
+          cat codecov.yml | curl --data-binary @- https://codecov.io/validate
+          bash <(curl -s https://codecov.io/bash) -n="${name}"
+  tox:
+    name: httpstan tox
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install tox
+      - name: Run tox
+        run: |
+          tox
