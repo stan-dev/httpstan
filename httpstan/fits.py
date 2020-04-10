@@ -1,4 +1,5 @@
 """Helper functions for Stan fits."""
+import base64
 import hashlib
 import pickle
 import random
@@ -19,12 +20,15 @@ def calculate_fit_name(function: str, model_name: str, kwargs: dict) -> str:
     binary representations of the arguments to ``services_stub.call``
     (type, model, kwargs):
 
-    -   UTF-8 encoded name of service function (e.g., ``hmc_nuts_diag_e_adapt``)
-    -   UTF-8 encoded Stan model name (which is derived from a hash of ``program_code``)
-    -   Bytes of pickled kwargs dictionary
-    -   UTF-8 encoded version of Stan
-    -   UTF-8 encoded version of `httpstan`
-    -   UTF-8 encoded name of OS (for good measure)
+    - UTF-8 encoded name of service function (e.g., ``hmc_nuts_diag_e_adapt``)
+    - UTF-8 encoded Stan model name (which is derived from a hash of ``program_code``)
+    - Bytes of pickled kwargs dictionary
+    - UTF-8 encoded string recording the Stan version
+    - UTF-8 encoded string recording the httpstan version
+    - UTF-8 encoded string identifying the system platform
+    - UTF-8 encoded string identifying the system bit architecture
+    - UTF-8 encoded string identifying the Python version
+    - UTF-8 encoded string identifying the Python executable
 
     Arguments:
         function: name of service function
@@ -37,14 +41,26 @@ def calculate_fit_name(function: str, model_name: str, kwargs: dict) -> str:
     """
     # digest_size of 5 means we expect a collision after a million fits
     digest_size = 5
+
+    # cannot cache fit if no random seed provided
     if "random_seed" not in kwargs:
         random_bytes = random.getrandbits(digest_size * 8).to_bytes(digest_size, sys.byteorder)
-        return f"{model_name}/fits/{random_bytes.hex()}"
+        id = base64.b32encode(random_bytes).decode().lower()
+        return f"{model_name}/fits/{id}"
+
     hash = hashlib.blake2b(digest_size=digest_size)
     hash.update(function.encode())
     hash.update(model_name.encode())
     hash.update(pickle.dumps(kwargs))
+
+    # system identifiers
     hash.update(httpstan.stan.version().encode())
     hash.update(httpstan.__version__.encode())
     hash.update(sys.platform.encode())
-    return f"{model_name}/fits/{hash.hexdigest()}"
+    hash.update(str(sys.maxsize).encode())
+    hash.update(sys.version.encode())
+    # include sys.executable in hash to account for different `venv`s
+    hash.update(sys.executable.encode())
+
+    id = base64.b32encode(hash.digest()).decode().lower()
+    return f"{model_name}/fits/{id}"

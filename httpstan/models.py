@@ -4,6 +4,7 @@ These functions manage the process of compiling a Python extension module
 from C++ code generated and loading the resulting module.
 """
 import asyncio
+import base64
 import contextlib
 import functools
 import hashlib
@@ -52,13 +53,16 @@ def TemporaryDirectory(
 def calculate_model_name(program_code: str) -> str:
     """Calculate model name from Stan program code.
 
-    Names look like this: ``models/cb6777c3543ebf18``. Name uses a hash of the
+    Names look like this: ``models/2uxewutp``. Name uses a hash of the
     concatenation of the following:
 
     - UTF-8 encoded Stan program code
-    - UTF-8 encoded string recording the current Stan version
-    - UTF-8 encoded string recording the current httpstan version
-    - UTF-8 encoded string identifying the current system platform
+    - UTF-8 encoded string recording the Stan version
+    - UTF-8 encoded string recording the httpstan version
+    - UTF-8 encoded string identifying the system platform
+    - UTF-8 encoded string identifying the system bit architecture
+    - UTF-8 encoded string identifying the Python version
+    - UTF-8 encoded string identifying the Python executable
 
     Arguments:
         program_code: Stan program code.
@@ -71,10 +75,18 @@ def calculate_model_name(program_code: str) -> str:
     digest_size = 5
     hash = hashlib.blake2b(digest_size=digest_size)
     hash.update(program_code.encode())
+
+    # system identifiers
     hash.update(httpstan.stan.version().encode())
     hash.update(httpstan.__version__.encode())
     hash.update(sys.platform.encode())
-    return f"models/{hash.hexdigest()}"
+    hash.update(str(sys.maxsize).encode())
+    hash.update(sys.version.encode())
+    # include sys.executable in hash to account for different `venv`s
+    hash.update(sys.executable.encode())
+
+    id = base64.b32encode(hash.digest()).decode().lower()
+    return f"models/{id}"
 
 
 def calculate_module_name(model_name: str) -> str:
