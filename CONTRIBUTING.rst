@@ -53,6 +53,24 @@ line length of 119 characters. Documentation, comments, and docstrings should be
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008/
 .. _black: https://pypi.org/project/black/
 
+Guidelines for git
+------------------
+
+Follow the `Astropy guidelines for git`_. Important reminders:
+
+* Make frequent commits, and always include a commit message. Each commit
+  should represent one logical set of changes.
+* Never merge changes from ``httpstan/master`` into your feature branch.
+
+You should also use the first line of your commit message to indicate the commit's "type". If it
+is a bugfix, the commit message should start with "fix:". If it is a new feature, the commit
+message should start with "feat:". This information makes reviewing patches and generating
+release notes easier. For a full list of common commit "types", consult the `Conventional Commits` specification.
+
+.. _Conventional Commits: https://www.conventionalcommits.org/en/v1.0.0-beta.4/#summary
+.. _Astropy guidelines for git: https://astropy.readthedocs.io/en/latest/development/workflow/development_workflow.html#astropy-guidelines-for-git
+
+
 Contributor Covenant Code of Conduct
 ====================================
 

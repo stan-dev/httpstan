@@ -30,7 +30,7 @@ Requirements
 ============
 
 - Python version 3.6 or higher.
-- A macOS or Linux operating system. (Windows support is planned.)
+- macOS or Linux.
 
 Background
 ==========
@@ -45,23 +45,12 @@ Stability and maintainability are two overriding goals of this software package.
 Install
 =======
 
-.. These instructions occuring in both README.rst and installation.rst
+.. These instructions appear in both README.rst and installation.rst
 
 ::
 
     $ python3 -m pip install httpstan
 
-Build from Source
------------------
-
-These instructions are experimental. We are using ``poetry`` to build our
-package.
-
-::
-
-    $ python3 -m pip install poetry
-    $ make  # generate required C++ code
-    $ python3 -m poetry install -v
 
 Usage
 =====
