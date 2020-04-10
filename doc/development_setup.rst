@@ -2,8 +2,8 @@
  Development Setup
 ===================
 
-Testing a patch for httpstan is complicated due to the heavy use of shared
-libraries and dynamic compilation. Python packaging tools are not written with
+Testing a patch for httpstan is complicated due to the use of shared
+libraries, code generation, and run-time compilation. Python packaging tools are not written with
 this kind of use in mind.
 
 This document is a work-in-progress. Please report any errors in these instructions.
@@ -13,18 +13,28 @@ Getting started
 
 ::
 
-    # first, install the protobuf compiler `protoc`
+    # 1. Create a virtual env
     python3 -m venv httpstan-development
     source httpstan-development/bin/activate
+
+    # 2. Clone repository
     git clone https://github.com/stan-dev/httpstan
+
+
+    # 3(a). Build shared libraries and generate code
     cd httpstan
     python3 -m pip install mypy-protobuf
     make
     python3 -m pip install poetry
+
+    # 3(b). Install the package
     python3 -m poetry install -v
-    # finally, run tests
+
+    # 4. Run tests
     python3 -m pytest -v tests
-    # run linters
+
+    # 5. Run code and style checks
+    python3 -m pip install tox
     python3 -m tox
 
 
