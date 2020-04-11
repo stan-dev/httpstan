@@ -70,7 +70,7 @@ program::
 
 This request will return a model name along with all the compiler output::
 
-    {"compiler_output": "", "name": "models/8ab027191f"}
+    {"name": "models/xc2pdjb4", "compiler_output": "In file included from …"}
 
 (The model ``name`` depends on the platform and the version of Stan.)
 
@@ -82,7 +82,7 @@ First we make a request to launch the sampling operation::
 
     curl -H "Content-Type: application/json" \
         --data '{"function":"stan::services::sample::hmc_nuts_diag_e_adapt"}' \
-        http://localhost:8080/v1/models/8ab027191f/fits
+        http://localhost:8080/v1/models/xc2pdjb4/fits
 
 This request instructs ``httpstan`` to draw samples from the normal
 distribution described in the model. The function name picks out a specific
@@ -90,16 +90,16 @@ function in the ``stan::services`` namespace found in the Stan C++ library (see
 the Stan C++ documentation for details).  This request will return immediately
 with a reference to a long-running fit operation::
 
-    {"name": "operations/2c4d22d815", "metadata": {"fit": {"name": "models/8ab027191f/fits/2c4d22d815"}}, "done": false}
+    {"name": "operations/gkf54axb", "done": false, "metadata": {"fit": {"name": "models/xc2pdjb4/fits/gkf54axb"}}}
 
 Once the operation is complete, the "fit" can be retrieved. The name of the fit,
-``models/8ab027191f/fits/2c4d22d815``, is included in the ``metadata`` field of the operation.
+``models/xc2pdjb4/fits/gkf54axb``, is included in the ``metadata`` field of the operation.
 The fit is saved as sequence of Protocol Buffer messages. These messages are strung together
 using `length-prefix encoding
 <https://eli.thegreenplace.net/2011/08/02/length-prefix-framing-for-protocol-buffers>`_.  To
 retrieve these messages, saving them locally in the file ``myfit.bin``, make the following request::
 
-    curl http://localhost:8080/v1/models/8ab027191f/fits/2c4d22d815 > myfit.bin
+    curl http://localhost:8080/v1/models/xc2pdjb4/fits/gkf54axb > myfit.bin
 
 To read the messages you will need a library for reading the encoding that
 Protocol Buffer messages use.  In this example we will read the first message
@@ -123,8 +123,8 @@ decoded message should resemble the following::
       }
     }
 
-This is not a particularly informative message. (It's an empty logger message.)
-The next one is slightly more interesting. It reads::
+This empty logger message is not particularly informative.
+The next message is more interesting. It reads::
 
    topic: LOGGER
    feature {
@@ -132,6 +132,9 @@ The next one is slightly more interesting. It reads::
        value: "info:Gradient evaluation took 4.7e-05 seconds"
      }
    }
+
+The Stan "fit", saved in ``myfit.bin``, aggregates all messages. By reading
+them one by one you can recover all messages sent by the Stan C++ library.
 
 Contribute
 ==========
