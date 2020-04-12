@@ -2,11 +2,11 @@
 
 import pytest
 
+import helpers
 import httpstan.app
 import httpstan.cache
 import httpstan.models
 import httpstan.services.arguments as arguments
-import helpers
 
 program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 

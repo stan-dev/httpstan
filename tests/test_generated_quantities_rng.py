@@ -6,7 +6,6 @@ import pytest
 
 import helpers
 
-
 program_code = """
     parameters {
       real z;

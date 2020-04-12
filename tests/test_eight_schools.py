@@ -6,7 +6,6 @@ import pytest
 
 import helpers
 
-
 program_code = """
     data {
       int<lower=0> J; // number of schools
