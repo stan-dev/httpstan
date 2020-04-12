@@ -4,7 +4,6 @@ import pytest
 
 import helpers
 
-
 headers = {"content-type": "application/json"}
 program_code = """
     data {

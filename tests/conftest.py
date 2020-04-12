@@ -1,9 +1,9 @@
 """pytest configuration for all tests."""
-import aiohttp.web
 import asyncio
-import typing
 import threading
+import typing
 
+import aiohttp.web
 import pytest
 
 import httpstan.app

@@ -6,8 +6,8 @@
 import argparse
 
 import aiohttp.web
-import httpstan.app
 
+import httpstan.app
 
 parser = argparse.ArgumentParser(description="Launch httpstan HTTP server.")
 parser.add_argument("--host", default="127.0.0.1")

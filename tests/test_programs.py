@@ -6,8 +6,8 @@ from time import time
 import aiohttp
 import pytest
 
-import httpstan.models
 import helpers
+import httpstan.models
 
 program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 

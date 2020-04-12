@@ -7,12 +7,13 @@ import logging
 
 import aiohttp.web
 
+import httpstan.routes
+
 try:
     from uvloop import EventLoopPolicy
 except ImportError:
     EventLoopPolicy = asyncio.DefaultEventLoopPolicy
 
-import httpstan.routes
 
 logger = logging.getLogger("httpstan")
 

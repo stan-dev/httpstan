@@ -9,7 +9,6 @@ import typing
 
 import pkg_resources
 
-
 Method = enum.Enum("Method", "SAMPLE OPTIMIZE VARIATIONAL DIAGNOSE")
 DEFAULTS_LOOKUP = None  # lazy loaded by lookup_default
 
