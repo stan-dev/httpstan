@@ -1,6 +1,7 @@
 """Test Schema validation."""
 import pytest
 from marshmallow.exceptions import ValidationError
+
 import httpstan.schemas as schemas
 
 

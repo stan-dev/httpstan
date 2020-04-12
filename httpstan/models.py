@@ -2,6 +2,8 @@
 
 These functions manage the process of compiling a Python extension module
 from C++ code generated and loading the resulting module.
+
+isort:skip_file
 """
 import asyncio
 import base64
@@ -15,16 +17,17 @@ import os
 import pathlib
 import platform
 import shutil
-import string
 import sqlite3
+import string
 import sys
 import tempfile
 from types import ModuleType
-from typing import Any, Generator, TextIO, Tuple, List, Optional, IO
+from typing import IO, Any, Generator, List, Optional, TextIO, Tuple
 
 # IMPORTANT: `import setuptools` MUST come before any module imports `distutils`
 # background: bugs.python.org/issue23114
 import setuptools
+
 import Cython
 import Cython.Build
 import Cython.Build.Inline

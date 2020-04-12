@@ -1,6 +1,6 @@
 """Miscellaneous helper routines."""
-from typing import List
 from typing import Tuple  # noqa: flake8 bug, #118
+from typing import List
 
 import numpy as np
 
