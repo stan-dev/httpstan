@@ -20,6 +20,7 @@ lib64
 
 # Installer logs
 pip-log.txt
+poetry.lock
 
 # Unit test / coverage reports
 cover/
@@ -29,6 +30,7 @@ cover/
 nosetests.xml
 .testrepository
 .venv
+htmlcov/
 
 # Translations
 *.mo
