@@ -74,10 +74,7 @@ async def test_bernoulli_unacceptable_arg(api_url: str) -> None:
 
     model_name = await helpers.get_model_name(api_url, program_code)
     fits_url = f"{api_url}/{model_name}/fits"
-    payload = {
-        "function": "invalid abcdef",
-        "data": "string, not a dictionary",
-    }
+    payload = {"function": "invalid abcdef", "data": "string, not a dictionary"}
     async with aiohttp.ClientSession() as session:
         async with session.post(fits_url, json=payload) as resp:
             assert resp.status == 422
@@ -90,11 +87,7 @@ async def test_bernoulli_unknown_arg(api_url: str) -> None:
 
     model_name = await helpers.get_model_name(api_url, program_code)
     fits_url = f"{api_url}/{model_name}/fits"
-    payload = {
-        "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
-        "data": data,
-        "unknown_arg": 9,
-    }
+    payload = {"function": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": data, "unknown_arg": 9}
     async with aiohttp.ClientSession() as session:
         async with session.post(fits_url, json=payload) as resp:
             assert resp.status == 422
