@@ -27,20 +27,13 @@ program_code = """
       target += normal_lpdf(y | theta, sigma);
     }
 """
-schools_data = {
-    "J": 8,
-    "y": (28, 8, -3, 7, -1, 1, 18, 12),
-    "sigma": (15, 10, 16, 11, 9, 11, 10, 18),
-}
+schools_data = {"J": 8, "y": (28, 8, -3, 7, -1, 1, 18, 12), "sigma": (15, 10, 16, 11, 9, 11, 10, 18)}
 
 
 @pytest.mark.asyncio
 async def test_eight_schools(api_url: str) -> None:
     """Test sampling from Eight Schools model with defaults."""
-    payload = {
-        "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
-        "data": schools_data,
-    }
+    payload = {"function": "stan::services::sample::hmc_nuts_diag_e_adapt", "data": schools_data}
     param_name = "mu"
     mu = await helpers.sample_then_extract(api_url, program_code, payload, param_name)
     assert len(mu) == 1_000
