@@ -7,6 +7,10 @@ authors = [
   "Ari Hartikainen <ahartikainen@users.noreply.github.com>",
 ]
 license = "ISC"
+readme = "README.rst"
+homepage = "https://mc-stan.org"
+repository = "https://github.com/stan-dev/httpstan"
+documentation = "https://httpstan.readthedocs.io"
 build = "build.py"
 
 classifiers = [
