@@ -47,6 +47,6 @@ script:
       else
         poetry install -vv
         poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 tests
-        cat codecov.yml | curl --data-binary @- https://codecov.io/validate
-        bash <(curl -s https://codecov.io/bash) -n="${name}"
       fi
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
