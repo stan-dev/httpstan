@@ -304,7 +304,7 @@ def _build_extension_module(
             define_macros=stan_macros,
             include_dirs=include_dirs,
             library_dirs=[f"{PACKAGE_DIR / 'lib'}"],
-            libraries=["protobuf-lite"],
+            libraries=["protobuf-lite", "sundials_cvodes", "sundials_idas", "sundials_nvecserial"],
             extra_compile_args=extra_compile_args,
             extra_link_args=[f"-Wl,-rpath,{PACKAGE_DIR / 'lib'}"],
         )
