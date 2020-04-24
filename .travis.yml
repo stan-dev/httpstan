@@ -18,7 +18,10 @@ matrix:
     - env: TOXENV=format
     - env: TOXENV=mypy
     - env: TOXENV=docs
-cache: pip
+cache:
+  - pip: true
+    directories:
+      - "$HOME/build/stan-dev/httpstan/build"
 before_install:
   - |
     if [ ${TRAVIS_OS_NAME} = "osx" ]; then
