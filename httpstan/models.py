@@ -278,14 +278,16 @@ def _build_extension_module(
             temporary_directory.as_posix(),
             os.path.join(httpstan_dir, "include"),
             os.path.join(httpstan_dir, "include", "lib", "eigen_3.3.3"),
-            os.path.join(httpstan_dir, "include", "lib", "boost_1.69.0"),
+            os.path.join(httpstan_dir, "include", "lib", "boost_1.72.0"),
             os.path.join(httpstan_dir, "include", "lib", "sundials_4.1.0", "include"),
+            os.path.join(httpstan_dir, "include", "lib", "tbb_2019_U8"),
         ]
 
         stan_macros: List[Tuple[str, Optional[str]]] = [
             ("BOOST_DISABLE_ASSERTS", None),
             ("BOOST_PHOENIX_NO_VARIADIC_EXPRESSION", None),
             ("STAN_THREADS", None),
+            ("_REENTRANT", None),  # required by stan-math, see stan/math/prim/scal/fun/lgamma.hpp
             # the following is needed on linux for compatibility with libraries built with the manylinux2014 image
             ("_GLIBCXX_USE_CXX11_ABI", "0"),
         ]
@@ -297,6 +299,9 @@ def _build_extension_module(
         # Note: `library_dirs` is only relevant for linking. It does not tell an extension
         # where to find shared libraries during execution. There are two ways for an
         # extension module to find shared libraries: LD_LIBRARY_PATH and rpath.
+        libraries = ["protobuf-lite", "sundials_cvodes", "sundials_idas", "sundials_nvecserial", "tbb"]
+        if platform.system() == "Darwin":
+            libraries.extend(["tbbmalloc", "tbbmalloc_proxy"])
         extension = setuptools.Extension(
             module_name,
             language="c++",
@@ -304,7 +309,7 @@ def _build_extension_module(
             define_macros=stan_macros,
             include_dirs=include_dirs,
             library_dirs=[f"{PACKAGE_DIR / 'lib'}"],
-            libraries=["protobuf-lite", "sundials_cvodes", "sundials_idas", "sundials_nvecserial"],
+            libraries=libraries,
             extra_compile_args=extra_compile_args,
             extra_link_args=[f"-Wl,-rpath,{PACKAGE_DIR / 'lib'}"],
         )
