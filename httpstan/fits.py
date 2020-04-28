@@ -6,7 +6,6 @@ import random
 import sys
 
 import httpstan
-import httpstan.stan
 
 
 def calculate_fit_name(function: str, model_name: str, kwargs: dict) -> str:
@@ -23,7 +22,6 @@ def calculate_fit_name(function: str, model_name: str, kwargs: dict) -> str:
     - UTF-8 encoded name of service function (e.g., ``hmc_nuts_diag_e_adapt``)
     - UTF-8 encoded Stan model name (which is derived from a hash of ``program_code``)
     - Bytes of pickled kwargs dictionary
-    - UTF-8 encoded string recording the Stan version
     - UTF-8 encoded string recording the httpstan version
     - UTF-8 encoded string identifying the system platform
     - UTF-8 encoded string identifying the system bit architecture
@@ -54,7 +52,6 @@ def calculate_fit_name(function: str, model_name: str, kwargs: dict) -> str:
     hash.update(pickle.dumps(kwargs))
 
     # system identifiers
-    hash.update(httpstan.stan.version().encode())
     hash.update(httpstan.__version__.encode())
     hash.update(sys.platform.encode())
     hash.update(str(sys.maxsize).encode())

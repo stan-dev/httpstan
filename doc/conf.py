@@ -50,7 +50,6 @@ def make_openapi_spec(_):
 
     # Use mock for extension and generated modules modules so we do not need to
     # build httpstan in order to run Sphinx.
-    sys.modules["httpstan.stan"] = unittest.mock.MagicMock()
     sys.modules["httpstan.compile"] = unittest.mock.MagicMock()
     sys.modules["httpstan.callbacks_writer_pb2"] = unittest.mock.MagicMock()
 

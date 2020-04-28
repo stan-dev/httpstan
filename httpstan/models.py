@@ -35,7 +35,6 @@ import pkg_resources
 
 import httpstan.cache
 import httpstan.compile
-import httpstan.stan
 
 PACKAGE_DIR = pathlib.Path(__file__).resolve(strict=True).parents[0]
 logger = logging.getLogger("httpstan")
@@ -60,7 +59,6 @@ def calculate_model_name(program_code: str) -> str:
     concatenation of the following:
 
     - UTF-8 encoded Stan program code
-    - UTF-8 encoded string recording the Stan version
     - UTF-8 encoded string recording the httpstan version
     - UTF-8 encoded string identifying the system platform
     - UTF-8 encoded string identifying the system bit architecture
@@ -80,7 +78,6 @@ def calculate_model_name(program_code: str) -> str:
     hash.update(program_code.encode())
 
     # system identifiers
-    hash.update(httpstan.stan.version().encode())
     hash.update(httpstan.__version__.encode())
     hash.update(sys.platform.encode())
     hash.update(str(sys.maxsize).encode())

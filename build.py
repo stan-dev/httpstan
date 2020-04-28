@@ -16,12 +16,6 @@ extra_compile_args = ["-O3", "-std=c++14"]
 
 extensions = [
     Extension(
-        "httpstan.stan",
-        sources=["httpstan/stan.pyx"],
-        include_dirs=include_dirs,
-        extra_compile_args=extra_compile_args,
-    ),
-    Extension(
         "httpstan.compile",
         sources=[
             "httpstan/compile.pyx",
