@@ -241,7 +241,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         return aiohttp.web.json_response(ex.messages, status=422)
 
     try:
-        model_module, _ = await httpstan.models.import_model_extension_module(model_name, request.app["db"])
+        await httpstan.models.import_model_extension_module(model_name, request.app["db"])
     except KeyError:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
@@ -327,7 +327,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
 
     logger_callback_partial = functools.partial(logger_callback, operation_dict)
     task = asyncio.ensure_future(
-        services_stub.call(function, model_module, messages_file, logger_callback_partial, **args)
+        services_stub.call(function, model_name, request.app["db"], messages_file, logger_callback_partial, **args)
     )
     task.add_done_callback(functools.partial(_services_call_done, operation_dict, messages_file, request.app["db"]))
     # keep track of all operations, used by an `on_cleanup` signal handler.
