@@ -18,6 +18,11 @@ import httpstan
 logger = logging.getLogger("httpstan")
 
 
+def cache_filename() -> str:
+    cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
+    return os.path.join(cache_path, "cache.sqlite3")
+
+
 async def init_cache(app: aiohttp.web.Application) -> None:
     """Store reference to opened cache database in app.
 
@@ -33,13 +38,11 @@ async def init_cache(app: aiohttp.web.Application) -> None:
         app (aiohttp.web.Application): The current application.
 
     """
-    cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
-    os.makedirs(cache_path, exist_ok=True)
-    logging.info(f"Opening cache in `{cache_path}`.")
+    cache_filename_ = cache_filename()
+    os.makedirs(os.path.dirname(cache_filename_), exist_ok=True)
+    logging.info(f"Using sqlite3 database `{cache_filename_}` to cache models.")
     # if `check_same_thread` is False, use of `conn` across threads should work
-    conn = sqlite3.connect(os.path.join(cache_path, "cache.sqlite3"), check_same_thread=False)
-    # use write-ahead-log, available since sqlite 3.7.0
-    conn.execute("""PRAGMA journal_mode=WAL;""")
+    conn = sqlite3.connect(cache_filename_, check_same_thread=False)
     with conn:
         conn.execute("""CREATE TABLE IF NOT EXISTS fits (name BLOB PRIMARY KEY, model_name BLOB, value BLOB);""")
         conn.execute(

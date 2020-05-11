@@ -1,23 +1,26 @@
-#ifndef HTTPSTAN_QUEUE_WRITER_HPP
-#define HTTPSTAN_QUEUE_WRITER_HPP
+#ifndef HTTPSTAN_SOCKET_WRITER_HPP
+#define HTTPSTAN_SOCKET_WRITER_HPP
 
+#include <iostream>
 #include <vector>
 #include <string>
-#include <boost/lockfree/spsc_queue.hpp>
+#include <boost/asio.hpp>
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <stan/callbacks/writer.hpp>
 #include "callbacks_writer.pb.h"
 
 /**
  * NOTE: httpstan makes use of `message_prefix` in an unexpected way!
  *
- * httpstan uses `message_prefix` to record what messages the queue_writer instance is receiving.
- * In a call to `hmc_nuts_diag_e_adapt`, three queue_writers are used:
+ * httpstan uses `message_prefix` to record what messages the socket_writer instance is receiving.
+ * In a call to `hmc_nuts_diag_e_adapt`, three socket_writers are used:
  * 1. init_writer
  * 2. sample_writer
  * 3. diagnostic_writer
  *
- * httpstan uses `message_prefix` to allow the queue_writer to know in what
- * context it is being used.  identity of the queue_writer. For example, the
+ * httpstan uses `message_prefix` to allow the socket_writer to know in what
+ * context it is being used.  identity of the socket_writer. For example, the
  * diagnostic writer uses the string `diagnostic_writer:` (note the colon) as
  * its message_prefix.
  *
@@ -55,26 +58,57 @@ enum class ProcessingAdaptationState {
   AFTER_PROCESSING_ADAPTATION
 };
 
+
 /**
- * <code>queue_writer</code> is an implementation
- * of <code>writer</code> that writes Protobuf-encoded values to a queue.
+ * <code>socket_writer</code> is an implementation
+ * of <code>writer</code> that writes Protobuf-encoded values to a socket.
  */
-class queue_writer : public writer {
- public:
+class socket_writer : public writer {
+ private:
   /**
-   * Constructs a writer with an output queue
-   * and an optional prefix for comments.
-   *
-   * @param[in, out] output queues to write
-   * @param[in] message_prefix will be prefixed to each string which is added to the queue. Default is "".
+   * Output
    */
-  explicit queue_writer(boost::lockfree::spsc_queue<std::string> * output, const std::string& message_prefix = ""):
-    output_(output), message_prefix_(message_prefix) {}
+
+  boost::asio::io_service io_service;
+  boost::asio::local::datagram_protocol::socket socket;
 
   /**
-   * Virtual destructor
+   * Channel name with which to prefix strings sent to the socket.
    */
-  virtual ~queue_writer() {}
+  std::string message_prefix_;
+  std::vector<std::string> diagnostic_fields_;
+  std::vector<std::string> sample_fields_;
+  ProcessingAdaptationState processing_adaptation_state_ = ProcessingAdaptationState::BEFORE_PROCESSING_ADAPTATION;
+
+  /**
+   * Send a protocol buffer message to a socket using length-prefix encoding.
+   */
+  size_t send_message(const stan::WriterMessage& message, boost::asio::local::datagram_protocol::socket& socket) {
+    boost::asio::streambuf stream_buffer;
+    std::ostream output_stream(&stream_buffer);
+    {
+      ::google::protobuf::io::OstreamOutputStream raw_output_stream(&output_stream);
+      ::google::protobuf::io::CodedOutputStream coded_output_stream(&raw_output_stream);
+      coded_output_stream.WriteVarint32(message.ByteSizeLong());
+      message.SerializeToCodedStream(&coded_output_stream);
+      // IMPORTANT: In order to flush a CodedOutputStream it must be deleted.
+    }
+    return socket.send(stream_buffer.data());
+  }
+
+ public:
+  /**
+   * Constructs a writer with an output socket
+   * and an optional prefix for comments.
+   *
+   * @param[in, out] output ostream
+   * @param[in] message_prefix will be prefixed to each string which is sent to the socket. Default is "".
+   */
+  explicit socket_writer(const std::string& socket_filename, const std::string& message_prefix = ""):
+    socket(io_service), message_prefix_(message_prefix) {
+      boost::asio::local::datagram_protocol::endpoint ep(socket_filename);
+      socket.connect(ep);
+    }
 
   /**
    * Writes a sequence of names.
@@ -102,9 +136,7 @@ class queue_writer : public writer {
       }
       feature->set_allocated_string_list(string_list);
 
-      std::string serialized;
-      writer_message.SerializeToString(&serialized);
-      output_->push(serialized);
+      send_message(writer_message, socket);
       return;
     } else if (message_prefix_ == "init_writer:") {
       throw std::runtime_error("Unexpected string vector for init writer.");
@@ -143,9 +175,7 @@ class queue_writer : public writer {
         feature->set_allocated_double_list(double_list);
       }
 
-      std::string serialized;
-      writer_message.SerializeToString(&serialized);
-      output_->push(serialized);
+      send_message(writer_message, socket);
       return;
     } else if (message_prefix_ == "init_writer:") {
       stan::WriterMessage writer_message;
@@ -158,9 +188,8 @@ class queue_writer : public writer {
         double_list->add_value(*it);
       }
       feature->set_allocated_double_list(double_list);
-      std::string serialized;
-      writer_message.SerializeToString(&serialized);
-      output_->push(serialized);
+
+      send_message(writer_message, socket);
       return;
     } else if (message_prefix_ == "sample_writer:") {
       if (sample_fields_.empty())
@@ -180,9 +209,8 @@ class queue_writer : public writer {
         double_list->add_value(state[i]);
         feature->set_allocated_double_list(double_list);
       }
-      std::string serialized;
-      writer_message.SerializeToString(&serialized);
-      output_->push(serialized);
+
+      send_message(writer_message, socket);
       return;
     }
   }
@@ -211,9 +239,7 @@ class queue_writer : public writer {
       string_list->add_value(message);
       feature->set_allocated_string_list(string_list);
 
-      std::string serialized;
-      writer_message.SerializeToString(&serialized);
-      output_->push(serialized);
+      send_message(writer_message, socket);
       return;
     } else if (message_prefix_ == "init_writer:") {
       throw std::runtime_error("Unexpected string vector for init writer.");
@@ -243,29 +269,12 @@ class queue_writer : public writer {
       string_list->add_value(message);
       feature->set_allocated_string_list(string_list);
 
-      std::string serialized;
-      writer_message.SerializeToString(&serialized);
-      output_->push(serialized);
+      send_message(writer_message, socket);
       return;
     }
   }
-
- private:
-  /**
-   * Output queue
-   */
-
-  boost::lockfree::spsc_queue<std::string> * output_;
-
-  /**
-   * Channel name with which to prefix strings added to the queue.
-   */
-  std::string message_prefix_;
-  std::vector<std::string> diagnostic_fields_;
-  std::vector<std::string> sample_fields_;
-  ProcessingAdaptationState processing_adaptation_state_ = ProcessingAdaptationState::BEFORE_PROCESSING_ADAPTATION;
 };
 
 }  // namespace callbacks
 }  // namespace stan
-#endif  // HTTPSTAN_QUEUE_WRITER_HPP
+#endif  // HTTPSTAN_SOCKET_WRITER_HPP

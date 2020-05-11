@@ -4,9 +4,6 @@ cimport libcpp
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
-cimport httpstan.boost as boost
-
-
 # stan io
 
 cdef extern from "stan/io/var_context.hpp" namespace "stan::io" nogil:
@@ -50,16 +47,16 @@ cdef extern from "stan/callbacks/interrupt.hpp" namespace "stan::callbacks" nogi
 
 # httpstan custom callbacks
 
-cdef extern from "queue_writer.hpp" namespace "stan::callbacks" nogil:
-    cdef cppclass queue_writer(writer):
-        queue_writer(boost.spsc_queue[string]* output)
-        queue_writer(boost.spsc_queue[string]* output, string& comment_prefix)
+cdef extern from "socket_writer.hpp" namespace "stan::callbacks" nogil:
+    cdef cppclass socket_writer(writer):
+        socket_writer(string& socket_filename)
+        socket_writer(string& socket_filename, string& comment_prefix)
 
 
-cdef extern from "queue_logger.hpp" namespace "stan::callbacks" nogil:
-    cdef cppclass queue_logger(logger):
-        queue_logger(boost.spsc_queue[string]* output)
-        queue_logger(boost.spsc_queue[string]* output, string& comment_prefix)
+cdef extern from "socket_logger.hpp" namespace "stan::callbacks" nogil:
+    cdef cppclass socket_logger(logger):
+        socket_logger(string& socket_filename)
+        socket_logger(string& socket_filename, string& comment_prefix)
 
 
 # stan sample

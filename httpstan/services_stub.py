@@ -3,23 +3,50 @@
 Functions here perform the menial task of calling (from Python) a named C++
 function in stan::services given a specific Stan model. The output of the
 stan::services function is routed from stan::callbacks writers into Python via a
-queue. The queue is a lock-free single-producer/single-consumer queue defined in
-<boost/lockfree/spsc_queue.hpp>.
+Unix domain socket.
+
 """
 import asyncio
+import concurrent.futures
 import functools
-import queue  # for queue.Empty exception
-import types
+import select
+import socket
+import sqlite3
+import tempfile
 import typing
+import os
 
-import google.protobuf.internal.encoder
-
+import httpstan.cache
+import httpstan.models
 import httpstan.services.arguments as arguments
+
+executor = concurrent.futures.ProcessPoolExecutor()
+
+
+# This function belongs inside `_make_lazy_function_wrapper`. It is defined here
+# because `pickle` (used by ProcessPoolExecutor) cannot pickle local functions.
+def _make_lazy_function_wrapper_helper(
+    function_basename: str, model_name: str, *args: typing.Any, **kwargs: typing.Any
+) -> typing.Callable:
+    cache_filename = httpstan.cache.cache_filename()
+    conn = sqlite3.connect(cache_filename)
+    model_module, _ = asyncio.run(httpstan.models.import_model_extension_module(model_name, conn))
+    function = getattr(model_module, function_basename + "_wrapper")
+    return function(*args, **kwargs)  # type: ignore
+
+
+# In order to avoid problems with the ProcessPoolExecutor, the module
+# needs to be loaded inside the spawned process, not before.
+def _make_lazy_function_wrapper(function_basename: str, model_name: str) -> typing.Callable:
+    # function_basename will be something like "hmc_nuts_diag_e"
+    # function_wrapper will refer to a function like "hmc_nuts_diag_e_wrapper"
+    return functools.partial(_make_lazy_function_wrapper_helper, function_basename, model_name)
 
 
 async def call(
     function_name: str,
-    model_module: types.ModuleType,
+    model_name: str,
+    db: sqlite3.Connection,
     messages_file: typing.IO[bytes],
     logger_callback: typing.Optional[typing.Callable] = None,
     **kwargs: dict,
@@ -39,16 +66,13 @@ async def call(
         kwargs: named stan::services function arguments, see CmdStan documentation.
     """
     method, function_basename = function_name.replace("stan::services::", "").split("::", 1)
-    # queue capacity of 10_000_000 is enough for ~4_000_000 draws. Type ignored
-    # because SPSCQueue is part of a module which is compiled during run time.
-    queue_wrapper = model_module.SPSCQueue(capacity=10_000_000)  # type: ignore
-    # function_basename will be something like "hmc_nuts_diag_e"
-    # function_wrapper will refer to a function like "hmc_nuts_diag_e_wrapper"
-    function_wrapper = getattr(model_module, function_basename + "_wrapper")
 
     # Fetch defaults for missing arguments. This is an important step!
     # For example, `random_seed`, if not in `kwargs`, will be set.
+    # temporarily load the module to lookup function arguments
+    model_module, _ = await httpstan.models.import_model_extension_module(model_name, db)
     function_arguments = arguments.function_arguments(function_basename, model_module)
+    del model_module
     # This is clumsy due to the way default values are available. There is no
     # way to directly lookup the default value for an argument (e.g., `delta`)
     # given both the argument name and the (full) function name (e.g.,
@@ -56,36 +80,33 @@ async def call(
     for arg in function_arguments:
         if arg not in kwargs:
             kwargs[arg] = typing.cast(typing.Any, arguments.lookup_default(arguments.Method[method.upper()], arg))
-    function_wrapper_partial = functools.partial(function_wrapper, queue_wrapper, **kwargs)
 
-    loop = asyncio.get_event_loop()
-    future = loop.run_in_executor(None, function_wrapper_partial)
-    # `varint_encoder` is used here as part of a simple strategy for storing
-    # a sequence of protocol buffer messages. Each message is prefixed by the
-    # length of a message. This works and is Google's recommended approach.
-    varint_encoder = google.protobuf.internal.encoder._EncodeVarint  # type: ignore
-    while True:
-        try:
-            message = queue_wrapper.get_nowait()
-        except queue.Empty:
-            if future.done():  # type: ignore
+    with socket.socket(socket.AF_UNIX, type=socket.SOCK_DGRAM) as socket_:
+        _, socket_filename = tempfile.mkstemp(prefix="httpstan_", suffix=".sock")
+        os.unlink(socket_filename)
+        socket_.setblocking(False)
+        socket_.bind(socket_filename)
+
+        lazy_function_wrapper = _make_lazy_function_wrapper(function_basename, model_name)
+        lazy_function_wrapper_partial = functools.partial(lazy_function_wrapper, socket_filename.encode(), **kwargs)
+        future = asyncio.get_running_loop().run_in_executor(executor, lazy_function_wrapper_partial)
+
+        while True:
+            # note: timeout of 0 required to avoid blocking
+            readable, writeable, errored = select.select([socket_], [], [], 0)
+            for s in readable:
+                message = s.recv(4096)
+                # Only trigger callback if message has topic LOGGER.  b'\0x08\x01' is how messages with Topic 1 (LOGGER) start.
+                # With length-prefix encoding a logger message looks like:
+                # b'6\x08\x01\x122\x120\n.info:Iteration: 2000 / 2000 [100%] (Sampling)' where b'6' indicates message length
+                if logger_callback and message[1:].startswith(b"\x08\x01"):
+                    logger_callback(message)
+                messages_file.write(message)
                 break
-            await asyncio.sleep(0.1)
-            continue
-        # Only trigger callback if message has topic LOGGER. Topic is an
-        # Enum:
-        # enum Topic {
-        #   UNKNOWN = 0;
-        #   LOGGER = 1;          // logger messages
-        #   INITIALIZATION = 2;  // unconstrained inits
-        #   SAMPLE = 3;          // draws
-        #   DIAGNOSTIC = 4;      // diagnostic information
-        # }
-        # b'\0x08\x01' is how messages with Topic 1 (LOGGER) start
-        if logger_callback and message.startswith(b"\x08\x01"):
-            logger_callback(message)
-        varint_encoder(messages_file.write, len(message))
-        messages_file.write(message)
+            else:
+                if future.done():  # type: ignore
+                    break  # break out of while loop
+                await asyncio.sleep(0.1)
     messages_file.flush()
     # `result()` method will raise exceptions, if any
     future.result()  # type: ignore
