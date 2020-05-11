@@ -7,12 +7,6 @@ from libcpp.vector cimport vector
 cimport httpstan.boost as boost
 
 
-cdef extern from '<stan/version.hpp>' namespace 'stan':
-    string MAJOR_VERSION
-    string MINOR_VERSION
-    string PATCH_VERSION
-
-
 # stan io
 
 cdef extern from "stan/io/var_context.hpp" namespace "stan::io" nogil:
