@@ -1,21 +1,82 @@
-PYTHON ?= python
+# Makefile for httpstan
+#
+# This Makefile generates code and builds the libraries used by httpstan
+#
+# Code generation rules appear in this Makefile. One httpstan-specific library
+# is built using rules defined in this Makefile. Other libraries used by all
+# Stan interfaces are built using rules defined in `Makefile.libraries`.  This
+# Makefile calls `make` to run `Makefile.libraries`. Note that some rules in
+# this Makefile copy libraries built by the other Makefile into their
+# httpstan-specific directories.
+
+PROTOBUF_VERSION := 3.11.3
+STAN_VERSION := 2.19.1
+MATH_VERSION := 2.19.1
+BOOST_VERSION := 1.69.0
+EIGEN_VERSION := 3.3.3
+SUNDIALS_VERSION := 4.1.0
+
+PROTOBUF_ARCHIVE := build/archives/protobuf-cpp-$(PROTOBUF_VERSION).tar.gz
+STAN_ARCHIVE := build/archives/stan-v$(STAN_VERSION).tar.gz
+MATH_ARCHIVE := build/archives/math-v$(MATH_VERSION).tar.gz
+HTTP_ARCHIVES := $(PROTOBUF_ARCHIVE) $(STAN_ARCHIVE) $(MATH_ARCHIVE)
+HTTP_ARCHIVES_EXPANDED := build/protobuf-$(PROTOBUF_VERSION) build/stan-$(STAN_VERSION) build/math-$(MATH_VERSION)
+
 PROTOBUF_FILES := httpstan/callbacks_writer_pb2.py httpstan/callbacks_writer.pb.cc
 STUB_FILES := httpstan/callbacks_writer_pb2.pyi
-LIBRARIES := httpstan/lib/libprotobuf-lite.so httpstan/lib/libsundials_nvecserial.a httpstan/lib/libsundials_cvodes.a httpstan/lib/libsundials_idas.a
-INCLUDES := httpstan/include/google/protobuf httpstan/include/stan httpstan/include/stan/math
-INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_1.69.0 httpstan/include/lib/eigen_3.3.3 httpstan/include/lib/sundials_4.1.0
+SUNDIALS_LIBRARIES := httpstan/lib/libsundials_nvecserial.a httpstan/lib/libsundials_cvodes.a httpstan/lib/libsundials_idas.a
+STAN_LIBRARIES := $(SUNDIALS_LIBRARIES)
+LIBRARIES := httpstan/lib/libprotobuf-lite.so $(STAN_LIBRARIES)
+INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_$(BOOST_VERSION) httpstan/include/lib/eigen_$(EIGEN_VERSION) httpstan/include/lib/sundials_$(SUNDIALS_VERSION)
+INCLUDES_STAN := httpstan/include/stan httpstan/include/stan/math $(INCLUDES_STAN_MATH_LIBS)
+INCLUDES := httpstan/include/google/protobuf $(INCLUDES_STAN)
 
 
-default: $(PROTOBUF_FILES) $(STUB_FILES) $(LIBRARIES) $(INCLUDES) $(INCLUDES_STAN_MATH_LIBS)
+default: $(PROTOBUF_FILES) $(STUB_FILES) $(LIBRARIES) $(INCLUDES)
 
 
-build/protobuf-3.11.3/configure:
-	@mkdir -p build
-	curl --silent --location https://github.com/protocolbuffers/protobuf/releases/download/v3.11.3/protobuf-cpp-3.11.3.tar.gz | tar -C build -zxf -
+###############################################################################
+# Download archives via HTTP and extract them
+###############################################################################
 
-httpstan/include/google/protobuf httpstan/lib/libprotobuf-lite.so httpstan/bin/protoc: build/protobuf-3.11.3/configure
+build/archives:
+	@mkdir -p build/archives
+
+$(PROTOBUF_ARCHIVE): build/archives
+	@echo downloading archive $@
+	@curl --silent --location https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/protobuf-cpp-3.11.3.tar.gz -o $@
+
+$(STAN_ARCHIVE): build/archives
+	@echo downloading archive $@
+	@curl --silent --location https://github.com/stan-dev/stan/archive/v$(STAN_VERSION).tar.gz -o $@
+
+$(MATH_ARCHIVE): build/archives
+	@echo downloading archive $@
+	@mkdir -p build/archives
+	@curl --silent --location https://github.com/stan-dev/math/archive/v$(MATH_VERSION).tar.gz -o $@
+
+build/protobuf-$(PROTOBUF_VERSION): $(PROTOBUF_ARCHIVE)
+build/stan-$(STAN_VERSION): $(STAN_ARCHIVE)
+build/math-$(MATH_VERSION): $(MATH_ARCHIVE)
+
+$(HTTP_ARCHIVES_EXPANDED):
+	@echo extracting archive $<
+	tar -C build -zxf $<
+	touch $@
+
+###############################################################################
+# Protocol Buffers library and generated files
+###############################################################################
+
+httpstan/include/google: build/protobuf-$(PROTOBUF_VERSION)
+	cp -r $</src/google $@
+
+httpstan/lib/libprotobuf-lite.so httpstan/bin/protoc: build/protobuf-$(PROTOBUF_VERSION)
 	@echo compiling with -D_GLIBCXX_USE_CXX11_ABI=0 for manylinux2014 wheel compatibility
-	cd build/protobuf-3.11.3 && ./configure --prefix="$(shell pwd)/httpstan" CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && make -j 8 install
+	cd build/protobuf-$(PROTOBUF_VERSION) && ./configure --prefix="$(shell pwd)/httpstan" CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && make -j 8 install
+
+# This is a phony dependency to avoid problems with parallel make
+httpstan/bin/protoc: httpstan/lib/libprotobuf-lite.so
 
 httpstan/%.pb.cc: protos/%.proto httpstan/bin/protoc
 	LD_LIBRARY_PATH="httpstan/lib:${LD_LIBRARY_PATH}" httpstan/bin/protoc -Iprotos --cpp_out=httpstan $<
@@ -27,117 +88,56 @@ httpstan/%_pb2.py: protos/%.proto httpstan/bin/protoc
 httpstan/%_pb2.pyi: protos/%.proto httpstan/bin/protoc
 	LD_LIBRARY_PATH="httpstan/lib:${LD_LIBRARY_PATH}" httpstan/bin/protoc -Iprotos --mypy_out=httpstan $<
 
-build/stan-2.19.1:
-	@mkdir -p build
-	curl --silent --location https://github.com/stan-dev/stan/archive/v2.19.1.tar.gz	| tar -C build -zxf -
 
-httpstan/include/stan: build/stan-2.19.1
+###############################################################################
+# Make local copies of C++ source code used by Stan
+###############################################################################
+
+httpstan/include/stan: build/stan-$(STAN_VERSION)
 	@mkdir -p httpstan/include
-	cp -r build/stan-2.19.1/src/stan $@
-	@echo delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
-	find httpstan/include/stan -iname '*.py' -delete
+	cp -r $</src/stan $@
+	# delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
+	@find httpstan/include/stan -iname '*.py' -delete
 
-build/math-2.19.1 build/math-2.19.1/lib/sundials_4.1.0:
-	@mkdir -p build
-	curl --silent --location https://github.com/stan-dev/math/archive/v2.19.1.tar.gz | tar -C build -zxf -
+httpstan/include/stan/math: build/math-$(MATH_VERSION)
+	@mkdir -p httpstan/include
+	cp -r $</stan/* httpstan/include/stan
+	# delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
+	@find httpstan/include/stan -iname '*.py' -delete
 
-httpstan/include/stan/math: build/math-2.19.1 httpstan/include/stan/version.hpp
-	cp -r build/math-2.19.1/stan/* httpstan/include/stan
-	@echo delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
-	find httpstan/include/stan -iname '*.py' -delete
-
-httpstan/include/lib/boost_1.69.0 httpstan/include/lib/eigen_3.3.3 httpstan/include/lib/sundials_4.1.0: build/math-2.19.1
+$(INCLUDES_STAN_MATH_LIBS): build/math-$(MATH_VERSION)
 	@mkdir -p httpstan/include/lib
-	cp -r build/math-2.19.1/lib/boost_1.69.0 httpstan/include/lib/boost_1.69.0
-	cp -r build/math-2.19.1/lib/eigen_3.3.3 httpstan/include/lib/eigen_3.3.3
-	cp -r build/math-2.19.1/lib/sundials_4.1.0 httpstan/include/lib/sundials_4.1.0
+	# $(notdir $@) gets us the library folder name—e.g., boost_$(BOOST_VERSION)
+	cp -r $</lib/$(notdir $@) $@
 	@echo delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
-	find httpstan/include/lib -iname '*.py' -delete
+	@find httpstan/include/lib -iname '*.py' -delete
 	@echo deleting unused boost and eigen files. This step can be removed when httpstan uses Stan 2.20 or higher.
-	rm -rf httpstan/include/lib/boost_1.69.0/doc
-	rm -rf httpstan/include/lib/boost_1.69.0/libs
-	rm -rf httpstan/include/lib/boost_1.69.0/more
-	rm -rf httpstan/include/lib/boost_1.69.0/status
-	rm -rf httpstan/include/lib/boost_1.69.0/tools
-	rm -rf httpstan/include/lib/eigen_3.3.3/unsupported/doc
-
-###############################################################################
-# libsundials
-###############################################################################
-
-CXXFLAGS_SUNDIALS ?= -fPIC
-MATH ?= build/math-2.19.1/
-SUNDIALS ?= $(MATH)lib/sundials_4.1.0
-# INC_SUNDIALS is defined in `stan/lib/stan_math/make/compiler_flags`
-INC_SUNDIALS ?= -I $(SUNDIALS)/include
-
-# The following section is mostly the same as a section in `stan/lib/stan_math/make/libraries`
-
-################################################################################
-# SUNDIALS build rules
-# Note: Files starting with f* are by SUNDIALS convention files needed for
-#       Fortran bindings which we do not need for stan-math. Thus these targets
-#       are ignored here. This convention was introduced with 4.0.
-##
-
-SUNDIALS_CVODES := $(patsubst %.c,%.o,\
-  $(wildcard $(SUNDIALS)/src/cvodes/*.c) \
-  $(wildcard $(SUNDIALS)/src/sundials/*.c) \
-  $(wildcard $(SUNDIALS)/src/sunmatrix/band/[^f]*.c) \
-  $(wildcard $(SUNDIALS)/src/sunmatrix/dense/[^f]*.c) \
-  $(wildcard $(SUNDIALS)/src/sunlinsol/band/[^f]*.c) \
-  $(wildcard $(SUNDIALS)/src/sunlinsol/dense/[^f]*.c) \
-  $(wildcard $(SUNDIALS)/src/sunnonlinsol/newton/[^f]*.c) \
-  $(wildcard $(SUNDIALS)/src/sunnonlinsol/fixedpoint/[^f]*.c))
-
-SUNDIALS_IDAS := $(patsubst %.c,%.o,\
-  $(wildcard $(SUNDIALS)/src/idas/*.c) \
-  $(wildcard $(SUNDIALS)/src/sundials/*.c) \
-  $(wildcard $(SUNDIALS)/src/sunmatrix/band/[^f]*.c) \
-  $(wildcard $(SUNDIALS)/src/sunmatrix/dense/[^f]*.c) \
-  $(wildcard $(SUNDIALS)/src/sunlinsol/band/[^f]*.c) \
-  $(wildcard $(SUNDIALS)/src/sunlinsol/dense/[^f]*.c) \
-  $(wildcard $(SUNDIALS)/src/sunnonlinsol/newton/[^f]*.c) \
-  $(wildcard $(SUNDIALS)/src/sunnonlinsol/fixedpoint/[^f]*.c))
-
-SUNDIALS_NVECSERIAL := $(patsubst %.c,%.o,\
-  $(addprefix $(SUNDIALS)/src/, nvector/serial/nvector_serial.c sundials/sundials_math.c))
-
-$(sort $(SUNDIALS_CVODES) $(SUNDIALS_IDAS) $(SUNDIALS_NVECSERIAL)) : CXXFLAGS = $(CXXFLAGS_SUNDIALS) $(CXXFLAGS_OS) -O$(O) $(INC_SUNDIALS)
-$(sort $(SUNDIALS_CVODES) $(SUNDIALS_IDAS) $(SUNDIALS_NVECSERIAL)) : CPPFLAGS = $(CPPFLAGS_SUNDIALS) $(CPPFLAGS_OS)
-$(sort $(SUNDIALS_CVODES) $(SUNDIALS_IDAS) $(SUNDIALS_NVECSERIAL)) : %.o : %.c
-	@mkdir -p $(dir $@)
-	$(COMPILE.cpp) -x c -include $(SUNDIALS)/include/stan_sundials_printf_override.hpp $< $(OUTPUT_OPTION)
-
-$(SUNDIALS)/lib/libsundials_cvodes.a: $(SUNDIALS_CVODES)
-	@mkdir -p $(dir $@)
-	$(AR) -rs $@ $^
-
-$(SUNDIALS)/lib/libsundials_idas.a: $(SUNDIALS_IDAS)
-	@mkdir -p $(dir $@)
-	$(AR) -rs $@ $^
-
-$(SUNDIALS)/lib/libsundials_nvecserial.a: $(SUNDIALS_NVECSERIAL)
-	@mkdir -p $(dir $@)
-	$(AR) -rs $@ $^
-
-LIBSUNDIALS := $(SUNDIALS)/lib/libsundials_nvecserial.a $(SUNDIALS)/lib/libsundials_cvodes.a $(SUNDIALS)/lib/libsundials_idas.a
-
-STAN_SUNDIALS_HEADERS := $(shell find $(MATH)stan -name *cvodes*.hpp) $(shell find $(MATH)stan -name *idas*.hpp)
-$(STAN_SUNDIALS_HEADERS) : $(LIBSUNDIALS)
-
-clean-sundials:
-	@echo '  cleaning sundials targets'
-	$(RM) $(wildcard $(sort $(SUNDIALS_CVODES) $(SUNDIALS_IDAS) $(SUNDIALS_NVECSERIAL) $(LIBSUNDIALS)))
+	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/doc
+	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/libs
+	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/more
+	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/status
+	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/tools
+	@rm -rf httpstan/include/lib/eigen_$(EIGEN_VERSION)/unsupported/doc
 
 
 ###############################################################################
-# httpstan-specific libsundials
+# Make local copies of shared libraries built by Stan Math's Makefile rules
 ###############################################################################
 
-httpstan/lib/libsundials_cvodes.a: $(SUNDIALS)/lib/libsundials_cvodes.a
+httpstan/lib/%: build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/%
 	cp $< $@
-httpstan/lib/libsundials_idas.a: $(SUNDIALS)/lib/libsundials_idas.a
-	cp $< $@
-httpstan/lib/libsundials_nvecserial.a: $(SUNDIALS)/lib/libsundials_nvecserial.a
-	cp $< $@
+
+###############################################################################
+# Build Stan-related shared libraries using Stan Math's Makefile rules
+###############################################################################
+# The file `Makefile.libraries` is a trimmed version of Stan Math's `makefile`,
+# which uses the `include` directive to add rules from the `make/libraries`
+# file (in Stan Math). `make/libraries` has all the rules required to build
+# libsundials, libtbb, etc.
+export MATH_VERSION
+
+# locations where Stan Math's Makefile expects to output the shared libraries
+SUNDIALS_LIBRARIES_BUILD_LOCATIONS := $(addprefix build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/,$(notdir $(SUNDIALS_LIBRARIES)))
+
+$(SUNDIALS_LIBRARIES_BUILD_LOCATIONS): build/math-$(MATH_VERSION)
+	$(MAKE) -f Makefile.libraries $@
