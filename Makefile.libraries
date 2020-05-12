@@ -1,0 +1,11 @@
+###############################################################################
+# Build Stan-related shared libraries
+###############################################################################
+# This file is a trimmed version of Stan Math's `makefile`.
+
+# MATH_VERSION is `export`ed from Makefile
+MATH ?= build/math-$(MATH_VERSION)/
+CXXFLAGS_SUNDIALS ?= -fPIC -pipe
+
+include $(MATH)make/compiler_flags               # CXX, CXXFLAGS, LDFLAGS set by the end of this file
+include $(MATH)make/libraries
