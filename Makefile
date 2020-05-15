@@ -10,11 +10,12 @@
 # httpstan-specific directories.
 
 PROTOBUF_VERSION := 3.11.3
-STAN_VERSION := 2.19.1
-MATH_VERSION := 2.19.1
-BOOST_VERSION := 1.69.0
+STAN_VERSION := 2.22.1
+MATH_VERSION := 3.1.1
+BOOST_VERSION := 1.72.0
 EIGEN_VERSION := 3.3.3
 SUNDIALS_VERSION := 4.1.0
+TBB_VERSION := 2019_U8
 
 PROTOBUF_ARCHIVE := build/archives/protobuf-cpp-$(PROTOBUF_VERSION).tar.gz
 STAN_ARCHIVE := build/archives/stan-v$(STAN_VERSION).tar.gz
@@ -24,10 +25,14 @@ HTTP_ARCHIVES_EXPANDED := build/protobuf-$(PROTOBUF_VERSION) build/stan-$(STAN_V
 
 PROTOBUF_FILES := httpstan/callbacks_writer_pb2.py httpstan/callbacks_writer.pb.cc
 STUB_FILES := httpstan/callbacks_writer_pb2.pyi
-SUNDIALS_LIBRARIES := httpstan/lib/libsundials_nvecserial.a httpstan/lib/libsundials_cvodes.a httpstan/lib/libsundials_idas.a
-STAN_LIBRARIES := $(SUNDIALS_LIBRARIES)
+SUNDIALS_LIBRARIES := httpstan/lib/libsundials_nvecserial.a httpstan/lib/libsundials_cvodes.a httpstan/lib/libsundials_idas.a httpstan/lib/libsundials_kinsol.a
+TBB_LIBRARIES := httpstan/lib/libtbb.so
+ifeq ($(shell uname -s),Darwin)
+  TBB_LIBRARIES += httpstan/lib/libtbbmalloc.so httpstan/lib/libtbbmalloc_proxy.so
+endif
+STAN_LIBRARIES := $(SUNDIALS_LIBRARIES) $(TBB_LIBRARIES)
 LIBRARIES := httpstan/lib/libprotobuf-lite.so $(STAN_LIBRARIES)
-INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_$(BOOST_VERSION) httpstan/include/lib/eigen_$(EIGEN_VERSION) httpstan/include/lib/sundials_$(SUNDIALS_VERSION)
+INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_$(BOOST_VERSION) httpstan/include/lib/eigen_$(EIGEN_VERSION) httpstan/include/lib/sundials_$(SUNDIALS_VERSION) httpstan/include/lib/tbb_$(TBB_VERSION)
 INCLUDES_STAN := httpstan/include/stan httpstan/include/stan/math $(INCLUDES_STAN_MATH_LIBS)
 INCLUDES := httpstan/include/google/protobuf $(INCLUDES_STAN)
 
@@ -89,7 +94,6 @@ httpstan/%_pb2.py: protos/%.proto httpstan/bin/protoc
 httpstan/%_pb2.pyi: protos/%.proto httpstan/bin/protoc
 	LD_LIBRARY_PATH="httpstan/lib:${LD_LIBRARY_PATH}" httpstan/bin/protoc -Iprotos --mypy_out=httpstan $<
 
-
 ###############################################################################
 # Make local copies of C++ source code used by Stan
 ###############################################################################
@@ -113,6 +117,7 @@ httpstan/include/stan/math: build/math-$(MATH_VERSION)/stan httpstan/include/sta
 httpstan/include/lib/boost_$(BOOST_VERSION): build/math-$(MATH_VERSION)/lib/boost_$(BOOST_VERSION)
 httpstan/include/lib/eigen_$(EIGEN_VERSION): build/math-$(MATH_VERSION)/lib/eigen_$(EIGEN_VERSION)
 httpstan/include/lib/sundials_$(SUNDIALS_VERSION): build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)
+httpstan/include/lib/tbb_$(TBB_VERSION): build/math-$(MATH_VERSION)/lib/tbb_$(TBB_VERSION)
 
 $(INCLUDES_STAN_MATH_LIBS):
 	@mkdir -p httpstan/include/lib
@@ -120,14 +125,6 @@ $(INCLUDES_STAN_MATH_LIBS):
 	cp -r build/math-$(MATH_VERSION)/lib/$(notdir $@) $@
 	@echo delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
 	@find $@ -iname '*.py' -delete
-	@echo deleting unused boost and eigen files. This step can be removed when httpstan uses Stan 2.20 or higher.
-	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/doc
-	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/libs
-	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/more
-	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/status
-	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/tools
-	@rm -rf httpstan/include/lib/eigen_$(EIGEN_VERSION)/unsupported/doc
-
 
 ###############################################################################
 # Make local copies of shared libraries built by Stan Math's Makefile rules
@@ -135,6 +132,17 @@ $(INCLUDES_STAN_MATH_LIBS):
 
 httpstan/lib/%: build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/%
 	cp $< $@
+
+# Stan Math builds a library with suffix .so.2 by default. Python prefers .so.
+httpstan/lib/libtbb.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb.so.2
+	cp $< httpstan/lib/$(notdir $<)
+	@rm -f $@
+	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
+
+httpstan/lib/libtbb%.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb%.so.2
+	cp $< httpstan/lib/$(notdir $<)
+	@rm -f $@
+	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
 
 ###############################################################################
 # Build Stan-related shared libraries using Stan Math's Makefile rules
@@ -144,9 +152,13 @@ httpstan/lib/%: build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/
 # file (in Stan Math). `make/libraries` has all the rules required to build
 # libsundials, libtbb, etc.
 export MATH_VERSION
+# Having to export TBB_VERSION is related to a bug in Stan Math. See stan-dev/math#TBD
+# Remove this export when the bug is fixed.
+export TBB_VERSION
 
 # locations where Stan Math's Makefile expects to output the shared libraries
 SUNDIALS_LIBRARIES_BUILD_LOCATIONS := $(addprefix build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/,$(notdir $(SUNDIALS_LIBRARIES)))
+TBB_LIBRARIES_BUILD_LOCATIONS := $(addprefix build/math-$(MATH_VERSION)/lib/tbb/,$(notdir $(TBB_LIBRARIES)).2)
 
-$(SUNDIALS_LIBRARIES_BUILD_LOCATIONS): build/math-$(MATH_VERSION)
+$(TBB_LIBRARIES_BUILD_LOCATIONS) $(SUNDIALS_LIBRARIES_BUILD_LOCATIONS): build/math-$(MATH_VERSION)
 	$(MAKE) -f Makefile.libraries $@

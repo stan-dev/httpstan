@@ -7,5 +7,10 @@
 MATH ?= build/math-$(MATH_VERSION)/
 CXXFLAGS_SUNDIALS ?= -fPIC -pipe
 
+# Having to define this here is a bug against Stan Math, see stan-dev/math#TBD
+# Remove this definition when the bug is fixed.
+# TBB_VERSION is `export`ed from Makefile
+TBB := $(MATH)lib/tbb_$(TBB_VERSION)
+
 include $(MATH)make/compiler_flags               # CXX, CXXFLAGS, LDFLAGS set by the end of this file
 include $(MATH)make/libraries
