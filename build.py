@@ -7,8 +7,9 @@ include_dirs = [
     "httpstan",
     "httpstan/include",
     "httpstan/include/lib/eigen_3.3.3",
-    "httpstan/include/lib/boost_1.69.0",
-    "httpstan/include/lib/sundials_4.1.0/include",
+    "httpstan/include/lib/boost_1.72.0",
+    "httpstan/include/lib/sundials_5.2.0/include",
+    "httpstan/include/lib/tbb_2019_U8",
 ]
 extra_compile_args = ["-O3", "-std=c++14"]
 
