@@ -11,9 +11,6 @@ matrix:
     - python: 3.8
     - python: 3.8
       env: CC=clang
-    - os: osx
-      osx_image: xcode11.3
-      language: generic
 cache:
   - pip: true
     directories:
@@ -29,12 +26,6 @@ before_install:
 install:
   - pip install "poetry<2,>=1.0" tox
   - pip install "mypy-protobuf~=1.0"
-  # this customization is just for `find` on macOS, can be removed after Stan 2.22 is used. See `Makefile` for details
-  - |
-    if [[ $TRAVIS_OS_NAME = "osx" ]]; then
-      brew install findutils
-      export PATH="/usr/local/opt/findutils/libexec/gnubin:$PATH"
-    fi
   - make  # generate Python protobuf files and build shared libraries
 script:
   - tox
