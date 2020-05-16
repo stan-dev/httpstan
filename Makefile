@@ -39,20 +39,19 @@ default: $(PROTOBUF_FILES) $(STUB_FILES) $(LIBRARIES) $(INCLUDES)
 # Download archives via HTTP and extract them
 ###############################################################################
 
-build/archives:
-	@mkdir -p build/archives
-
 $(PROTOBUF_ARCHIVE): build/archives
+	@mkdir -p build/archives
 	@echo downloading archive $@
 	@curl --silent --location https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/protobuf-cpp-3.11.3.tar.gz -o $@
 
 $(STAN_ARCHIVE): build/archives
+	@mkdir -p build/archives
 	@echo downloading archive $@
 	@curl --silent --location https://github.com/stan-dev/stan/archive/v$(STAN_VERSION).tar.gz -o $@
 
 $(MATH_ARCHIVE): build/archives
-	@echo downloading archive $@
 	@mkdir -p build/archives
+	@echo downloading archive $@
 	@curl --silent --location https://github.com/stan-dev/math/archive/v$(MATH_VERSION).tar.gz -o $@
 
 build/protobuf-$(PROTOBUF_VERSION): $(PROTOBUF_ARCHIVE)
@@ -68,8 +67,10 @@ $(HTTP_ARCHIVES_EXPANDED):
 # Protocol Buffers library and generated files
 ###############################################################################
 
-httpstan/include/google: build/protobuf-$(PROTOBUF_VERSION)
-	cp -r $</src/google $@
+httpstan/include/google: build/protobuf-$(PROTOBUF_VERSION)/src/google build/protobuf-$(PROTOBUF_VERSION)
+	@mkdir -p httpstan/include
+	@rm -rf $@
+	cp -r $< $@
 
 httpstan/lib/libprotobuf-lite.so httpstan/bin/protoc: build/protobuf-$(PROTOBUF_VERSION)
 	@echo compiling with -D_GLIBCXX_USE_CXX11_ABI=0 for manylinux2014 wheel compatibility
@@ -93,24 +94,32 @@ httpstan/%_pb2.pyi: protos/%.proto httpstan/bin/protoc
 # Make local copies of C++ source code used by Stan
 ###############################################################################
 
-httpstan/include/stan: build/stan-$(STAN_VERSION)
+httpstan/include/stan: build/stan-$(STAN_VERSION)/src/stan build/stan-$(STAN_VERSION)
 	@mkdir -p httpstan/include
-	cp -r $</src/stan $@
+	@rm -rf $@
+	cp -r $< $@
 	# delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
 	@find httpstan/include/stan -iname '*.py' -delete
 
-httpstan/include/stan/math: build/math-$(MATH_VERSION)
-	@mkdir -p httpstan/include
-	cp -r $</stan/* httpstan/include/stan
+build/stan-$(STAN_VERSION)/src/stan: build/stan-$(STAN_VERSION)
+
+httpstan/include/stan/math: build/math-$(MATH_VERSION)/stan httpstan/include/stan
+	@mkdir -p httpstan/include/stan
+	@rm -rf $@
+	cp -r $</math $</math.hpp httpstan/include/stan
 	# delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
 	@find httpstan/include/stan -iname '*.py' -delete
 
-$(INCLUDES_STAN_MATH_LIBS): build/math-$(MATH_VERSION)
+httpstan/include/lib/boost_$(BOOST_VERSION): build/math-$(MATH_VERSION)/lib/boost_$(BOOST_VERSION)
+httpstan/include/lib/eigen_$(EIGEN_VERSION): build/math-$(MATH_VERSION)/lib/eigen_$(EIGEN_VERSION)
+httpstan/include/lib/sundials_$(SUNDIALS_VERSION): build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)
+
+$(INCLUDES_STAN_MATH_LIBS):
 	@mkdir -p httpstan/include/lib
 	# $(notdir $@) gets us the library folder name—e.g., boost_$(BOOST_VERSION)
-	cp -r $</lib/$(notdir $@) $@
+	cp -r build/math-$(MATH_VERSION)/lib/$(notdir $@) $@
 	@echo delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
-	@find httpstan/include/lib -iname '*.py' -delete
+	@find $@ -iname '*.py' -delete
 	@echo deleting unused boost and eigen files. This step can be removed when httpstan uses Stan 2.20 or higher.
 	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/doc
 	@rm -rf httpstan/include/lib/boost_$(BOOST_VERSION)/libs
