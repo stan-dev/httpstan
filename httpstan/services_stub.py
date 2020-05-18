@@ -9,7 +9,6 @@ Unix domain socket.
 import asyncio
 import concurrent.futures
 import functools
-import select
 import socket
 import sqlite3
 import tempfile
@@ -84,7 +83,7 @@ async def call(
     with socket.socket(socket.AF_UNIX, type=socket.SOCK_DGRAM) as socket_:
         _, socket_filename = tempfile.mkstemp(prefix="httpstan_", suffix=".sock")
         os.unlink(socket_filename)
-        socket_.setblocking(False)
+        socket_.settimeout(0.001)
         socket_.bind(socket_filename)
 
         lazy_function_wrapper = _make_lazy_function_wrapper(function_basename, model_name)
@@ -92,21 +91,16 @@ async def call(
         future = asyncio.get_running_loop().run_in_executor(executor, lazy_function_wrapper_partial)
 
         while True:
-            # note: timeout of 0 required to avoid blocking
-            readable, writeable, errored = select.select([socket_], [], [], 0)
-            for s in readable:
-                message = s.recv(4096)
-                # Only trigger callback if message has topic LOGGER.  b'\0x08\x01' is how messages with Topic 1 (LOGGER) start.
-                # With length-prefix encoding a logger message looks like:
-                # b'6\x08\x01\x122\x120\n.info:Iteration: 2000 / 2000 [100%] (Sampling)' where b'6' indicates message length
-                if logger_callback and message[1:].startswith(b"\x08\x01"):
-                    logger_callback(message)
-                messages_file.write(message)
-                break
-            else:
+            try:
+                message = socket_.recv(8192)
+            except socket.timeout:
                 if future.done():  # type: ignore
-                    break  # break out of while loop
+                    break  # exit while loop
                 await asyncio.sleep(0.1)
+                continue
+            if logger_callback and message[1:].startswith(b"\x08\x01"):
+                logger_callback(message)
+            messages_file.write(message)
     messages_file.flush()
     # `result()` method will raise exceptions, if any
     future.result()  # type: ignore
