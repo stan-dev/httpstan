@@ -85,6 +85,10 @@ async def call(
         os.unlink(socket_filename)
         socket_.settimeout(0.001)
         socket_.bind(socket_filename)
+        # Try to set a standard buffer size. 104 * 1024 is the default send/recv buffer size on Linux.
+        # On macOS it appears to be smaller.
+        socket_.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 256 * 1024)
+        socket_.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 256 * 1024)
 
         lazy_function_wrapper = _make_lazy_function_wrapper(function_basename, model_name)
         lazy_function_wrapper_partial = functools.partial(lazy_function_wrapper, socket_filename.encode(), **kwargs)
