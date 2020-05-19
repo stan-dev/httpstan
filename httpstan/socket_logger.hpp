@@ -30,7 +30,7 @@ class socket_logger : public logger {
    * Output socket
    */
   boost::asio::io_service io_service;
-  boost::asio::local::datagram_protocol::socket socket;
+  boost::asio::local::stream_protocol::socket socket;
 
   /**
    * Channel name with which to prefix strings sent to the socket.
@@ -40,7 +40,7 @@ class socket_logger : public logger {
   /**
    * Send a protocol buffer message to a socket using length-prefix encoding.
    */
-  size_t send_message(const stan::WriterMessage& message, boost::asio::local::datagram_protocol::socket& socket) {
+  size_t send_message(const stan::WriterMessage& message, boost::asio::local::stream_protocol::socket& socket) {
     boost::asio::streambuf stream_buffer;
     std::ostream output_stream(&stream_buffer);
     {
@@ -63,9 +63,16 @@ class socket_logger : public logger {
    */
   explicit socket_logger(const std::string& socket_filename, const std::string& message_prefix = ""):
     socket(io_service), message_prefix_(message_prefix) {
-      boost::asio::local::datagram_protocol::endpoint ep(socket_filename);
+      boost::asio::local::stream_protocol::endpoint ep(socket_filename);
       socket.connect(ep);
     }
+
+  /**
+   * Destructor
+   */
+  ~socket_logger() {
+    socket.close();
+   }
 
   /**
    * Logs a message with debug log level

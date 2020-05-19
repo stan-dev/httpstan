@@ -70,7 +70,7 @@ class socket_writer : public writer {
    */
 
   boost::asio::io_service io_service;
-  boost::asio::local::datagram_protocol::socket socket;
+  boost::asio::local::stream_protocol::socket socket;
 
   /**
    * Channel name with which to prefix strings sent to the socket.
@@ -83,7 +83,7 @@ class socket_writer : public writer {
   /**
    * Send a protocol buffer message to a socket using length-prefix encoding.
    */
-  size_t send_message(const stan::WriterMessage& message, boost::asio::local::datagram_protocol::socket& socket) {
+  size_t send_message(const stan::WriterMessage& message, boost::asio::local::stream_protocol::socket& socket) {
     boost::asio::streambuf stream_buffer;
     std::ostream output_stream(&stream_buffer);
     {
@@ -106,9 +106,16 @@ class socket_writer : public writer {
    */
   explicit socket_writer(const std::string& socket_filename, const std::string& message_prefix = ""):
     socket(io_service), message_prefix_(message_prefix) {
-      boost::asio::local::datagram_protocol::endpoint ep(socket_filename);
+      boost::asio::local::stream_protocol::endpoint ep(socket_filename);
       socket.connect(ep);
     }
+
+  /**
+   * Destructor
+   */
+  ~socket_writer() {
+    socket.close();
+   }
 
   /**
    * Writes a sequence of names.
