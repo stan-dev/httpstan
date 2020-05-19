@@ -9,6 +9,7 @@ Unix domain socket.
 import asyncio
 import concurrent.futures
 import functools
+import select
 import socket
 import sqlite3
 import tempfile
@@ -80,27 +81,41 @@ async def call(
         if arg not in kwargs:
             kwargs[arg] = typing.cast(typing.Any, arguments.lookup_default(arguments.Method[method.upper()], arg))
 
-    with socket.socket(socket.AF_UNIX, type=socket.SOCK_DGRAM) as socket_:
+    with socket.socket(socket.AF_UNIX, type=socket.SOCK_STREAM) as socket_:
         _, socket_filename = tempfile.mkstemp(prefix="httpstan_", suffix=".sock")
         os.unlink(socket_filename)
-        socket_.settimeout(0.001)
         socket_.bind(socket_filename)
+        socket_.listen(4)  # three stan callback writers, one stan callback logger
 
         lazy_function_wrapper = _make_lazy_function_wrapper(function_basename, model_name)
         lazy_function_wrapper_partial = functools.partial(lazy_function_wrapper, socket_filename.encode(), **kwargs)
         future = asyncio.get_running_loop().run_in_executor(executor, lazy_function_wrapper_partial)
 
+        potential_readers = [socket_]
         while True:
-            try:
-                message = socket_.recv(8192)
-            except socket.timeout:
+            # note: timeout of 0 required to avoid blocking
+            readable, writeable, errored = select.select(potential_readers, [], [], 0)
+            for s in readable:
+                if s is socket_:
+                    conn, _ = s.accept()
+                    potential_readers.append(conn)
+                    continue
+                message = s.recv(1024 * 256)
+                if not len(message):
+                    # `close` called on other end
+                    s.close()
+                    potential_readers.remove(s)
+                    continue
+                # Only trigger callback if message has topic LOGGER.  b'\0x08\x01' is how messages with Topic 1 (LOGGER) start.
+                # With length-prefix encoding a logger message looks like:
+                # b'6\x08\x01\x122\x120\n.info:Iteration: 2000 / 2000 [100%] (Sampling)' where b'6' indicates message length
+                if logger_callback and message[1:].startswith(b"\x08\x01"):
+                    logger_callback(message)
+                messages_file.write(message)
+            if not readable:
                 if future.done():  # type: ignore
-                    break  # exit while loop
-                await asyncio.sleep(0.1)
-                continue
-            if logger_callback and message[1:].startswith(b"\x08\x01"):
-                logger_callback(message)
-            messages_file.write(message)
+                    break
+                await asyncio.sleep(0.01)
     messages_file.flush()
     # `result()` method will raise exceptions, if any
     future.result()  # type: ignore
