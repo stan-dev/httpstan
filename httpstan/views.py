@@ -26,6 +26,10 @@ import httpstan.services_stub as services_stub
 logger = logging.getLogger("httpstan")
 
 
+# match a string such as `Iteration: 2000 / 2000 [100%]  (Sampling)`
+iteration_info_re = re.compile(rb"Iteration:\s+\d+ / \d+ \[\s*\d+%\]\s+\(\w+\)")
+
+
 def _make_error(message: str, status: int, details: Optional[Sequence] = None) -> dict:
     status_dict = {"code": status, "status": http.HTTPStatus(status).phrase, "message": message}
     if details is not None:
@@ -320,7 +324,8 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         # Deserializing it would be costly and require importing the protobuf Python module.
         if b"info:Iteration" not in message:
             return
-        operation["metadata"]["progress"] = message.split(b"info:", 1)[1].decode()
+        # When sampling completes rapidly, multiple iteration messages can be passed together. Return the final one.
+        operation["metadata"]["progress"] = iteration_info_re.findall(message).pop().decode()
         asyncio.ensure_future(
             httpstan.cache.dump_operation(operation_name, json.dumps(operation_dict).encode(), request.app["db"])
         )
