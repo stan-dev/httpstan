@@ -123,6 +123,5 @@ async def call(
                     logger.debug(f"Stan services function `{function_basename}` returned or raised a C++ exception.")
                     break
                 await asyncio.sleep(0.01)
-    messages_file.flush()
     # `result()` method will raise exceptions, if any
     future.result()  # type: ignore
