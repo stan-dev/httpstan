@@ -1,16 +1,19 @@
-dist: bionic
+version: ~> 1.0
 language: python
 # NOTE: when `language: python` is set, using `compiler: clang` or
 # `compiler: gcc` does nothing. These only work when `language: cpp`.
 python: 3.7
-matrix:
-  include:
-    - python: 3.7
-    - python: 3.7
-      env: CC=clang
-    - python: 3.8
-    - python: 3.8
-      env: CC=clang
+os: linux
+dist: bionic
+jobs:
+  - python: 3.7
+  - python: 3.7
+    env:
+      - CC=clang
+  - python: 3.8
+  - python: 3.8
+    env:
+      - CC=clang
 cache:
   - pip: true
     directories:
