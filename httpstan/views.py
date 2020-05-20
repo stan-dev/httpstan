@@ -285,7 +285,10 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         """
         # either the call succeeded or it raised an exception.
         operation["done"] = True
+        messages_file.flush()
         asyncio.ensure_future(httpstan.cache.dump_fit(operation["metadata"]["fit"]["name"], messages_file.getvalue()))
+        messages_file.close()
+
         exc = future.exception()
         if exc:
             # e.g., "hmc_nuts_diag_e_adapt_wrapper() got an unexpected keyword argument, ..."
@@ -303,8 +306,6 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         # store the updated Operation
         operation = schemas.Operation().load(operation)
         asyncio.ensure_future(httpstan.cache.dump_operation(operation["name"], json.dumps(operation).encode(), db))
-
-        messages_file.close()
 
     operation_name = f'operations/{name.split("/")[-1]}'
     operation_dict = schemas.Operation().load(

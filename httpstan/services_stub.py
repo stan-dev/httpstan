@@ -116,6 +116,5 @@ async def call(
                 if future.done():  # type: ignore
                     break
                 await asyncio.sleep(0.01)
-    messages_file.flush()
     # `result()` method will raise exceptions, if any
     future.result()  # type: ignore
