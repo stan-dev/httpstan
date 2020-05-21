@@ -9,18 +9,20 @@ Unix domain socket.
 import asyncio
 import concurrent.futures
 import functools
+import logging
+import os
 import select
 import socket
 import sqlite3
 import tempfile
 import typing
-import os
 
 import httpstan.cache
 import httpstan.models
 import httpstan.services.arguments as arguments
 
 executor = concurrent.futures.ProcessPoolExecutor()
+logger = logging.getLogger("httpstan")
 
 
 # This function belongs inside `_make_lazy_function_wrapper`. It is defined here
@@ -98,12 +100,14 @@ async def call(
             for s in readable:
                 if s is socket_:
                     conn, _ = s.accept()
+                    logger.debug("Opened socket connection to a socket_logger or socket_writer.")
                     potential_readers.append(conn)
                     continue
                 message = s.recv(1024 * 256)
                 if not len(message):
                     # `close` called on other end
                     s.close()
+                    logger.debug("Closed socket connection to a socket_logger or socket_writer.")
                     potential_readers.remove(s)
                     continue
                 # Only trigger callback if message has topic LOGGER.  b'\0x08\x01' is how messages with Topic 1 (LOGGER) start.
@@ -112,8 +116,11 @@ async def call(
                 if logger_callback and message[1:].startswith(b"\x08\x01"):
                     logger_callback(message)
                 messages_file.write(message)
-            if not readable:
+            # if `potential_readers == [socket_]` then either (1) no connections
+            # have been opened or (2) all connections have been closed.
+            if not readable and potential_readers == [socket_]:
                 if future.done():  # type: ignore
+                    logger.debug(f"Stan services function `{function_basename}` returned or raised a C++ exception.")
                     break
                 await asyncio.sleep(0.01)
     messages_file.flush()

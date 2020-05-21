@@ -140,39 +140,40 @@ def hmc_nuts_diag_e_adapt_wrapper(
         raise ValueError("Unexpected value for `init`. Should be an empty dict or a dict with initial parameter values.")
     init_var_context = make_array_var_context(init)
     with nogil:
-        return_code = stan.hmc_nuts_diag_e_adapt(
-            deref(model),
-            deref(init_var_context),
-            random_seed,
-            chain,
-            init_radius,
-            num_warmup,
-            num_samples,
-            num_thin,
-            save_warmup,
-            refresh,
-            stepsize,
-            stepsize_jitter,
-            max_depth,
-            delta,
-            gamma,
-            kappa,
-            t0,
-            init_buffer,
-            term_buffer,
-            window,
-            interrupt,
-            deref(logger),
-            deref(init_writer),
-            deref(sample_writer),
-            deref(diagnostic_writer),
-        )
-
-    del model
-    del init_var_context
-    del logger
-    del init_writer
-    del sample_writer
-    del diagnostic_writer
-    del var_context_ptr
+        try:
+            return_code = stan.hmc_nuts_diag_e_adapt(
+                deref(model),
+                deref(init_var_context),
+                random_seed,
+                chain,
+                init_radius,
+                num_warmup,
+                num_samples,
+                num_thin,
+                save_warmup,
+                refresh,
+                stepsize,
+                stepsize_jitter,
+                max_depth,
+                delta,
+                gamma,
+                kappa,
+                t0,
+                init_buffer,
+                term_buffer,
+                window,
+                interrupt,
+                deref(logger),
+                deref(init_writer),
+                deref(sample_writer),
+                deref(diagnostic_writer),
+            )
+        finally:
+            del model
+            del init_var_context
+            del logger
+            del init_writer
+            del sample_writer
+            del diagnostic_writer
+            del var_context_ptr
     return return_code
