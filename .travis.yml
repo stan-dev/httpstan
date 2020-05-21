@@ -10,13 +10,17 @@ jobs:
   - python: 3.7
     env:
       - CC=clang
+      - PYTEST_ARGS="--forked"
   - python: 3.8
   - python: 3.8
     env:
       - CC=clang
+      - PYTEST_ARGS="--forked"
   - os: osx
     osx_image: xcode11.3
     language: generic
+    env:
+      - PYTEST_ARGS="--forked"
 cache:
   - pip: true
     directories:
@@ -44,6 +48,8 @@ script:
   # Compiling sometimes takes longer than 10 minutes. Extend timeout with `travis_wait`.
   # When stanc3 is used, remove this hack. Compiling stanc takes a long time.
   - travis_wait poetry install -vv
-  - poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 tests
+  # Running pytest with `--forked` runs each test in a separate subprocess. Otherwise flaky tests
+  # pass when this is used. These flaky tests only appear when `clang` is used. With `gcc` all tests pass.
+  - poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 $PYTEST_ARGS tests
 after_success:
   - bash <(curl -s https://codecov.io/bash)
