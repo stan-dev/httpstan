@@ -132,13 +132,13 @@ $(INCLUDES_STAN_MATH_LIBS):
 httpstan/lib/%: build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/%
 	cp $< $@
 
-# Stan Math builds a library with suffix .so.2 by default. Python prefers .so.
-httpstan/lib/libtbb.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb.so.2
+# macOS version
+httpstan/lib/libtbb.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb.dylib
 	cp $< httpstan/lib/$(notdir $<)
 	@rm -f $@
 	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
 
-httpstan/lib/libtbb%.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb%.so.2
+httpstan/lib/libtbb%.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb%.dylib
 	cp $< httpstan/lib/$(notdir $<)
 	@rm -f $@
 	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
@@ -154,7 +154,7 @@ export MATH_VERSION
 
 # locations where Stan Math's Makefile expects to output the shared libraries
 SUNDIALS_LIBRARIES_BUILD_LOCATIONS := $(addprefix build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/,$(notdir $(SUNDIALS_LIBRARIES)))
-TBB_LIBRARIES_BUILD_LOCATIONS := $(addprefix build/math-$(MATH_VERSION)/lib/tbb/,$(notdir $(TBB_LIBRARIES)).2)
+TBB_LIBRARIES_BUILD_LOCATIONS := build/math-$(MATH_VERSION)/lib/tbb/libtbb.dylib build/math-$(MATH_VERSION)/lib/tbb/libtbbmalloc.dylib build/math-$(MATH_VERSION)/lib/tbb/libtbbmalloc_proxy.dylib
 
 $(TBB_LIBRARIES_BUILD_LOCATIONS) $(SUNDIALS_LIBRARIES_BUILD_LOCATIONS): build/math-$(MATH_VERSION)
 	$(MAKE) -f Makefile.libraries $@

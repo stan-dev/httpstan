@@ -6,16 +6,6 @@ python: 3.7
 os: linux
 dist: bionic
 jobs:
-  - python: 3.7
-  - python: 3.7
-    env:
-      - CC=clang
-      - PYTEST_ARGS="--forked"
-  - python: 3.8
-  - python: 3.8
-    env:
-      - CC=clang
-      - PYTEST_ARGS="--forked"
   - os: osx
     osx_image: xcode11.3
     language: generic
