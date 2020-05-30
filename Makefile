@@ -132,7 +132,9 @@ $(INCLUDES_STAN_MATH_LIBS):
 httpstan/lib/%: build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/%
 	cp $< $@
 
-# macOS version
+# Stan Math builds a library with suffix .so.2 by default. Python prefers .so.
+# macOS rules
+ifeq ($(shell uname -s),Darwin)
 httpstan/lib/libtbb.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb.dylib
 	cp $< httpstan/lib/$(notdir $<)
 	@rm -f $@
@@ -142,6 +144,17 @@ httpstan/lib/libtbb%.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb%.dylib
 	cp $< httpstan/lib/$(notdir $<)
 	@rm -f $@
 	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
+else
+httpstan/lib/libtbb.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb.so.2
+	cp $< httpstan/lib/$(notdir $<)
+	@rm -f $@
+	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
+
+httpstan/lib/libtbb%.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb%.so.2
+	cp $< httpstan/lib/$(notdir $<)
+	@rm -f $@
+	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
+endif
 
 ###############################################################################
 # Build Stan-related shared libraries using Stan Math's Makefile rules

@@ -6,6 +6,7 @@ python: 3.7
 os: linux
 dist: bionic
 jobs:
+  - python: 3.7
   - os: osx
     osx_image: xcode11.3
     language: generic
