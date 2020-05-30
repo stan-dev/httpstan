@@ -167,7 +167,16 @@ export MATH_VERSION
 
 # locations where Stan Math's Makefile expects to output the shared libraries
 SUNDIALS_LIBRARIES_BUILD_LOCATIONS := $(addprefix build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/,$(notdir $(SUNDIALS_LIBRARIES)))
-TBB_LIBRARIES_BUILD_LOCATIONS := build/math-$(MATH_VERSION)/lib/tbb/libtbb.dylib build/math-$(MATH_VERSION)/lib/tbb/libtbbmalloc.dylib build/math-$(MATH_VERSION)/lib/tbb/libtbbmalloc_proxy.dylib
+
+ifeq ($(shell uname -s),Darwin)
+  TBB_LIBRARIES_BUILD_LOCATIONS := build/math-$(MATH_VERSION)/lib/tbb/libtbb.dylib build/math-$(MATH_VERSION)/lib/tbb/libtbbmalloc.dylib build/math-$(MATH_VERSION)/lib/tbb/libtbbmalloc_proxy.dylib
+else
+  TBB_LIBRARIES_BUILD_LOCATIONS := build/math-$(MATH_VERSION)/lib/tbb/libtbb.so.2 build/math-$(MATH_VERSION)/lib/tbb/libtbbmalloc.so.2 build/math-$(MATH_VERSION)/lib/tbb/libtbbmalloc_proxy.so.2
+endif
 
 $(TBB_LIBRARIES_BUILD_LOCATIONS) $(SUNDIALS_LIBRARIES_BUILD_LOCATIONS): build/math-$(MATH_VERSION)
+	echo $(TBB_LIBRARIES_BUILD_LOCATIONS)
+	echo $(addprefix build/math-$(MATH_VERSION)/lib/tbb/,$(notdir $(TBB_LIBRARIES)).2)
+	echo $(addprefix build/math-$(MATH_VERSION)/lib/tbb/,$(notdir $(basename $(TBB_LIBRARIES))).so.2)
+	echo $(addprefix build/math-$(MATH_VERSION)/lib/tbb/,$(notdir $(basename $(TBB_LIBRARIES))).dylib)
 	$(MAKE) -f Makefile.libraries $@
