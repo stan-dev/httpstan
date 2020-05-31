@@ -2,7 +2,7 @@
 httpstan
 ********
 
-Release v\ |version| (:doc:`Changelog <changelog>`)
+Release v\ |version|
 
 An HTTP 1.1 interface to the Stan_ C++ package, **httpstan** is a shim_ that
 allows users to interact with the Stan C++ library using a REST API. The
@@ -109,7 +109,6 @@ User Guide
    installation
    rest_api
    autoapi/index
-   changelog
    contributing
    development_setup
    authors
