@@ -10,6 +10,7 @@ import base64
 import functools
 import hashlib
 import importlib
+import importlib.resources
 import io
 import logging
 import os
@@ -29,7 +30,6 @@ import setuptools
 import Cython
 import Cython.Build
 import Cython.Build.Inline
-import pkg_resources
 
 import httpstan.cache
 import httpstan.compile
@@ -115,7 +115,7 @@ async def compile_model_extension_module(program_code: str) -> Tuple[bytes, str]
     cpp_code = await asyncio.get_event_loop().run_in_executor(
         None, httpstan.compile.compile, program_code, stan_model_name
     )
-    pyx_code_template = pkg_resources.resource_string(__name__, "anonymous_stan_model_services.pyx.template").decode()
+    pyx_code_template = importlib.resources.read_text(__package__, "anonymous_stan_model_services.pyx.template")
     logger.info(f"building extension module with stan model name `{stan_model_name}`.")
     module_bytes, compiler_output = _build_extension_module(stan_model_name, cpp_code, pyx_code_template)
     return module_bytes, compiler_output
