@@ -1,13 +1,12 @@
 """Lookup arguments and argument default values for stan::services functions."""
 import enum
 import functools
+import importlib.resources
 import inspect
 import json
 import time
 import types
 import typing
-
-import pkg_resources
 
 Method = enum.Enum("Method", "SAMPLE OPTIMIZE VARIATIONAL DIAGNOSE")
 DEFAULTS_LOOKUP = None  # lazy loaded by lookup_default
@@ -44,7 +43,7 @@ def lookup_default(method: Method, arg: str) -> typing.Union[float, int]:
     """
     global DEFAULTS_LOOKUP
     if DEFAULTS_LOOKUP is None:
-        DEFAULTS_LOOKUP = json.loads(pkg_resources.resource_string(__name__, "cmdstan-help-all.json").decode())
+        DEFAULTS_LOOKUP = json.loads(importlib.resources.read_text(__package__, "cmdstan-help-all.json"))
     # special handling for random_seed, argument name differs from CmdStan name
     if arg == "random_seed":
         # CmdStan generates an unsigned integer using boost::posix_time (line 80 of command.hpp)
