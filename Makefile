@@ -38,20 +38,19 @@ default: $(PROTOBUF_FILES) $(STUB_FILES) $(LIBRARIES) $(INCLUDES)
 ###############################################################################
 # Download archives via HTTP and extract them
 ###############################################################################
-
-$(PROTOBUF_ARCHIVE): build/archives
+build/archives:
 	@mkdir -p build/archives
-	@echo downloading archive $@
+
+$(PROTOBUF_ARCHIVE): | build/archives
+	@echo downloading $@
 	@curl --silent --location https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/protobuf-cpp-3.11.3.tar.gz -o $@
 
-$(STAN_ARCHIVE): build/archives
-	@mkdir -p build/archives
-	@echo downloading archive $@
+$(STAN_ARCHIVE): | build/archives
+	@echo downloading $@
 	@curl --silent --location https://github.com/stan-dev/stan/archive/v$(STAN_VERSION).tar.gz -o $@
 
-$(MATH_ARCHIVE): build/archives
-	@mkdir -p build/archives
-	@echo downloading archive $@
+$(MATH_ARCHIVE): | build/archives
+	@echo downloading $@
 	@curl --silent --location https://github.com/stan-dev/math/archive/v$(MATH_VERSION).tar.gz -o $@
 
 build/protobuf-$(PROTOBUF_VERSION): $(PROTOBUF_ARCHIVE)
@@ -67,12 +66,12 @@ $(HTTP_ARCHIVES_EXPANDED):
 # Protocol Buffers library and generated files
 ###############################################################################
 
-httpstan/include/google: build/protobuf-$(PROTOBUF_VERSION)/src/google build/protobuf-$(PROTOBUF_VERSION)
+httpstan/include/google: build/protobuf-$(PROTOBUF_VERSION)/src/google | build/protobuf-$(PROTOBUF_VERSION)
 	@mkdir -p httpstan/include
 	@rm -rf $@
 	cp -r $< $@
 
-httpstan/lib/libprotobuf-lite.so httpstan/bin/protoc: build/protobuf-$(PROTOBUF_VERSION)
+httpstan/lib/libprotobuf-lite.so httpstan/bin/protoc: | build/protobuf-$(PROTOBUF_VERSION)
 	@echo compiling with -D_GLIBCXX_USE_CXX11_ABI=0 for manylinux2014 wheel compatibility
 	cd build/protobuf-$(PROTOBUF_VERSION) && ./configure --prefix="$(shell pwd)/httpstan" CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && make -j 8 install
 
@@ -94,25 +93,24 @@ httpstan/%_pb2.pyi: protos/%.proto httpstan/bin/protoc
 # Make local copies of C++ source code used by Stan
 ###############################################################################
 
-httpstan/include/stan: build/stan-$(STAN_VERSION)/src/stan build/stan-$(STAN_VERSION)
+httpstan/include/stan: | build/stan-$(STAN_VERSION)
 	@mkdir -p httpstan/include
 	@rm -rf $@
-	cp -r $< $@
+	cp -r build/stan-$(STAN_VERSION)/src/stan $@
 	# delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
 	@find httpstan/include/stan -iname '*.py' -delete
 
-build/stan-$(STAN_VERSION)/src/stan: build/stan-$(STAN_VERSION)
-
-httpstan/include/stan/math: build/math-$(MATH_VERSION)/stan httpstan/include/stan
+httpstan/include/stan/math: | build/math-$(MATH_VERSION)
 	@mkdir -p httpstan/include/stan
-	@rm -rf $@
-	cp -r $</math $</math.hpp httpstan/include/stan
+	@rm -rf $@ httpstan/include/stan/math.hpp httpstan/include/stan/math
+	cp build/math-$(MATH_VERSION)/stan/math.hpp httpstan/include/stan
+	cp -r build/math-$(MATH_VERSION)/stan/math httpstan/include/stan
 	# delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
 	@find httpstan/include/stan -iname '*.py' -delete
 
-httpstan/include/lib/boost_$(BOOST_VERSION): build/math-$(MATH_VERSION)/lib/boost_$(BOOST_VERSION)
-httpstan/include/lib/eigen_$(EIGEN_VERSION): build/math-$(MATH_VERSION)/lib/eigen_$(EIGEN_VERSION)
-httpstan/include/lib/sundials_$(SUNDIALS_VERSION): build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)
+httpstan/include/lib/boost_$(BOOST_VERSION): | build/math-$(MATH_VERSION)
+httpstan/include/lib/eigen_$(EIGEN_VERSION): | build/math-$(MATH_VERSION)
+httpstan/include/lib/sundials_$(SUNDIALS_VERSION): | build/math-$(MATH_VERSION)
 
 $(INCLUDES_STAN_MATH_LIBS):
 	@mkdir -p httpstan/include/lib
@@ -148,5 +146,5 @@ export MATH_VERSION
 # locations where Stan Math's Makefile expects to output the shared libraries
 SUNDIALS_LIBRARIES_BUILD_LOCATIONS := $(addprefix build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/,$(notdir $(SUNDIALS_LIBRARIES)))
 
-$(SUNDIALS_LIBRARIES_BUILD_LOCATIONS): build/math-$(MATH_VERSION)
+$(SUNDIALS_LIBRARIES_BUILD_LOCATIONS): | build/math-$(MATH_VERSION)
 	$(MAKE) -f Makefile.libraries $@
