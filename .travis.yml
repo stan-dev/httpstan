@@ -42,6 +42,7 @@ install:
 script:
   - tox
   # Compiling sometimes takes longer than 10 minutes. Extend timeout with `travis_wait`.
+  # When stanc3 is used, remove this hack. Compiling stanc takes a long time.
   - travis_wait poetry install -vv
   - poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 tests
 after_success:
