@@ -41,6 +41,8 @@ install:
   - make  # generate Python protobuf files and build shared libraries
 script:
   - tox
-  - poetry install -vv && poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 tests
+  # Compiling sometimes takes longer than 10 minutes. Extend timeout with `travis_wait`.
+  - travis_wait poetry install -vv
+  - poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 tests
 after_success:
   - bash <(curl -s https://codecov.io/bash)
