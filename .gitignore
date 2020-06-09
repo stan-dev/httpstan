@@ -72,4 +72,5 @@ httpstan/*.pb.cc
 httpstan/*.pb.h
 httpstan/lib
 httpstan/include
+httpstan/stanc
 doc/openapi.yaml
