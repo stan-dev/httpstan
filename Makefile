@@ -11,6 +11,7 @@
 
 PROTOBUF_VERSION := 3.11.3
 STAN_VERSION := 2.23.0
+STANC_VERSION := 2.23.0
 MATH_VERSION := 3.2.0
 BOOST_VERSION := 1.72.0
 EIGEN_VERSION := 3.3.3
@@ -35,9 +36,10 @@ LIBRARIES := httpstan/lib/libprotobuf-lite.so $(STAN_LIBRARIES)
 INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_$(BOOST_VERSION) httpstan/include/lib/eigen_$(EIGEN_VERSION) httpstan/include/lib/sundials_$(SUNDIALS_VERSION) httpstan/include/lib/tbb_$(TBB_VERSION)
 INCLUDES_STAN := httpstan/include/stan httpstan/include/stan/math $(INCLUDES_STAN_MATH_LIBS)
 INCLUDES := httpstan/include/google/protobuf $(INCLUDES_STAN)
+STANC := httpstan/stanc
 
 
-default: $(PROTOBUF_FILES) $(STUB_FILES) $(LIBRARIES) $(INCLUDES)
+default: $(PROTOBUF_FILES) $(STUB_FILES) $(LIBRARIES) $(INCLUDES) $(STANC)
 
 
 ###############################################################################
@@ -66,6 +68,20 @@ $(HTTP_ARCHIVES_EXPANDED):
 	@echo extracting archive $<
 	tar -C build -zxf $<
 	touch $@
+
+###############################################################################
+# Download and install stanc
+###############################################################################
+ifeq ($(shell uname -s),Darwin)
+build/stanc:
+	@curl --silent --location https://github.com/stan-dev/stanc3/releases/download/v$(STANC_VERSION)/mac-stanc -o $@
+else
+build/stanc:
+	@curl --silent --location https://github.com/stan-dev/stanc3/releases/download/v$(STANC_VERSION)/linux-stanc -o $@
+endif
+
+$(STANC): build/stanc
+	@rm -f $@ && cp -r $< $@ && chmod u+x $@
 
 ###############################################################################
 # Protocol Buffers library and generated files
