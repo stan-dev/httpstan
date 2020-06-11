@@ -24,9 +24,10 @@ include = [
   "httpstan/*_pb2.pyi",
   "httpstan/*.pb.cc",
   "httpstan/*.pb.h",
-  "httpstan/lib/libprotobuf-lite*",  # .gitignore excludes httpstan/lib
-  "httpstan/lib/libsundials*",  # .gitignore excludes httpstan/lib
-  "httpstan/lib/libtbb*",  # .gitignore excludes httpstan/lib
+  "httpstan/lib/libprotobuf-lite*",
+  "httpstan/lib/libsundials*",
+  "httpstan/lib/libtbb*",
+  "httpstan/stanc",
   "httpstan/include/**/*",
   "doc/openapi.yaml",
 ]
