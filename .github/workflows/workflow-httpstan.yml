@@ -162,3 +162,146 @@ jobs:
         if: success()
         run: |
           bash <(curl -s https://codecov.io/bash)
+
+
+  #### WHEEL (manylinux2014) ####
+  publish_manylinux2014:
+    name: manylinux2014 wheel
+    needs: [pytest, tox-flake8, tox-format, tox-mypy, tox-docs]
+    runs-on: ${{ matrix.os }}
+    container:
+      image: quay.io/pypa/manylinux2014_x86_64:latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [cp37-cp37m, cp38-cp38]
+        compiler: [clang]
+    steps:
+      - uses: actions/checkout@v2
+      - name: set up compiler
+        run: |
+          rpm -q centos-release
+          yum install --enablerepo=extras centos-release-scl -y
+          yum install --enablerepo=extras llvm-toolset-7 -y
+          echo "::add-path::/opt/rh/llvm-toolset-7/root/usr/bin"
+      - name: Set up Python
+        run: |
+          echo "::add-path::/opt/python/${{ matrix.python-version }}/bin/"
+      - name: check C++ compiler and Python
+        run: |
+          clang --version
+          clang++ --version
+          which clang
+          python --version
+          which python
+      - name: Install dependencies
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          python -m pip install --upgrade --no-cache-dir pip
+          python -m pip install --no-cache-dir "poetry<2,>=1.0"
+          python -m pip install --no-cache-dir "mypy-protobuf~=1.0"
+      - name: Build libraries
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          make
+      - name: Build wheel
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          python -m poetry run pip install --no-cache-dir Cython
+          python -m poetry build -v
+      - name: Fix wheel
+        env:
+          CC: ${{ matrix.compiler }}
+          PLAT: manylinux2014_x86_64
+        run: |
+          for whl in dist/*-linux*.whl; do
+            auditwheel repair "${whl}" --plat "${PLAT}" -w "./dist";
+            rm ${whl};
+          done
+      - uses: actions/upload-artifact@v2
+        with:
+          name: httpstan_wheels
+          path: dist/*.whl
+      - name: Upload wheel to release
+        uses: svenstaro/upload-release-action@v1-release
+        if: success() && startsWith(github.ref, 'refs/tags/')
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/*.whl
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
+      - name: Upload to pypi
+        if: success() && startsWith(github.ref, 'refs/tags/')
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
+        run: |
+          python -m pip install --no-cache-dir twine
+          twine upload --repository-url https://test.pypi.org/legacy/ -u ${TWINE_USERNAME} -p ${TWINE_PASSWORD} --skip-existing dist/*
+
+  #### WHEEL (macOS) ####
+  publish_macos:
+    name: macos wheel
+    needs: [pytest, tox-flake8, tox-format, tox-mypy, tox-docs]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest]
+        python-version: [3.7, 3.8]
+        compiler: [clang]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: check C++ compiler and Python
+        run: |
+          clang --version
+          clang++ --version
+          which clang
+          python --version
+          which python
+      - name: Install dependencies
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          python -m pip install --no-cache-dir --upgrade pip
+          python -m pip install --no-cache-dir "poetry<2,>=1.0"
+          python -m pip install --no-cache-dir "mypy-protobuf~=1.0"
+      - name: Build libraries
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          make
+      - name: Build wheel
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          python -m poetry run pip install --no-cache-dir Cython
+          python -m poetry build -v
+      - uses: actions/upload-artifact@v2
+        with:
+          name: httpstan_wheels
+          path: dist/*.whl
+      - name: Upload wheel to release
+        uses: svenstaro/upload-release-action@v1-release
+        if: success() && startsWith(github.ref, 'refs/tags/')
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/*.whl
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
+      - name: Upload to pypi
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
+        if: success() && startsWith(github.ref, 'refs/tags/')
+        run: |
+          python -m pip install --no-cache-dir twine
+          twine upload --repository-url https://test.pypi.org/legacy/ -u ${TWINE_USERNAME} -p ${TWINE_PASSWORD} --skip-existing dist/*
