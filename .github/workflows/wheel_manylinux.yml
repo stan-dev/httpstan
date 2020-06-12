@@ -1,0 +1,62 @@
+name: wheel - manylinux2014
+
+on:
+  push:
+    tags:
+      - '*'
+jobs:
+  wheel_manylinux:
+    name: manylinux2014
+    runs-on: ${{ matrix.os }}
+    container:
+      image: quay.io/pypa/manylinux2014_x86_64:latest
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+        python-version: [cp37-cp37m, cp38-cp38]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        run: |
+          echo "::add-path::/opt/python/${{ matrix.python-version }}/bin/"
+      - name: check C++ compiler and Python
+        run: |
+          gcc --version
+          python --version
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade --no-cache-dir pip
+          python -m pip install --no-cache-dir "poetry<2,>=1.0"
+          python -m pip install --no-cache-dir "mypy-protobuf~=1.0"
+      - name: Build libraries
+        run: |
+          make
+      - name: Build wheel
+        run: |
+          python -m poetry build -v
+      - name: Fix wheel
+        run: |
+          auditwheel repair dist/*.whl -w wheelhouse
+      - name: Install wheel
+        if: success()
+        run: |
+          python -m pip install wheelhouse/*.whl
+      - name: Install test dependencies
+        if: success()
+        run: |
+          # export test dependencies from pyproject.toml, install them
+          python -m poetry export -f requirements.txt --dev -o requirements.txt
+          python -m pip install -r requirements.txt
+      - name: Tests
+        if: success()
+        run: |
+          mkdir testdir
+          cd testdir
+          python -m pytest -s -v --cov=httpstan --cov-fail-under=93 ../tests
+      - name: Upload to pypi
+        env:
+          TWINE_TOKEN: ${{ secrets.TEST_PYPI_PASSWORD }}
+        if: success()
+        run: |
+          python -m pip install twine
+          python -m twine upload --repository-url https://test.pypi.org/legacy/ -u __token__ -p ${TWINE_TOKEN} --skip-existing wheelhouse/*
