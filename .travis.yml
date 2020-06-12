@@ -45,9 +45,12 @@ install:
   - make  # generate Python protobuf files and build shared libraries
 script:
   - tox
-  - poetry install -v
+  - poetry build -v
+  # export test dependencies from pyproject.toml, install them
+  - poetry export -f requirements.txt --dev -o requirements.txt && pip install -r requirements.txt
+  - python -m pip install dist/*.whl
   # Running pytest with `--forked` runs each test in a separate subprocess. Otherwise flaky tests
   # pass when this is used. These flaky tests only appear when `clang` is used. With `gcc` all tests pass.
-  - poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 $PYTEST_ARGS tests
+  - mkdir testdir && cd testdir && python -m pytest -s -v --cov=httpstan --cov-fail-under=93 $PYTEST_ARGS ../tests
 after_success:
   - bash <(curl -s https://codecov.io/bash)
