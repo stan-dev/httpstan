@@ -1,0 +1,63 @@
+name: wheel - macOS
+
+on:
+  push:
+    tags:
+      - '*'
+jobs:
+  wheel_macos:
+    name: macOS wheel
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-10.15]
+        python-version: [3.7, 3.8]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: check C++ compiler and Python
+        run: |
+          clang --version
+          python --version
+      - name: Install dependencies
+        run: |
+          python -m pip install --no-cache-dir --upgrade pip
+          python -m pip install --no-cache-dir "poetry<2,>=1.0"
+          python -m pip install --no-cache-dir "mypy-protobuf~=1.0"
+      - name: Build libraries
+        run: |
+          make
+      - name: Build wheel
+        run: |
+          python -m poetry build -v
+      - name: Fix wheel
+        run: |
+          python -m pip install wheel
+          python -m pip install delocate
+          delocate-wheel -v dist/*.whl -w wheelhouse
+      - name: Install wheel
+        run: |
+          python -m pip install wheelhouse/*.whl
+      - name: Install test dependencies
+        if: success()
+        run: |
+          # export test dependencies from pyproject.toml, install them
+          python -m poetry export -f requirements.txt --dev -o requirements.txt
+          python -m pip install -r requirements.txt
+      - name: Tests
+        if: success()
+        run: |
+          mkdir testdir
+          cd testdir
+          python -m pytest -s -v --cov=httpstan --cov-fail-under=93 ../tests
+          cd ..
+      - name: Upload to pypi
+        env:
+          TWINE_TOKEN: ${{ secrets.TEST_PYPI_PASSWORD }}
+        if: success()
+        run: |
+          python -m pip install twine
+          python -m twine upload --repository-url https://test.pypi.org/legacy/ -u __token__ -p ${TWINE_TOKEN} --skip-existing wheelhouse/*
