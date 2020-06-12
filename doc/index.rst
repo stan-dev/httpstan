@@ -126,9 +126,9 @@ User Guide
     :target: https://badge.fury.io/py/httpstan
     :alt: pypi version
 
-.. |travis| image:: https://travis-ci.org/stan-dev/httpstan.png?branch=master
-    :target: https://travis-ci.org/stan-dev/httpstan
-    :alt: travis-ci build status
+.. |actions| image:: https://github.com/stan-dev/httpstan/workflows/httpstan/badge.svg?branch=master
+    :target: https://github.com/stan-dev/httpstan/actions
+    :alt: actions-ci build status
 
 .. |coveralls| image:: https://coveralls.io/repos/github/stan-dev/httpstan/badge.svg?branch=master
     :target: https://coveralls.io/github/stan-dev/httpstan?branch=master
