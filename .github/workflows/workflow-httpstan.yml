@@ -1,0 +1,164 @@
+name: httpstan
+
+on:
+  pull_request:
+    types: [assigned, opened, synchronize, reopened]
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+jobs:
+
+  #### TOX ####
+  tox-flake8:
+    name: flake8
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: [3.8]
+        include:
+          - os: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --no-cache-dir --upgrade pip
+          python -m pip install --no-cache-dir tox
+      - name: Run tox
+        env:
+          TOXENV: flake8
+        run: |
+          python -m tox
+
+
+  #### TOX ####
+  tox-format:
+    name: format
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: [3.8]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --no-cache-dir --upgrade pip
+          python -m pip install --no-cache-dir tox
+      - name: Run tox
+        env:
+          TOXENV: format
+        run: |
+          python -m tox
+
+
+  #### TOX ####
+  tox-mypy:
+    name: mypy
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: [3.8]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --no-cache-dir --upgrade pip
+          python -m pip install --no-cache-dir tox
+      - name: Run tox
+        env:
+          TOXENV: mypy
+        run: |
+          python -m tox
+
+
+  #### TOX ####
+  tox-docs:
+    name: docs
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.8]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --no-cache-dir --upgrade pip
+          python -m pip install --no-cache-dir tox
+      - name: Run tox
+        env:
+          TOXENV: docs
+        run: |
+          python -m tox
+      - uses: actions/upload-artifact@v2
+        with:
+          name: httpstan_docs
+          path: build/
+
+  #### TEST ####
+  pytest:
+    name: Run tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: [3.7, 3.8]
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: debug packages
+        run: |
+          python -v
+          which python
+          make --version
+          which make
+          gcc --version
+          which gcc
+      - name: Install dependencies
+        run: |
+          python -m pip install --no-cache-dir --upgrade pip
+          python -m pip install --no-cache-dir "poetry<2,>=1.0"
+          python -m pip install --no-cache-dir "mypy-protobuf~=1.0"
+      - name: Build libraries
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          make
+      - name: Install httpstan
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          python -m poetry install -v
+      - name: Run tests
+        env:
+          CC: ${{ matrix.compiler }}
+        run: |
+          python -m poetry run pytest -s -v --cov=httpstan --cov-fail-under=93 --forked tests
+      - name: Upload coverage
+        if: success()
+        run: |
+          bash <(curl -s https://codecov.io/bash)
