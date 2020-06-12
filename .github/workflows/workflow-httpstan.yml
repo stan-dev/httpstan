@@ -221,7 +221,24 @@ jobs:
             auditwheel repair "${whl}" --plat "${PLAT}" -w "./dist";
             rm ${whl};
           done
+      - name: Test wheel
+        env:
+          CC: ${{ matrix.compiler }}
+        if: success()
+        run: |
+          cd dist
+          python -m venv test_env --copies --clear
+          ./test_env/Scripts/activate
+          which python
+          python -m pip install --upgrade pip
+          for whl in *.whl; do break; done
+          python -m pip install "${whl}"
+          python -m pip install pytest
+          python -m pip freeze
+          python -m pytest -s -v --cov=httpstan --cov-fail-under=93 --forked ../tests
+          cd ..
       - uses: actions/upload-artifact@v2
+        if: success()
         with:
           name: httpstan_wheels
           path: dist/*.whl
@@ -284,7 +301,24 @@ jobs:
         run: |
           python -m poetry run pip install --no-cache-dir Cython
           python -m poetry build -v
+      - name: Test wheel
+        env:
+          CC: ${{ matrix.compiler }}
+        if: success()
+        run: |
+          cd dist
+          python -m venv test_env --copies --clear
+          ./test_env/Scripts/activate
+          which python
+          python -m pip install --upgrade pip
+          for whl in *.whl; do break; done
+          python -m pip install "${whl}"
+          python -m pip install pytest
+          python -m pip freeze
+          python -m pytest -s -v --cov=httpstan --cov-fail-under=93 --forked ../tests
+          cd ..
       - uses: actions/upload-artifact@v2
+        if: success()
         with:
           name: httpstan_wheels
           path: dist/*.whl
