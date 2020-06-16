@@ -23,7 +23,7 @@ Getting started
 
     # 3(a). Build shared libraries and generate code
     cd httpstan
-    python3 -m pip install mypy-protobuf
+    python3 -m pip install mypy-protobuf==1.21
     make
     python3 -m pip install poetry
 
