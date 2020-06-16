@@ -11,6 +11,7 @@ readme = "README.rst"
 homepage = "https://mc-stan.org"
 repository = "https://github.com/stan-dev/httpstan"
 documentation = "https://httpstan.readthedocs.io"
+build = "build.py"
 
 classifiers = [
   "Intended Audience :: Science/Research",
