@@ -46,7 +46,6 @@ protobuf = "^3.11"
 [tool.poetry.dev-dependencies]
 pytest-cov = "^2.8"
 pytest-asyncio = "^0.10"
-pytest-xdist = "^1.32"
 apispec = {version = "^3.1", extras = ["yaml", "validation"]}
 
 [build-system]
