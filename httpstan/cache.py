@@ -2,13 +2,12 @@
 
 Functions in this module manage the Stan model cache and related caches.
 """
-import asyncio
-import gzip
 import json
 import logging
 import os
+import pathlib
 import sqlite3
-from typing import Tuple, cast
+from typing import cast
 
 import aiohttp.web
 import appdirs
@@ -21,6 +20,23 @@ logger = logging.getLogger("httpstan")
 def cache_db_filename() -> str:
     cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
     return os.path.join(cache_path, "cache.sqlite3")
+
+
+def model_directory(model_name: str) -> str:
+    """Get the path to a model's directory. Directory may not exist."""
+    cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
+    model_id = model_name.split("/")[1]
+    return os.path.join(cache_path, "models", model_id)
+
+
+def services_extension_module_compiler_output(model_name: str) -> str:
+    """Load compiler output from building a model-specific stan::services extension module."""
+    # may raise KeyError
+    model_directory_ = pathlib.Path(model_directory(model_name))
+    if not model_directory_.exists():
+        raise KeyError(f"Directory for `{model_name}` at `{model_directory}` does not exist.")
+    with open(model_directory_ / "stderr.log") as fh:
+        return fh.read()
 
 
 async def init_cache(app: aiohttp.web.Application) -> None:
@@ -40,13 +56,10 @@ async def init_cache(app: aiohttp.web.Application) -> None:
     """
     cache_db_filename_ = cache_db_filename()
     os.makedirs(os.path.dirname(cache_db_filename_), exist_ok=True)
-    logging.info(f"Using sqlite3 database `{cache_db_filename_}` to cache models.")
+    logging.info(f"Using sqlite3 database `{cache_db_filename_}` to store pending operation info.")
     # if `check_same_thread` is False, use of `conn` across threads should work
     conn = sqlite3.connect(cache_db_filename_, check_same_thread=False)
     with conn:
-        conn.execute(
-            """CREATE TABLE IF NOT EXISTS models (name BLOB PRIMARY KEY, value BLOB, compiler_output TEXT);"""
-        )
         conn.execute("""CREATE TABLE IF NOT EXISTS operations (name BLOB PRIMARY KEY, value value BLOB);""")
     app["db"] = conn
 
@@ -65,60 +78,6 @@ async def close_cache(app: aiohttp.web.Application) -> None:
     """
     logging.info("Closing cache.")
     app["db"].close()
-
-
-async def dump_model_extension_module(
-    model_name: str, module_bytes: bytes, compiler_output: str, db: sqlite3.Connection
-) -> None:
-    """Store Stan model extension module the cache.
-
-    The Stan model extension module is passed via ``module_bytes``. The bytes
-    will be compressed before writing to the cache.
-
-    Since compressing the bytes will take time, the compression function is run
-    in a different thread.
-
-    This function is a coroutine.
-
-    Arguments:
-        model_name: Model name.
-        module_bytes: Bytes of the compile Stan model extension module.
-        compiler_output: Output (standard error) from compiler.
-        db: Cache database handle.
-
-    """
-    compress_level = 1  # fastest
-    compressed = await asyncio.get_event_loop().run_in_executor(None, gzip.compress, module_bytes, compress_level)
-    with db:
-        db.execute(
-            """INSERT INTO models VALUES (?, ?, ?)""", (model_name.encode(), compressed, compiler_output.encode()),
-        )
-
-
-async def load_model_extension_module(model_name: str, db: sqlite3.Connection) -> Tuple[bytes, str]:
-    """Load Stan model extension module the cache.
-
-    The extension module is stored in compressed form. Since decompressing the
-    module will take time, the decompression function is run in a different
-    thread.
-
-    This function is a coroutine.
-
-    Arguments:
-        model_name: Model name
-        db: Cache database handle.
-
-    Returns
-        bytes: Bytes of compiled extension module.
-        str: Output (standard error) from compiler.
-
-    """
-    row = db.execute("""SELECT value, compiler_output FROM models WHERE name=?""", (model_name.encode(),)).fetchone()
-    if not row:
-        raise KeyError(f"Extension module for `{model_name}` not found.")
-    compressed, compiler_output = row
-    module_bytes = await asyncio.get_event_loop().run_in_executor(None, gzip.decompress, compressed)
-    return module_bytes, compiler_output
 
 
 async def dump_fit(name: str, fit_bytes: bytes) -> None:

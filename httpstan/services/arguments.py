@@ -74,22 +74,22 @@ def lookup_default(method: Method, arg: str) -> typing.Union[float, int]:
     return typing.cast(typing.Union[float, int], python_type(item["default"]))
 
 
-def function_arguments(function_name: str, model_module: types.ModuleType) -> typing.List[str]:
+def function_arguments(function_name: str, services_module: types.ModuleType) -> typing.List[str]:
     """Get function arguments for stan::services `function_name`.
 
-    A compiled `model_module` is required for the lookup. Only simple function
+    A compiled `services_module` is required for the lookup. Only simple function
     arguments are returned. For example, callback writers and var_context
     arguments are dropped.
 
     Arguments:
         function_name: Name of the function.
-        model_module (module): Compiled model module.
+        services_module (module): Compiled model-specific services extension module.
 
     Returns:
         Argument names for `function_name`.
 
     """
-    function = getattr(model_module, f"{function_name}_wrapper")
+    function = getattr(services_module, f"{function_name}_wrapper")
     sig = inspect.Signature.from_callable(function)
     # remove arguments which are specific to the wrapper
     arguments_exclude = {"socket_filename"}

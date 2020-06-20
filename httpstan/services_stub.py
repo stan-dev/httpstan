@@ -13,7 +13,6 @@ import logging
 import os
 import select
 import socket
-import sqlite3
 import tempfile
 import typing
 
@@ -30,10 +29,8 @@ logger = logging.getLogger("httpstan")
 def _make_lazy_function_wrapper_helper(
     function_basename: str, model_name: str, *args: typing.Any, **kwargs: typing.Any
 ) -> typing.Callable:
-    cache_db_filename = httpstan.cache.cache_db_filename()
-    conn = sqlite3.connect(cache_db_filename)
-    model_module, _ = asyncio.run(httpstan.models.import_model_extension_module(model_name, conn))
-    function = getattr(model_module, function_basename + "_wrapper")
+    services_module = httpstan.models.import_services_extension_module(model_name)
+    function = getattr(services_module, function_basename + "_wrapper")
     return function(*args, **kwargs)  # type: ignore
 
 
@@ -48,7 +45,6 @@ def _make_lazy_function_wrapper(function_basename: str, model_name: str) -> typi
 async def call(
     function_name: str,
     model_name: str,
-    db: sqlite3.Connection,
     messages_file: typing.IO[bytes],
     logger_callback: typing.Optional[typing.Callable] = None,
     **kwargs: dict,
@@ -62,7 +58,7 @@ async def call(
 
     Arguments:
         function_name: full name of function in stan::services
-        model_module (module): Stan model extension module
+        services_module (module): model-specific services extension module
         messages_file: file into which length-prefixed messages will be written
         logger_callback: Callback function for logger messages, including sampling progress messages
         kwargs: named stan::services function arguments, see CmdStan documentation.
@@ -72,9 +68,9 @@ async def call(
     # Fetch defaults for missing arguments. This is an important step!
     # For example, `random_seed`, if not in `kwargs`, will be set.
     # temporarily load the module to lookup function arguments
-    model_module, _ = await httpstan.models.import_model_extension_module(model_name, db)
-    function_arguments = arguments.function_arguments(function_basename, model_module)
-    del model_module
+    services_module = httpstan.models.import_services_extension_module(model_name)
+    function_arguments = arguments.function_arguments(function_basename, services_module)
+    del services_module
     # This is clumsy due to the way default values are available. There is no
     # way to directly lookup the default value for an argument (e.g., `delta`)
     # given both the argument name and the (full) function name (e.g.,
