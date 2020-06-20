@@ -89,11 +89,11 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
     program_code = args["program_code"]
     model_name = httpstan.models.calculate_model_name(program_code)
     try:
-        module_bytes, compiler_output = await httpstan.cache.load_model_extension_module(model_name, request.app["db"])
+        httpstan.models.import_services_extension_module(model_name)
     except KeyError:
-        logger.info(f"Compiling Stan model, `{model_name}`.")
+        logger.info(f"Building model-specific services extension module for `{model_name}`.")
         try:
-            module_bytes, compiler_output = await httpstan.models.compile_model_extension_module(program_code)
+            await httpstan.models.build_services_extension_module(program_code)
         except Exception as exc:
             message, status = (
                 f"Exception while building model extension module: `{repr(exc)}`, traceback: `{traceback.format_tb(exc.__traceback__)}`",
@@ -101,9 +101,9 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
             )
             logger.critical(message)
             return aiohttp.web.json_response(_make_error(message, status=status), status=status)
-        await httpstan.cache.dump_model_extension_module(model_name, module_bytes, compiler_output, request.app["db"])
     else:
         logger.info(f"Found Stan model in cache (`{model_name}`).")
+    compiler_output = httpstan.cache.services_extension_module_compiler_output(model_name)
     response_dict = schemas.Model().load({"name": model_name, "compiler_output": compiler_output})
     return aiohttp.web.json_response(response_dict, status=201)
 
@@ -160,7 +160,7 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
     data = args["data"]
 
     try:
-        model_module, _ = await httpstan.models.import_model_extension_module(model_name, request.app["db"])
+        services_module = httpstan.models.import_services_extension_module(model_name)
     except KeyError:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
@@ -171,15 +171,15 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
     # Ignoring types due to the difficulty of referring to an extension module
     # which is compiled during run time.
     try:
-        param_names_bytes = model_module.param_names(data)  # type: ignore
+        param_names_bytes = services_module.param_names(data)  # type: ignore
     except Exception as exc:
         # e.g., "Found negative dimension size in variable declaration"
         message, status = f"Error calling param_names: `{exc}`", 400
         logger.critical(message)
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     param_names = [name.decode() for name in param_names_bytes]
-    dims = model_module.dims(data)  # type: ignore
-    constrained_param_names_bytes = model_module.constrained_param_names(data)  # type: ignore
+    dims = services_module.dims(data)  # type: ignore
+    constrained_param_names_bytes = services_module.constrained_param_names(data)  # type: ignore
     constrained_param_names = [name.decode() for name in constrained_param_names_bytes]
     params = []
     for name, dims_ in zip(param_names, dims):
@@ -248,7 +248,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         return aiohttp.web.json_response(ex.messages, status=422)
 
     try:
-        await httpstan.models.import_model_extension_module(model_name, request.app["db"])
+        httpstan.models.import_services_extension_module(model_name)
     except KeyError:
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
@@ -336,7 +336,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
 
     logger_callback_partial = functools.partial(logger_callback, operation_dict)
     task = asyncio.ensure_future(
-        services_stub.call(function, model_name, request.app["db"], messages_file, logger_callback_partial, **args)
+        services_stub.call(function, model_name, messages_file, logger_callback_partial, **args)
     )
     task.add_done_callback(functools.partial(_services_call_done, operation_dict, messages_file, request.app["db"]))
     # keep track of all operations, used by an `on_cleanup` signal handler.

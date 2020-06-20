@@ -33,13 +33,11 @@ async def test_function_arguments(api_url: str) -> None:
     # function_arguments needs compiled module, so we have to get one
     model_name = await helpers.get_model_name(api_url, program_code)
 
-    # get a reference to the model_module
+    # get a reference to the model-specific services extension module
     # the following call sets up database, populates app['db']
     app = httpstan.app.make_app()
     await httpstan.cache.init_cache(app)
-    model_module, compiler_output = await httpstan.models.import_model_extension_module(model_name, app["db"])
-    assert model_module is not None
-    assert compiler_output is not None
+    module = httpstan.models.import_services_extension_module(model_name)
 
     expected = [
         "data",
@@ -64,7 +62,7 @@ async def test_function_arguments(api_url: str) -> None:
         "window",
     ]
 
-    assert expected == arguments.function_arguments("hmc_nuts_diag_e_adapt", model_module)
+    assert expected == arguments.function_arguments("hmc_nuts_diag_e_adapt", module)
 
 
 @pytest.mark.parametrize(
