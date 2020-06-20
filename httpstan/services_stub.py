@@ -30,8 +30,8 @@ logger = logging.getLogger("httpstan")
 def _make_lazy_function_wrapper_helper(
     function_basename: str, model_name: str, *args: typing.Any, **kwargs: typing.Any
 ) -> typing.Callable:
-    cache_filename = httpstan.cache.cache_filename()
-    conn = sqlite3.connect(cache_filename)
+    cache_db_filename = httpstan.cache.cache_db_filename()
+    conn = sqlite3.connect(cache_db_filename)
     model_module, _ = asyncio.run(httpstan.models.import_model_extension_module(model_name, conn))
     function = getattr(model_module, function_basename + "_wrapper")
     return function(*args, **kwargs)  # type: ignore
