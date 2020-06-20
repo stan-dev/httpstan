@@ -3,7 +3,6 @@
 These functions manage the process of compiling a Python extension module
 from C++ code generated and loading the resulting module.
 
-isort:skip_file
 """
 import asyncio
 import base64
@@ -11,7 +10,6 @@ import functools
 import hashlib
 import importlib
 import importlib.resources
-import io
 import logging
 import os
 import pathlib
@@ -21,16 +19,11 @@ import string
 import sys
 import tempfile
 from types import ModuleType
-from typing import IO, Any, List, Optional, TextIO, Tuple
+from typing import List, Optional, Tuple
 
-# IMPORTANT: `import setuptools` MUST come before any module imports `distutils`
-# background: bugs.python.org/issue23114
 import setuptools
 
-import Cython
-import Cython.Build
-import Cython.Build.Inline
-
+import httpstan.build_ext
 import httpstan.cache
 import httpstan.compile
 
@@ -202,47 +195,6 @@ def _build_extension_module(
         str: Output (standard error) from compiler.
 
     """
-
-    # define utility functions for silencing compiler output
-    def _has_fileno(stream: TextIO) -> bool:
-        """Returns whether the stream object has a working fileno()
-
-        Suggests whether _redirect_stderr is likely to work.
-        """
-        try:
-            stream.fileno()
-        except (AttributeError, OSError, IOError, io.UnsupportedOperation):
-            return False
-        return True
-
-    def _redirect_stdout() -> int:
-        """Redirect stdout for subprocesses to /dev/null.
-
-        Returns
-        -------
-        orig_stderr: copy of original stderr file descriptor
-        """
-        sys.stdout.flush()
-        stdout_fileno = sys.stdout.fileno()
-        orig_stdout = os.dup(stdout_fileno)
-        devnull = os.open(os.devnull, os.O_WRONLY)
-        os.dup2(devnull, stdout_fileno)
-        os.close(devnull)
-        return orig_stdout
-
-    def _redirect_stderr_to(stream: IO[Any]) -> int:
-        """Redirect stderr for subprocesses to /dev/null.
-
-        Returns
-        -------
-        orig_stderr: copy of original stderr file descriptor
-        """
-        sys.stderr.flush()
-        stderr_fileno = sys.stderr.fileno()
-        orig_stderr = os.dup(stderr_fileno)
-        os.dup2(stream.fileno(), stderr_fileno)
-        return orig_stderr
-
     with tempfile.TemporaryDirectory(prefix="httpstan_") as temporary_directory:
         temporary_directory_path = pathlib.Path(temporary_directory)
         cpp_filepath = temporary_directory_path / f"{module_name}.hpp"
@@ -276,7 +228,6 @@ def _build_extension_module(
         if extra_compile_args is None:
             extra_compile_args = ["-O3", "-std=c++14"]
 
-        cython_include_path = [os.path.dirname(httpstan_dir)]
         # Note: `library_dirs` is only relevant for linking. It does not tell an extension
         # where to find shared libraries during execution. There are two ways for an
         # extension module to find shared libraries: LD_LIBRARY_PATH and rpath.
@@ -294,30 +245,16 @@ def _build_extension_module(
             extra_compile_args=extra_compile_args,
             extra_link_args=[f"-Wl,-rpath,{PACKAGE_DIR / 'lib'}"],
         )
-        build_extension = Cython.Build.Inline._get_build_extension()
 
-        # silence stdout and stderr for compilation, if stderr is silenceable
-        # silence stdout too as cythonizing prints a couple of lines to stdout
-        stream = tempfile.TemporaryFile(prefix="httpstan_")
-        redirect_stderr = _has_fileno(sys.stderr)
-        compiler_output = ""
-        if redirect_stderr:
-            orig_stdout = _redirect_stdout()
-            orig_stderr = _redirect_stderr_to(stream)
-        try:
-            build_extension.extensions = Cython.Build.cythonize([extension], include_path=cython_include_path)
-            build_extension.build_temp = build_extension.build_lib = temporary_directory_path.as_posix()
-            build_extension.run()
-        finally:
-            if redirect_stderr:
-                stream.seek(0)
-                compiler_output = stream.read().decode()
-                stream.close()
-                # restore
-                os.dup2(orig_stderr, sys.stderr.fileno())
-                os.dup2(orig_stdout, sys.stdout.fileno())
+        extensions = [extension]
+        build_lib = temporary_directory_path.as_posix()
 
-        module = _import_module(module_name, build_extension.build_lib)
+        httpstan.build_ext.run_build_ext(extensions, build_lib)
+
+        with open(os.path.join(build_lib, "stderr.log")) as fh:
+            compiler_output = fh.read()
+
+        module = _import_module(module_name, build_lib)
         with open(module.__file__, "rb") as fh:  # type: ignore  # see mypy#3062
             assert module.__name__ == module_name, (module.__name__, module_name)
             return fh.read(), compiler_output  # type: ignore  # see mypy#3062

@@ -35,6 +35,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
+setuptools = ">=41.0"
 aiohttp = "^3.6"
 appdirs = "^1.4"
 webargs = "^5.5"
