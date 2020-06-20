@@ -95,7 +95,10 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
         try:
             module_bytes, compiler_output = await httpstan.models.compile_model_extension_module(program_code)
         except Exception as exc:
-            message, status = f"Failed to compile module: {exc}", 400
+            message, status = (
+                f"Exception while building model extension module: `{repr(exc)}`, traceback: `{traceback.format_tb(exc.__traceback__)}`",
+                400,
+            )
             logger.critical(message)
             return aiohttp.web.json_response(_make_error(message, status=status), status=status)
         await httpstan.cache.dump_model_extension_module(model_name, module_bytes, compiler_output, request.app["db"])
