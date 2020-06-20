@@ -44,7 +44,6 @@ async def init_cache(app: aiohttp.web.Application) -> None:
     # if `check_same_thread` is False, use of `conn` across threads should work
     conn = sqlite3.connect(cache_db_filename_, check_same_thread=False)
     with conn:
-        conn.execute("""CREATE TABLE IF NOT EXISTS fits (name BLOB PRIMARY KEY, model_name BLOB, value BLOB);""")
         conn.execute(
             """CREATE TABLE IF NOT EXISTS models (name BLOB PRIMARY KEY, value BLOB, compiler_output TEXT);"""
         )
