@@ -18,7 +18,7 @@ import httpstan
 logger = logging.getLogger("httpstan")
 
 
-def cache_filename() -> str:
+def cache_db_filename() -> str:
     cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
     return os.path.join(cache_path, "cache.sqlite3")
 
@@ -38,11 +38,11 @@ async def init_cache(app: aiohttp.web.Application) -> None:
         app (aiohttp.web.Application): The current application.
 
     """
-    cache_filename_ = cache_filename()
-    os.makedirs(os.path.dirname(cache_filename_), exist_ok=True)
-    logging.info(f"Using sqlite3 database `{cache_filename_}` to cache models.")
+    cache_db_filename_ = cache_db_filename()
+    os.makedirs(os.path.dirname(cache_db_filename_), exist_ok=True)
+    logging.info(f"Using sqlite3 database `{cache_db_filename_}` to cache models.")
     # if `check_same_thread` is False, use of `conn` across threads should work
-    conn = sqlite3.connect(cache_filename_, check_same_thread=False)
+    conn = sqlite3.connect(cache_db_filename_, check_same_thread=False)
     with conn:
         conn.execute("""CREATE TABLE IF NOT EXISTS fits (name BLOB PRIMARY KEY, model_name BLOB, value BLOB);""")
         conn.execute(
