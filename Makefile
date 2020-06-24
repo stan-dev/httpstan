@@ -74,14 +74,14 @@ $(HTTP_ARCHIVES_EXPANDED):
 ###############################################################################
 ifeq ($(shell uname -s),Darwin)
 build/stanc:
-	@curl --silent --location https://github.com/stan-dev/stanc3/releases/download/v$(STANC_VERSION)/mac-stanc -o $@
+	curl --location https://github.com/stan-dev/stanc3/releases/download/v$(STANC_VERSION)/mac-stanc -o $@ --retry 5 --fail
 else
 build/stanc:
-	@curl --silent --location https://github.com/stan-dev/stanc3/releases/download/v$(STANC_VERSION)/linux-stanc -o $@
+	curl --location https://github.com/stan-dev/stanc3/releases/download/v$(STANC_VERSION)/linux-stanc -o $@ --retry 5 --fail
 endif
 
 $(STANC): build/stanc
-	@rm -f $@ && cp -r $< $@ && chmod u+x $@
+	rm -f $@ && cp -r $< $@ && chmod u+x $@
 
 ###############################################################################
 # Protocol Buffers library and generated files
