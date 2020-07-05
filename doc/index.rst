@@ -10,7 +10,7 @@ package is intended for use as a universal backend for frontends which know how
 to make HTTP requests. The primary audience for this package is developers.
 
 In addition to providing the essential functionality of the command-line interface
-to Stan (CmdStan_) over HTTP, **httpstan** provides the following features:
+to Stan (CmdStan_) over HTTP, httpstan provides the following features:
 
 * Automatic caching of compiled Stan models
 * Automatic caching of samples from Stan models
@@ -110,10 +110,9 @@ User Guide
    rest_api
    autoapi/index
    contributing
-   development_setup
-   authors
    license
-   developers
+   authors
+   developer_resources
 
 
 .. _shim: https://en.wikipedia.org/wiki/Shim_%28computing%29
