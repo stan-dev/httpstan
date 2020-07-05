@@ -30,24 +30,24 @@ intersphinx_mapping = {
 
 version = release = httpstan.__version__
 
-autoapi_dirs = [os.path.join('..', 'httpstan')]
+autoapi_dirs = [os.path.join("..", "httpstan")]
 autoapi_ignore = [
-    '*lib*',
-    '*views.py',
-    '*openapi.py',
-    '*callbacks_writer_pb2.py',
-    '*callbacks_writer_pb2.pyi',
+    "*lib*",
+    "*views.py",
+    "*openapi.py",
+    "*callbacks_writer_pb2.py",
+    "*callbacks_writer_pb2.pyi",
 ]
 
 ################################################################################
 # openapi spec
 ################################################################################
 
+
 def make_openapi_spec(_):
     print("conf.py: Generating openapi spec... ", end="")
     source_dir = os.path.dirname(os.path.realpath(__file__))
     output_path = os.path.join(source_dir, "openapi.yaml")
-
 
     # Use mock for extension and generated modules modules so we do not need to
     # build httpstan in order to run Sphinx.
