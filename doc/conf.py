@@ -32,10 +32,11 @@ version = release = httpstan.__version__
 
 autoapi_dirs = [os.path.join('..', 'httpstan')]
 autoapi_ignore = [
-    '*/lib*',
-    '*/views.py',
-    '*/openapi.py',
-    '*/httpstan.callbacks_writer_pb2.py',
+    '*lib*',
+    '*views.py',
+    '*openapi.py',
+    '*callbacks_writer_pb2.py',
+    '*callbacks_writer_pb2.pyi',
 ]
 
 ################################################################################
