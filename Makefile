@@ -32,7 +32,12 @@ ifeq ($(shell uname -s),Darwin)
   TBB_LIBRARIES += httpstan/lib/libtbbmalloc.so httpstan/lib/libtbbmalloc_proxy.so
 endif
 STAN_LIBRARIES := $(SUNDIALS_LIBRARIES) $(TBB_LIBRARIES)
-LIBRARIES := httpstan/lib/libprotobuf-lite.so $(STAN_LIBRARIES)
+LIBRARIES := $(STAN_LIBRARIES)
+ifeq ($(shell uname -s),Darwin)
+LIBRARIES += httpstan/lib/libprotobuf-lite.dylib
+else
+LIBRARIES += httpstan/lib/libprotobuf-lite.so
+endif
 INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_$(BOOST_VERSION) httpstan/include/lib/eigen_$(EIGEN_VERSION) httpstan/include/lib/sundials_$(SUNDIALS_VERSION) httpstan/include/lib/tbb_$(TBB_VERSION)
 INCLUDES_STAN := httpstan/include/stan httpstan/include/stan/math $(INCLUDES_STAN_MATH_LIBS)
 INCLUDES := httpstan/include/google/protobuf $(INCLUDES_STAN)
@@ -92,12 +97,28 @@ httpstan/include/google: build/protobuf-$(PROTOBUF_VERSION)/src/google | build/p
 	@rm -rf $@
 	cp -r $< $@
 
+# For context on the use of install_name_tool see https://github.com/PixarAnimationStudios/USD/pull/1125 
+ifeq ($(shell uname -s),Darwin)
+httpstan/lib/libprotobuf-lite.dylib httpstan/bin/protoc: | build/protobuf-$(PROTOBUF_VERSION)
+	@echo compiling with -D_GLIBCXX_USE_CXX11_ABI=0 for manylinux2014 wheel compatibility
+	cd build/protobuf-$(PROTOBUF_VERSION) && ./configure --prefix="$(shell pwd)/httpstan" CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && make -j 8 install
+	install_name_tool -id @rpath/libprotobuf-lite.dylib httpstan/lib/libprotobuf-lite.dylib
+	install_name_tool -id @rpath/libprotobuf-lite.22.dylib httpstan/lib/libprotobuf-lite.22.dylib
+else
 httpstan/lib/libprotobuf-lite.so httpstan/bin/protoc: | build/protobuf-$(PROTOBUF_VERSION)
 	@echo compiling with -D_GLIBCXX_USE_CXX11_ABI=0 for manylinux2014 wheel compatibility
 	cd build/protobuf-$(PROTOBUF_VERSION) && ./configure --prefix="$(shell pwd)/httpstan" CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && make -j 8 install
+endif
+
+
 
 # This is a phony dependency to avoid problems with parallel make
+ifeq ($(shell uname -s),Darwin)
+httpstan/bin/protoc: httpstan/lib/libprotobuf-lite.dylib
+else
 httpstan/bin/protoc: httpstan/lib/libprotobuf-lite.so
+endif
+
 
 httpstan/%.pb.cc: protos/%.proto httpstan/bin/protoc
 	LD_LIBRARY_PATH="httpstan/lib:${LD_LIBRARY_PATH}" httpstan/bin/protoc -Iprotos --cpp_out=httpstan $<
