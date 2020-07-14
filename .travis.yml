@@ -33,7 +33,6 @@ install:
   - pip install "poetry<2,>=1.0" tox
   # These are build requirements. poetry does not offer a way to specify build requirements.
   - pip install "mypy-protobuf==1.21"
-  - pip install "Cython<1,>=0.29"
   # this customization is just for `find` on macOS, can be removed after Stan 2.22 is used. See `Makefile` for details
   - |
     if [[ $TRAVIS_OS_NAME = "osx" ]]; then

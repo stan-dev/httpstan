@@ -65,7 +65,6 @@ releasenotes/build
 .pytest_cache
 
 # project-specific
-httpstan/*.cpp
 httpstan/*_pb2.py
 httpstan/*_pb2.pyi
 httpstan/*.pb.cc
