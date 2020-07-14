@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "httpstan"
-version = "2.0.2"
+version = "2.0.3"
 description = "HTTP-based interface to Stan, a package for Bayesian inference."
 authors = [
   "Allen Riddell <riddella@indiana.edu>",
