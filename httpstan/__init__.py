@@ -7,4 +7,10 @@ Configures logging and exposes httpstan.__version__.
 import logging
 
 logging.getLogger("httpstan").addHandler(logging.NullHandler())
-__version__ = "2.0.3"
+
+try:
+    from importlib.metadata import version
+
+    __version__ = version("httpstan")
+except ModuleNotFoundError:
+    pass
