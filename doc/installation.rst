@@ -28,7 +28,7 @@ The build process for httpstan is not simple.
 
     # 3. Build shared libraries and generate code
     cd httpstan
-    python3 -m pip install mypy-protobuf==1.21 Cython poetry
+    python3 -m pip install mypy-protobuf==1.21 poetry
     make
 
     # 4. Build the httpstan wheel

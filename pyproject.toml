@@ -50,10 +50,6 @@ pytest-cov = "^2.8"
 pytest-asyncio = "^0.10"
 apispec = {version = "^3.1", extras = ["yaml", "validation"]}
 
-[build-system]
-requires = ["poetry>=0.12", "Cython>=0.29"]
-build-backend = "poetry.masonry.api"
-
 [tool.black]
 line-length = 119
 exclude = '.*_pb2|httpstan/lib'
@@ -64,3 +60,7 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 119
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

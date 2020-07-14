@@ -10,6 +10,7 @@
 # httpstan-specific directories.
 
 PROTOBUF_VERSION := 3.11.3
+PYBIND11_VERSION := 2.5.0
 STAN_VERSION := 2.23.0
 STANC_VERSION := 2.23.0
 MATH_VERSION := 3.2.0
@@ -19,10 +20,11 @@ SUNDIALS_VERSION := 5.2.0
 TBB_VERSION := 2019_U8
 
 PROTOBUF_ARCHIVE := build/archives/protobuf-cpp-$(PROTOBUF_VERSION).tar.gz
+PYBIND11_ARCHIVE := build/archives/pybind11-$(PYBIND11_VERSION).tar.gz
 STAN_ARCHIVE := build/archives/stan-v$(STAN_VERSION).tar.gz
 MATH_ARCHIVE := build/archives/math-v$(MATH_VERSION).tar.gz
 HTTP_ARCHIVES := $(PROTOBUF_ARCHIVE) $(STAN_ARCHIVE) $(MATH_ARCHIVE)
-HTTP_ARCHIVES_EXPANDED := build/protobuf-$(PROTOBUF_VERSION) build/stan-$(STAN_VERSION) build/math-$(MATH_VERSION)
+HTTP_ARCHIVES_EXPANDED := build/protobuf-$(PROTOBUF_VERSION) build/pybind11-$(PYBIND11_VERSION) build/stan-$(STAN_VERSION) build/math-$(MATH_VERSION)
 
 PROTOBUF_FILES := httpstan/callbacks_writer_pb2.py httpstan/callbacks_writer.pb.cc
 STUB_FILES := httpstan/callbacks_writer_pb2.pyi
@@ -40,7 +42,7 @@ LIBRARIES += httpstan/lib/libprotobuf-lite.so
 endif
 INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_$(BOOST_VERSION) httpstan/include/lib/eigen_$(EIGEN_VERSION) httpstan/include/lib/sundials_$(SUNDIALS_VERSION) httpstan/include/lib/tbb_$(TBB_VERSION)
 INCLUDES_STAN := httpstan/include/stan httpstan/include/stan/math $(INCLUDES_STAN_MATH_LIBS)
-INCLUDES := httpstan/include/google/protobuf $(INCLUDES_STAN)
+INCLUDES := httpstan/include/google/protobuf httpstan/include/pybind11 $(INCLUDES_STAN)
 STANC := httpstan/stanc
 
 
@@ -57,6 +59,10 @@ $(PROTOBUF_ARCHIVE): | build/archives
 	@echo downloading $@
 	@curl --silent --location https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/protobuf-cpp-3.11.3.tar.gz -o $@
 
+$(PYBIND11_ARCHIVE): | build/archives
+	@echo downloading $@
+	curl --silent --location https://github.com/pybind/pybind11/archive/v$(PYBIND11_VERSION).tar.gz -o $@
+
 $(STAN_ARCHIVE): | build/archives
 	@echo downloading $@
 	@curl --silent --location https://github.com/stan-dev/stan/archive/v$(STAN_VERSION).tar.gz -o $@
@@ -66,6 +72,7 @@ $(MATH_ARCHIVE): | build/archives
 	@curl --silent --location https://github.com/stan-dev/math/archive/v$(MATH_VERSION).tar.gz -o $@
 
 build/protobuf-$(PROTOBUF_VERSION): $(PROTOBUF_ARCHIVE)
+build/pybind11-$(PYBIND11_VERSION): $(PYBIND11_ARCHIVE)
 build/stan-$(STAN_VERSION): $(STAN_ARCHIVE)
 build/math-$(MATH_VERSION): $(MATH_ARCHIVE)
 
@@ -87,6 +94,16 @@ endif
 
 $(STANC): build/stanc
 	rm -f $@ && cp -r $< $@ && chmod u+x $@
+
+###############################################################################
+# pybind11
+###############################################################################
+httpstan/include/pybind11: build/pybind11-$(PYBIND11_VERSION)/include/pybind11 | build/pybind11-$(PYBIND11_VERSION)
+	@mkdir -p httpstan/include
+	@rm -rf $@
+	cp -r $< $@
+
+build/pybind11-$(PYBIND11_VERSION)/include/pybind11: | build/pybind11-$(PYBIND11_VERSION)
 
 ###############################################################################
 # Protocol Buffers library and generated files
