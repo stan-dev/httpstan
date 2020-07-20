@@ -7,10 +7,8 @@ import asyncio
 import functools
 import http
 import io
-import json
 import logging
 import re
-import sqlite3
 import traceback
 from typing import Optional, Sequence, cast
 
@@ -256,7 +254,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     function = args.pop("function")
     name = httpstan.fits.calculate_fit_name(function, model_name, args)
     try:
-        await httpstan.cache.load_fit(name)
+        httpstan.cache.load_fit(name)
     except KeyError:
         pass
     else:
@@ -270,11 +268,10 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
                 "result": schemas.Fit().load({"name": name}),
             }
         )
+        request.app["operations"][operation_name] = operation_dict
         return aiohttp.web.json_response(operation_dict, status=201)
 
-    def _services_call_done(
-        operation: dict, messages_file: io.BytesIO, db: sqlite3.Connection, future: asyncio.Future
-    ) -> None:
+    def _services_call_done(operation: dict, messages_file: io.BytesIO, future: asyncio.Future) -> None:
         """Called when services call (i.e., an operation) is done.
 
         This needs to handle both successful and exception-raising calls.
@@ -282,14 +279,13 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         Arguments:
             operation: Operation dict
             messages_file: Open file handle passed to services call
-            db: Database connection
             future: Finished future
 
         """
         # either the call succeeded or it raised an exception.
         operation["done"] = True
         messages_file.flush()
-        asyncio.ensure_future(httpstan.cache.dump_fit(operation["metadata"]["fit"]["name"], messages_file.getvalue()))
+        httpstan.cache.dump_fit(operation["metadata"]["fit"]["name"], messages_file.getvalue())
         messages_file.close()
 
         exc = future.exception()
@@ -305,10 +301,6 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         else:
             logger.info(f"Operation `{operation['name']}` finished.")
             operation["result"] = schemas.Fit().load(operation["metadata"]["fit"])
-
-        # store the updated Operation
-        operation = schemas.Operation().load(operation)
-        asyncio.ensure_future(httpstan.cache.dump_operation(operation["name"], json.dumps(operation).encode(), db))
 
     operation_name = f'operations/{name.split("/")[-1]}'
     operation_dict = schemas.Operation().load(
@@ -328,22 +320,15 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         # Deserializing it would be costly and require importing the protobuf Python module.
         if b"info:Iteration" not in message:
             return
-        # When sampling completes rapidly, multiple iteration messages can be passed together. Return the final one.
+        # When sampling completes rapidly, multiple iteration messages can be passed together. Use final one.
         operation["metadata"]["progress"] = iteration_info_re.findall(message).pop().decode()
-        asyncio.ensure_future(
-            httpstan.cache.dump_operation(operation_name, json.dumps(operation_dict).encode(), request.app["db"])
-        )
 
     logger_callback_partial = functools.partial(logger_callback, operation_dict)
     task = asyncio.ensure_future(
         services_stub.call(function, model_name, messages_file, logger_callback_partial, **args)
     )
-    task.add_done_callback(functools.partial(_services_call_done, operation_dict, messages_file, request.app["db"]))
-    # keep track of all operations, used by an `on_cleanup` signal handler.
-    request.app["operations"].add(operation_name)
-
-    # return the operation
-    await httpstan.cache.dump_operation(operation_name, json.dumps(operation_dict).encode(), request.app["db"])
+    task.add_done_callback(functools.partial(_services_call_done, operation_dict, messages_file))
+    request.app["operations"][operation_name] = operation_dict
     return aiohttp.web.json_response(operation_dict, status=201)
 
 
@@ -383,7 +368,7 @@ async def handle_get_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
     fit_name = f"{model_name}/fits/{request.match_info['fit_id']}"
 
     try:
-        fit_bytes = await httpstan.cache.load_fit(fit_name)
+        fit_bytes = httpstan.cache.load_fit(fit_name)
     except KeyError:
         message, status = f"Fit `{fit_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
@@ -418,7 +403,7 @@ async def handle_get_operation(request: aiohttp.web.Request) -> aiohttp.web.Resp
     """
     operation_name = f"operations/{request.match_info['operation_id']}"
     try:
-        operation = await httpstan.cache.load_operation(operation_name, request.app["db"])
+        operation = request.app["operations"][operation_name]
     except KeyError:
         message, status = f"Operation `{operation_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
