@@ -9,6 +9,7 @@ Unix domain socket.
 import asyncio
 import concurrent.futures
 import functools
+import io
 import logging
 import os
 import select
@@ -45,7 +46,7 @@ def _make_lazy_function_wrapper(function_basename: str, model_name: str) -> typi
 async def call(
     function_name: str,
     model_name: str,
-    messages_file: typing.IO[bytes],
+    fit_name: str,
     logger_callback: typing.Optional[typing.Callable] = None,
     **kwargs: dict,
 ) -> None:
@@ -59,10 +60,11 @@ async def call(
     Arguments:
         function_name: full name of function in stan::services
         services_module (module): model-specific services extension module
-        messages_file: file into which length-prefixed messages will be written
+        fit_name: Name of fit, used for saving length-prefixed messages
         logger_callback: Callback function for logger messages, including sampling progress messages
         kwargs: named stan::services function arguments, see CmdStan documentation.
     """
+    messages_file = io.BytesIO()
     method, function_basename = function_name.replace("stan::services::", "").split("::", 1)
 
     # Fetch defaults for missing arguments. This is an important step!
@@ -119,5 +121,9 @@ async def call(
                     logger.debug(f"Stan services function `{function_basename}` returned or raised a C++ exception.")
                     break
                 await asyncio.sleep(0.01)
+
+    messages_file.flush()
+    httpstan.cache.dump_fit(fit_name, messages_file.getvalue())
+    messages_file.close()
     # `result()` method will raise exceptions, if any
     future.result()  # type: ignore

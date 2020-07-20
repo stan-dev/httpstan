@@ -6,7 +6,6 @@ Handlers are separated from the endpoint names. Endpoints are defined in
 import asyncio
 import functools
 import http
-import io
 import logging
 import re
 import traceback
@@ -271,22 +270,18 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         request.app["operations"][operation_name] = operation_dict
         return aiohttp.web.json_response(operation_dict, status=201)
 
-    def _services_call_done(operation: dict, messages_file: io.BytesIO, future: asyncio.Future) -> None:
+    def _services_call_done(operation: dict, future: asyncio.Future) -> None:
         """Called when services call (i.e., an operation) is done.
 
         This needs to handle both successful and exception-raising calls.
 
         Arguments:
             operation: Operation dict
-            messages_file: Open file handle passed to services call
             future: Finished future
 
         """
         # either the call succeeded or it raised an exception.
         operation["done"] = True
-        messages_file.flush()
-        httpstan.cache.dump_fit(operation["metadata"]["fit"]["name"], messages_file.getvalue())
-        messages_file.close()
 
         exc = future.exception()
         if exc:
@@ -306,7 +301,6 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     operation_dict = schemas.Operation().load(
         {"name": operation_name, "done": False, "metadata": {"fit": schemas.Fit().load({"name": name})}}
     )
-    messages_file = io.BytesIO()
 
     # Launch the call to the services function in the background. Wire things up
     # such that the database gets updated when the task finishes. Note that
@@ -324,9 +318,11 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
 
     logger_callback_partial = functools.partial(logger_callback, operation_dict)
     task = asyncio.create_task(
-        services_stub.call(function, model_name, messages_file, logger_callback_partial, **args)
+        services_stub.call(
+            function, model_name, operation_dict["metadata"]["fit"]["name"], logger_callback_partial, **args
+        )
     )
-    task.add_done_callback(functools.partial(_services_call_done, operation_dict, messages_file))
+    task.add_done_callback(functools.partial(_services_call_done, operation_dict))
     request.app["operations"][operation_name] = operation_dict
     return aiohttp.web.json_response(operation_dict, status=201)
 
