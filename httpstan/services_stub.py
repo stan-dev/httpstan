@@ -116,11 +116,14 @@ async def call(
                 messages_file.write(message)
             # if `potential_readers == [socket_]` then either (1) no connections
             # have been opened or (2) all connections have been closed.
-            if not readable and potential_readers == [socket_]:
-                if future.done():  # type: ignore
-                    logger.debug(f"Stan services function `{function_basename}` returned or raised a C++ exception.")
+            if not readable:
+                if potential_readers == [socket_] and future.done():  # type: ignore
+                    logger.debug(
+                        f"Stan services function `{function_basename}` returned without problems or raised a C++ exception."
+                    )
                     break
-                await asyncio.sleep(0.01)
+                # no messages right now and not done. Sleep briefly so other pending tasks get a chance to run.
+                await asyncio.sleep(0.001)
 
     messages_file.flush()
     httpstan.cache.dump_fit(fit_name, messages_file.getvalue())
