@@ -312,7 +312,6 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     # such that the database gets updated when the task finishes. Note that
     # if a task is cancelled before finishing a warning will be issued (see
     # `on_cleanup` signal handler in main.py).
-    # Note: Python 3.7 and later, `ensure_future` is `create_task`
     def logger_callback(operation: dict, message: bytes) -> None:
         # Hack: Use the raw protobuf-encoded message here. Raw message looks like this:
         # b"\x08\x01\x120\x12.\n,info:Iteration:  500 / 2000 [ 25%]  (Warmup)"
@@ -324,7 +323,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         operation["metadata"]["progress"] = iteration_info_re.findall(message).pop().decode()
 
     logger_callback_partial = functools.partial(logger_callback, operation_dict)
-    task = asyncio.ensure_future(
+    task = asyncio.create_task(
         services_stub.call(function, model_name, messages_file, logger_callback_partial, **args)
     )
     task.add_done_callback(functools.partial(_services_call_done, operation_dict, messages_file))
