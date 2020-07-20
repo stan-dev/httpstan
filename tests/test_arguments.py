@@ -6,7 +6,6 @@ import pytest
 
 import helpers
 import httpstan.app
-import httpstan.cache
 import httpstan.models
 import httpstan.services.arguments as arguments
 
@@ -35,8 +34,6 @@ async def test_function_arguments(api_url: str) -> None:
 
     # get a reference to the model-specific services extension module
     # the following call sets up database, populates app['db']
-    app = httpstan.app.make_app()
-    await httpstan.cache.init_cache(app)
     module = httpstan.models.import_services_extension_module(model_name)
 
     expected = [
