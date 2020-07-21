@@ -93,8 +93,8 @@ async def call(
 
         potential_readers = [socket_]
         while True:
-            # note: timeout of 0 required to avoid blocking
-            readable, writeable, errored = select.select(potential_readers, [], [], 0)
+            # note: timeout of 0.01 seems to work well based on measurements
+            readable, writeable, errored = select.select(potential_readers, [], [], 0.01)
             for s in readable:
                 if s is socket_:
                     conn, _ = s.accept()
