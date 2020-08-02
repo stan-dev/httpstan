@@ -36,7 +36,8 @@ def make_app() -> aiohttp.web.Application:
         aiohttp.web.Application: assembled aiohttp application.
 
     """
-    app = aiohttp.web.Application()
+    # default `client_max_size` is 1 MiB. Model `data` is often greater. None removes limit.
+    app = aiohttp.web.Application(client_max_size=None)
     httpstan.routes.setup_routes(app)
     # startup and shutdown tasks
     app["operations"] = {}
