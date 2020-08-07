@@ -29,7 +29,7 @@ async def test_sampling_initialization_failed(api_url: str) -> None:
     operation = await helpers.sample(api_url, program_code, payload)
 
     # verify an error occurred
-    assert operation["result"]["code"] == 400
+    assert operation["result"].get("code") == 400
     assert "Initialization failed." in operation["result"]["message"]
 
     # recover the error messages sent to `logger`
