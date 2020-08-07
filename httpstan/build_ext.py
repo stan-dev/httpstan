@@ -17,6 +17,8 @@ from typing import IO, Any, List, TextIO
 
 import Cython.Build
 
+from httpstan.config import HTTPSTAN_DEBUG
+
 
 def _get_build_extension() -> distutils.command.build_ext.build_ext:  # type: ignore
     dist = distutils.core.Distribution()
@@ -85,7 +87,7 @@ def run_build_ext(extensions: List[distutils.core.Extension], build_lib: str) ->
     # silence stdout and stderr for compilation, if stderr is silenceable
     # silence stdout too as cythonize prints a couple of lines to stdout
     stream = tempfile.TemporaryFile(prefix="httpstan_")
-    redirect_stderr = _has_fileno(sys.stderr)
+    redirect_stderr = _has_fileno(sys.stderr) and not HTTPSTAN_DEBUG
     compiler_output = ""
     if redirect_stderr:
         orig_stdout = _redirect_stdout()

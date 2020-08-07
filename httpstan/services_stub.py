@@ -18,6 +18,7 @@ import tempfile
 import typing
 
 import httpstan.cache
+from httpstan.config import HTTPSTAN_DEBUG
 import httpstan.models
 import httpstan.services.arguments as arguments
 
@@ -89,7 +90,15 @@ async def call(
 
         lazy_function_wrapper = _make_lazy_function_wrapper(function_basename, model_name)
         lazy_function_wrapper_partial = functools.partial(lazy_function_wrapper, socket_filename.encode(), **kwargs)
-        future = asyncio.get_running_loop().run_in_executor(executor, lazy_function_wrapper_partial)
+
+        # If HTTPSTAN_DEBUG is set block until sampling is complete. Do not use an executor.
+        if HTTPSTAN_DEBUG:
+            future: asyncio.Future = asyncio.Future()
+            logger.debug("Calling stan::services function with debug mode on.")
+            print("Warning: httpstan debug mode is on! `num_samples` must be set to a small number (e.g., 10).")
+            future.set_result(lazy_function_wrapper_partial())
+        else:
+            future = asyncio.get_running_loop().run_in_executor(executor, lazy_function_wrapper_partial)  # type: ignore
 
         potential_readers = [socket_]
         while True:
@@ -117,7 +126,7 @@ async def call(
             # if `potential_readers == [socket_]` then either (1) no connections
             # have been opened or (2) all connections have been closed.
             if not readable:
-                if potential_readers == [socket_] and future.done():  # type: ignore
+                if potential_readers == [socket_] and future.done():
                     logger.debug(
                         f"Stan services function `{function_basename}` returned without problems or raised a C++ exception."
                     )
@@ -129,4 +138,4 @@ async def call(
     httpstan.cache.dump_fit(fit_name, messages_file.getvalue())
     messages_file.close()
     # `result()` method will raise exceptions, if any
-    future.result()  # type: ignore
+    future.result()
