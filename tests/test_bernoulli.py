@@ -65,7 +65,7 @@ async def test_bernoulli_params_out_of_bounds(api_url: str) -> None:
             assert resp.status == 400
             response_payload = await resp.json()
             assert "message" in response_payload
-            assert "Found negative dimension size in variable declaration" in response_payload["message"]
+            assert "but must be greater than or equal to 0" in response_payload["message"]
 
 
 @pytest.mark.asyncio
@@ -110,7 +110,7 @@ async def test_bernoulli_out_of_bounds(api_url: str) -> None:
     operation = await helpers.sample(api_url, program_code, payload)
     error = operation["result"]
     assert "message" in error
-    assert "Found negative dimension size in variable" in error["message"]
+    assert "but must be greater than or equal to 0" in error["message"]
 
 
 @pytest.mark.asyncio

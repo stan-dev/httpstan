@@ -170,7 +170,7 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
     try:
         param_names_bytes = services_module.param_names(data)  # type: ignore
     except Exception as exc:
-        # e.g., "Found negative dimension size in variable declaration"
+        # e.g., "N is -5, but must be greater than or equal to 0"
         message, status = f"Error calling param_names: `{exc}`", 400
         logger.critical(message)
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
@@ -286,7 +286,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         exc = future.exception()
         if exc:
             # e.g., "hmc_nuts_diag_e_adapt_wrapper() got an unexpected keyword argument, ..."
-            # e.g., "Found negative dimension size in variable declaration"
+            # e.g., dimension errors in variable declarations
             message, status = (
                 f"Exception during call to services function: `{repr(exc)}`, traceback: `{traceback.format_tb(exc.__traceback__)}`",
                 400,
