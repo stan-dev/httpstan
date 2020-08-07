@@ -30,12 +30,9 @@ cimport httpstan.stan as stan
 import httpstan.utils
 
 cdef extern from "${cpp_filename}" nogil:
-    cdef cppclass stan_model:
+    cdef cppclass stan_model(stan.model_base):
         stan_model(stan.var_context& var_context) except +
         stan_model(stan.var_context& var_context, unsigned int random_seed) except +
-        void get_param_names(vector[string]&)
-        void get_dims(vector[vector[size_t]]&)
-        void constrained_param_names(vector[string]&)
 
 
 cdef stan.array_var_context * make_array_var_context(dict data):
@@ -65,7 +62,7 @@ cdef stan.array_var_context * make_array_var_context(dict data):
 def param_names(dict data):
     """Call the ``get_params`` method of the ``stan_model``."""
     cdef stan.array_var_context * var_context_ptr = make_array_var_context(data)
-    cdef stan_model * model = new stan_model(deref(var_context_ptr))
+    cdef stan.model_base * model = new stan_model(deref(var_context_ptr))
 
     cdef vector[string] names
     model.get_param_names(names)
@@ -79,7 +76,7 @@ def param_names(dict data):
 def constrained_param_names(dict data):
     """Call the ``constrained_param_names`` method of the ``stan_model``."""
     cdef stan.array_var_context * var_context_ptr = make_array_var_context(data)
-    cdef stan_model * model = new stan_model(deref(var_context_ptr))
+    cdef stan.model_base * model = new stan_model(deref(var_context_ptr))
 
     cdef vector[string] names
     model.constrained_param_names(names)
@@ -93,7 +90,7 @@ def constrained_param_names(dict data):
 def dims(dict data):
     """Call the ``get_dims`` method of the ``stan_model``."""
     cdef stan.array_var_context * var_context_ptr = make_array_var_context(data)
-    cdef stan_model * model = new stan_model(deref(var_context_ptr))
+    cdef stan.model_base * model = new stan_model(deref(var_context_ptr))
 
     cdef vector[vector[size_t]] dims_
     model.get_dims(dims_)
@@ -130,7 +127,7 @@ def hmc_nuts_diag_e_adapt_wrapper(
     cdef int return_code
     cdef stan.array_var_context * var_context_ptr = make_array_var_context(data)
     cdef stan.var_context * init_var_context
-    cdef stan_model * model = new stan_model(deref(var_context_ptr), <unsigned int> random_seed)
+    cdef stan.model_base * model = new stan_model(deref(var_context_ptr), <unsigned int> random_seed)
     cdef stan.interrupt interrupt
     cdef stan.logger * logger = new stan.socket_logger(socket_filename.c_str(), b'logger:')
     cdef stan.writer * init_writer = new stan.socket_writer(socket_filename.c_str(), b'init_writer:')

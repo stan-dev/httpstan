@@ -4,6 +4,13 @@ cimport libcpp
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
+# stan model_base
+cdef extern from "<stan/model/model_base.hpp>" namespace "stan::model" nogil:
+    cdef cppclass model_base:
+        void get_param_names(vector[string]&)
+        void get_dims(vector[vector[size_t]]&)
+        void constrained_param_names(vector[string]&)
+
 # stan io
 
 cdef extern from "stan/io/var_context.hpp" namespace "stan::io" nogil:
