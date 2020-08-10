@@ -6,7 +6,7 @@ import httpstan.schemas as schemas
 
 
 def test_model_schema() -> None:
-    result = schemas.Model().load({"name": "12345", "compiler_output": ""})
+    result = schemas.Model().load({"name": "12345", "compiler_output": "", "stanc_warnings": ""})
     assert result
 
 

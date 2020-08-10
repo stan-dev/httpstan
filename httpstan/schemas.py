@@ -52,6 +52,7 @@ class CreateModelRequest(marshmallow.Schema):
 class Model(marshmallow.Schema):
     name = fields.String(required=True)
     compiler_output = fields.String(required=True)
+    stanc_warnings = fields.String(required=True)
 
 
 class Data(marshmallow.Schema):
