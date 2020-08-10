@@ -53,3 +53,16 @@ async def test_sampling_initialization_failed(api_url: str) -> None:
     # first message should be an "Rejecting initial value" message.
     error_message = messages[0].feature[0].string_list.value[0]
     assert "Rejecting initial value" in error_message
+
+
+@pytest.mark.asyncio
+async def test_sampling_missing_data(api_url: str) -> None:
+    """Sampling failure due to missing data."""
+
+    program_code = """data {int N;} parameters {real y;} model {y ~ normal(0,1);}"""
+
+    payload = {"function": "stan::services::sample::hmc_nuts_diag_e_adapt", "random_seed": 1}
+    operation = await helpers.sample(api_url, program_code, payload)
+
+    assert operation["result"].get("code") == 400
+    assert "variable does not exist" in operation["result"]["message"]
