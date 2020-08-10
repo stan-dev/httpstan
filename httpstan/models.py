@@ -95,6 +95,20 @@ def import_services_extension_module(model_name: str) -> ModuleType:
     return module
 
 
+async def stanc_warnings(program_code: str) -> str:
+    """Call external `stanc` program, returning warnings.
+
+    Raises an exception if `program_code` does not compile.
+
+    """
+    # C++ model name must be a valid C++ identifier. Cannot start with number.
+    stan_model_name = f"model_{calculate_model_name(program_code).split('/')[1]}"
+    _, warnings = await asyncio.get_event_loop().run_in_executor(
+        None, httpstan.compile.compile, program_code, stan_model_name
+    )
+    return warnings
+
+
 async def generate_model_cpp_code(program_code: str) -> str:
     """Call external `stanc` program to generate C++ code from `program_code`.
 
@@ -112,7 +126,7 @@ async def generate_model_cpp_code(program_code: str) -> str:
     # C++ model name must be a valid C++ identifier. Cannot start with number.
     stan_model_name = f"model_{model_name.split('/')[1]}"
     logger.info(f"generating cpp for `{model_name}`.")
-    cpp_code = await asyncio.get_event_loop().run_in_executor(
+    cpp_code, _ = await asyncio.get_event_loop().run_in_executor(
         None, httpstan.compile.compile, program_code, stan_model_name
     )
     return cpp_code

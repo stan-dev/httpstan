@@ -85,6 +85,15 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
 
     program_code = args["program_code"]
     model_name = httpstan.models.calculate_model_name(program_code)
+
+    # compile `program_code` twice, first time only to check for errors and get warnings
+    try:
+        stanc_warnings = await httpstan.models.stanc_warnings(program_code)
+    except ValueError as exc:
+        message, status = f"Exception while compiling `program_code`: `{repr(exc)}`", 400
+        logger.critical(message)
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+
     try:
         httpstan.models.import_services_extension_module(model_name)
     except KeyError:
@@ -101,7 +110,9 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
     else:
         logger.info(f"Found Stan model in cache (`{model_name}`).")
     compiler_output = httpstan.cache.services_extension_module_compiler_output(model_name)
-    response_dict = schemas.Model().load({"name": model_name, "compiler_output": compiler_output})
+    response_dict = schemas.Model().load(
+        {"name": model_name, "compiler_output": compiler_output, "stanc_warnings": stanc_warnings}
+    )
     return aiohttp.web.json_response(response_dict, status=201)
 
 

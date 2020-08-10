@@ -3,10 +3,10 @@ import importlib.resources
 import os
 import subprocess
 import tempfile
-from typing import List, Union
+from typing import List, Tuple, Union
 
 
-def compile(program_code: str, stan_model_name: str) -> str:
+def compile(program_code: str, stan_model_name: str) -> Tuple[str, str]:
     """Return C++ code for Stan model specified by `program_code`.
 
     Arguments:
@@ -14,7 +14,7 @@ def compile(program_code: str, stan_model_name: str) -> str:
         stan_model_name
 
     Returns:
-        str: C++ code
+        (str, str): C++ code, warnings
 
     Raises:
         ValueError: Syntax or semantic error in program code.
@@ -32,9 +32,7 @@ def compile(program_code: str, stan_model_name: str) -> str:
                 fh.name,
             ]
             completed_process = subprocess.run(run_args, capture_output=True, timeout=1)
-    stderr = completed_process.stderr.decode()
-    if stderr:
-        # `strip` unnecessary newlines in stanc error message
-        raise ValueError(stderr.strip())
-
-    return completed_process.stdout.decode().strip()
+    stderr = completed_process.stderr.decode().strip()
+    if completed_process.returncode != 0:
+        raise ValueError(stderr)
+    return completed_process.stdout.decode().strip(), stderr
