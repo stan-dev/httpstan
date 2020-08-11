@@ -1,7 +1,9 @@
 """Runs the `stanc` binary in a subprocess to compile a Stan program."""
 import importlib.resources
+import os
 import subprocess
 import tempfile
+from typing import List, Union
 
 
 def compile(program_code: str, stan_model_name: str) -> str:
@@ -22,7 +24,7 @@ def compile(program_code: str, stan_model_name: str) -> str:
         with tempfile.NamedTemporaryFile() as fh:
             fh.write(program_code.encode())
             fh.flush()
-            run_args = [
+            run_args: List[Union[os.PathLike, str]] = [
                 stanc_binary,
                 "--name",
                 stan_model_name,
