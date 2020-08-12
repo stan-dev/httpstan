@@ -4,7 +4,7 @@ language: python
 # `compiler: gcc` does nothing. These only work when `language: cpp`.
 python: 3.7
 os: linux
-dist: bionic
+dist: focal
 jobs:
   - python: 3.7
   - python: 3.7
@@ -12,6 +12,10 @@ jobs:
       - CC=clang
   - python: 3.8
   - python: 3.8
+    env:
+      - CC=clang
+  - python: 3.9-dev
+  - python: 3.9-dev
     env:
       - CC=clang
   - os: osx
