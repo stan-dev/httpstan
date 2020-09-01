@@ -8,7 +8,6 @@ import asyncio
 import base64
 import hashlib
 import importlib
-from importlib.machinery import EXTENSION_SUFFIXES
 import importlib.resources
 import logging
 import os
@@ -17,6 +16,7 @@ import platform
 import shutil
 import string
 import sys
+from importlib.machinery import EXTENSION_SUFFIXES
 from types import ModuleType
 from typing import List, Optional, Tuple
 
