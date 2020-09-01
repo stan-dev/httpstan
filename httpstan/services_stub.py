@@ -18,9 +18,9 @@ import tempfile
 import typing
 
 import httpstan.cache
-from httpstan.config import HTTPSTAN_DEBUG
 import httpstan.models
 import httpstan.services.arguments as arguments
+from httpstan.config import HTTPSTAN_DEBUG
 
 executor = concurrent.futures.ProcessPoolExecutor()
 logger = logging.getLogger("httpstan")

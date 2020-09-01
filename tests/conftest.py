@@ -8,7 +8,9 @@ import httpstan.app
 
 
 @pytest.fixture
-async def server_host_port_pair(unused_tcp_port: int,) -> typing.AsyncGenerator[typing.Tuple[str, int], None]:
+async def server_host_port_pair(
+    unused_tcp_port: int,
+) -> typing.AsyncGenerator[typing.Tuple[str, int], None]:
     """Arrange event loop with httpstan server running.
 
     HTTP server shutdown is handled as well.

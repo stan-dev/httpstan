@@ -15,7 +15,11 @@ extensions = [
 ]
 
 redoc = [
-    {"name": "httpstan API", "page": "api", "spec": "openapi.yaml",},
+    {
+        "name": "httpstan API",
+        "page": "api",
+        "spec": "openapi.yaml",
+    },
 ]
 
 source_suffix = ".rst"
