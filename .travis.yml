@@ -30,14 +30,14 @@ before_install:
   - python --version
   - if [[ -n $CC ]]; then $CC --version; fi
 install:
-  - pip install "poetry<2,>=1.0" tox
+  - pip install "poetry<2,>=1.0"
   # These are build requirements. poetry does not offer a way to specify build requirements.
   - pip install "mypy-protobuf==1.21"
   - make  # generate Python protobuf files and build shared libraries
 script:
-  - tox
-  - poetry build -v
   # export test dependencies from pyproject.toml, install them
   - poetry export -f requirements.txt --dev -o requirements.txt && pip install -r requirements.txt
+  - scripts/check
+  - poetry build -v
   - python -m pip install dist/*.whl
   - mkdir testdir && cd testdir && python -m pytest -s -v --cov=httpstan --cov-fail-under=93 ../tests
