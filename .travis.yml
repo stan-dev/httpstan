@@ -41,5 +41,3 @@ script:
   - poetry export -f requirements.txt --dev -o requirements.txt && pip install -r requirements.txt
   - python -m pip install dist/*.whl
   - mkdir testdir && cd testdir && python -m pytest -s -v --cov=httpstan --cov-fail-under=93 ../tests
-after_success:
-  - bash <(curl -s https://codecov.io/bash)

@@ -128,7 +128,3 @@ User Guide
 .. |travis| image:: https://travis-ci.org/stan-dev/httpstan.png?branch=master
     :target: https://travis-ci.org/stan-dev/httpstan
     :alt: travis-ci build status
-
-.. |coveralls| image:: https://coveralls.io/repos/github/stan-dev/httpstan/badge.svg?branch=master
-    :target: https://coveralls.io/github/stan-dev/httpstan?branch=master
-    :alt: test coverage report
