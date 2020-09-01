@@ -130,7 +130,7 @@ async def fit_bytes(api_url: str, fit_name: str) -> bytes:
             assert resp.status == 200
             assert resp.headers["Content-Type"] == "application/octet-stream"
             fit_bytes = await resp.read()
-    return typing.cast(bytes, fit_bytes)
+    return fit_bytes
 
 
 async def sample_then_extract(
