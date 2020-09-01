@@ -37,9 +37,8 @@ install:
 script:
   # export test dependencies from pyproject.toml, install them
   - poetry export -f requirements.txt --dev -o requirements.txt && pip install -r requirements.txt
-  - scripts/check
-  - poetry build -v
-  - python -m pip install dist/*.whl
+  - scripts/check || travis_terminate 1
+  - poetry build -v && python -m pip install dist/*.whl
   - mkdir testdir && cd testdir && python -m pytest -s -v --cov=httpstan --cov-fail-under=93 ../tests
 after_success:
   - bash <(curl -s https://codecov.io/bash)
