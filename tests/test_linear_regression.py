@@ -41,6 +41,7 @@ async def test_linear_regression(api_url: str) -> None:
         "data": data,
         "num_samples": 500,
         "num_warmup": 500,
+        "random_seed": 1,
     }
     beta_0 = await helpers.sample_then_extract(api_url, program_code, payload, "beta.1")
     assert all(np.abs(beta_0 - np.array(beta_true)[0]) < 0.05)
