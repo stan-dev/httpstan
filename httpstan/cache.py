@@ -2,6 +2,7 @@
 
 Functions in this module manage the Stan model cache and related caches.
 """
+import gzip
 import logging
 import os
 import pathlib
@@ -37,6 +38,8 @@ def dump_fit(name: str, fit_bytes: bytes) -> None:
 
     This function is a coroutine.
 
+    This function uses gzip to compress the cache.
+
     Arguments:
         name: Stan fit name
         fit_bytes: Bytes of the Stan fit.
@@ -45,9 +48,9 @@ def dump_fit(name: str, fit_bytes: bytes) -> None:
     cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
     # fits are stored under their "parent" models
     fit_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
-    fit_filename = os.path.join(fit_path, f'{name.split("/")[-1]}.dat')
+    fit_filename = os.path.join(fit_path, f'{name.split("/")[-1]}.dat.gz')
     os.makedirs(fit_path, exist_ok=True)
-    with open(fit_filename, "wb") as fh:
+    with gzip.open(fit_filename, mode="wb") as fh:
         fh.write(fit_bytes)
 
 
@@ -55,6 +58,8 @@ def load_fit(name: str) -> bytes:
     """Load Stan fit from the filesystem-based cache.
 
     This function is a coroutine.
+
+    This function uses gzip to decompress the cache.
 
     Arguments:
         name: Stan fit name
@@ -67,9 +72,9 @@ def load_fit(name: str) -> bytes:
     cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
     # fits are stored under their "parent" models
     fit_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
-    fit_filename = os.path.join(fit_path, f'{name.split("/")[-1]}.dat')
+    fit_filename = os.path.join(fit_path, f'{name.split("/")[-1]}.dat.gz')
     try:
-        with open(fit_filename, "rb") as fh:
+        with gzip.open(fit_filename, mode="rb") as fh:
             return fh.read()
     except FileNotFoundError:
         raise KeyError(f"Fit `{name}` not found.")
