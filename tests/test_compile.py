@@ -1,4 +1,5 @@
 """Test compiling functions."""
+import re
 
 import aiohttp
 import pytest
@@ -44,6 +45,12 @@ async def test_build_invalid_distribution(api_url: str) -> None:
             response_payload = await resp.json()
     assert "message" in response_payload
     assert "Semantic error in" in response_payload["message"]
+
+
+def test_compile_filename() -> None:
+    program_code = "parameters {real y;} model {y ~ normal(0,1);}"
+    cpp_code, _ = httpstan.compile.compile(program_code, "test_model")
+    assert re.search(r"httpstan_\S+/test_model.stan", cpp_code)
 
 
 @pytest.mark.asyncio

@@ -21,15 +21,17 @@ def compile(program_code: str, stan_model_name: str) -> Tuple[str, str]:
 
     """
     with importlib.resources.path(__package__, "stanc") as stanc_binary:
-        with tempfile.NamedTemporaryFile() as fh:
-            fh.write(program_code.encode())
-            fh.flush()
+        with tempfile.TemporaryDirectory(prefix="httpstan_") as tmpdir:
+            filepath = os.path.join(tmpdir, f"{stan_model_name}.stan")
+            with open(filepath, "w") as fh:
+                fh.write(program_code)
             run_args: List[Union[os.PathLike, str]] = [
                 stanc_binary,
                 "--name",
                 stan_model_name,
+                "--warn-pedantic",
                 "--print-cpp",
-                fh.name,
+                filepath,
             ]
             completed_process = subprocess.run(run_args, capture_output=True, timeout=1)
     stderr = completed_process.stderr.decode().strip()
