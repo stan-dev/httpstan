@@ -78,7 +78,7 @@ async def test_bernoulli_unacceptable_arg(api_url: str) -> None:
     async with aiohttp.ClientSession() as session:
         async with session.post(fits_url, json=payload) as resp:
             assert resp.status == 422
-            assert "data" in (await resp.json())
+            assert "json" in (await resp.json()) and "data" in (await resp.json())["json"]
 
 
 @pytest.mark.asyncio
@@ -91,7 +91,7 @@ async def test_bernoulli_unknown_arg(api_url: str) -> None:
     async with aiohttp.ClientSession() as session:
         async with session.post(fits_url, json=payload) as resp:
             assert resp.status == 422
-            assert "unknown_arg" in (await resp.json())
+            assert "json" in (await resp.json()) and "unknown_arg" in (await resp.json())["json"]
 
 
 @pytest.mark.asyncio

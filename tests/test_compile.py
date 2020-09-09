@@ -68,7 +68,7 @@ async def test_build_unknown_arg(api_url: str) -> None:
         async with session.post(models_url, json=payload) as resp:
             assert resp.status == 422
             response_payload = await resp.json()
-    assert "unknown_arg" in response_payload
+    assert "json" in response_payload and "unknown_arg" in response_payload["json"]
 
 
 @pytest.mark.asyncio

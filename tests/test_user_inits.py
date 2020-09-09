@@ -83,5 +83,5 @@ async def test_user_inits_invalid_value(api_url: str) -> None:
         async with session.post(fits_url, json=payload) as resp:
             assert resp.status == 422
             response_payload = await resp.json()
-    assert response_payload.get("init")
-    assert response_payload["init"]["_schema"].pop() == "Invalid input type."
+    assert "json" in response_payload and response_payload["json"].get("init")
+    assert response_payload["json"]["init"]["_schema"].pop() == "Invalid input type."
