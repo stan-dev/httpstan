@@ -38,7 +38,12 @@ async def test_models_actions_bad_args(api_url: str) -> None:
     async with aiohttp.ClientSession() as session:
         async with session.post(fits_url, json=payload) as resp:
             assert resp.status == 422
-            assert (await resp.json()) == {"function": ["Missing data for required field."]}
+            response_dict = await resp.json()
+            assert "json" in response_dict
+            assert response_dict["json"] == {
+                "function": ["Missing data for required field."],
+                "wrong_key": ["Unknown field."],
+            }
 
 
 @pytest.mark.asyncio

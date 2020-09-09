@@ -73,15 +73,6 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
 
     """
     args = await webargs.aiohttpparser.parser.parse(schemas.CreateModelRequest(), request)
-    # the following block is a hotfix for a webargs issue which
-    # should be resolved in 2019, see https://github.com/marshmallow-code/webargs/issues/267
-    # remove the block as soon as the issue is fixed (behavior should remain the same)
-    import marshmallow.exceptions
-
-    try:
-        schemas.CreateModelRequest().load(await request.json())
-    except marshmallow.exceptions.ValidationError as ex:
-        return aiohttp.web.json_response(ex.messages, status=422)
 
     program_code = args["program_code"]
     model_name = httpstan.models.calculate_model_name(program_code)
@@ -245,15 +236,6 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     """
     model_name = f'models/{request.match_info["model_id"]}'
     args = await webargs.aiohttpparser.parser.parse(schemas.CreateFitRequest(), request)
-    # the following block is a hotfix for a webargs issue which
-    # should be resolved in 2019, see https://github.com/marshmallow-code/webargs/issues/267
-    # remove the block as soon as the issue is fixed (behavior should remain the same)
-    import marshmallow.exceptions
-
-    try:
-        schemas.CreateFitRequest().load(await request.json())
-    except marshmallow.exceptions.ValidationError as ex:
-        return aiohttp.web.json_response(ex.messages, status=422)
 
     try:
         httpstan.models.import_services_extension_module(model_name)
