@@ -21,7 +21,17 @@ def model_directory(model_name: str) -> str:
     return os.path.join(cache_path, "models", model_id)
 
 
-def services_extension_module_compiler_output(model_name: str) -> str:
+def dump_services_extension_module_compiler_output(compiler_output: str, model_name: str) -> None:
+    """Dump compiler output from building a model-specific stan::services extension module."""
+    # may raise KeyError
+    model_directory_ = pathlib.Path(model_directory(model_name))
+    if not model_directory_.exists():
+        raise KeyError(f"Directory for `{model_name}` at `{model_directory}` does not exist.")
+    with open(model_directory_ / "stderr.log", "w") as fh:
+        fh.write(compiler_output)
+
+
+def load_services_extension_module_compiler_output(model_name: str) -> str:
     """Load compiler output from building a model-specific stan::services extension module."""
     # may raise KeyError
     model_directory_ = pathlib.Path(model_directory(model_name))

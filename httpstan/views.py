@@ -90,7 +90,7 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
     except KeyError:
         logger.info(f"Building model-specific services extension module for `{model_name}`.")
         try:
-            await httpstan.models.build_services_extension_module(program_code)
+            compiler_output = await httpstan.models.build_services_extension_module(program_code)
         except Exception as exc:
             message, status = (
                 f"Exception while building model extension module: `{repr(exc)}`, traceback: `{traceback.format_tb(exc.__traceback__)}`",
@@ -98,9 +98,10 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
             )
             logger.critical(message)
             return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+        httpstan.cache.dump_services_extension_module_compiler_output(compiler_output, model_name)
     else:
         logger.info(f"Found Stan model in cache (`{model_name}`).")
-    compiler_output = httpstan.cache.services_extension_module_compiler_output(model_name)
+    compiler_output = httpstan.cache.load_services_extension_module_compiler_output(model_name)
     response_dict = schemas.Model().load(
         {"name": model_name, "compiler_output": compiler_output, "stanc_warnings": stanc_warnings}
     )
