@@ -13,7 +13,6 @@ import logging
 import os
 import pathlib
 import platform
-import shutil
 import string
 import sys
 from importlib.machinery import EXTENSION_SUFFIXES
@@ -129,16 +128,13 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     model_name = calculate_model_name(program_code)
     model_directory_path = pathlib.Path(httpstan.cache.model_directory(model_name))
 
-    # delete model directory if it exists
-    shutil.rmtree(model_directory_path, ignore_errors=True)
     os.makedirs(model_directory_path, exist_ok=True)
 
     module_name = f"services_{model_name.split('/')[1]}"
     cpp_code_path = model_directory_path / f"{module_name}.hpp"
     pyx_code_path = cpp_code_path.with_suffix(".pyx")
-    cpp_code, _ = await asyncio.get_event_loop().run_in_executor(
-        None, httpstan.compile.compile, program_code, model_name
-    )
+    stan_model_name = f"model_{model_name.split('/')[1]}"
+    cpp_code, _ = httpstan.compile.compile(program_code, stan_model_name)
     pyx_code = services_extension_module_pyx_code(cpp_code_path)
     for path, code in zip([cpp_code_path, pyx_code_path], [cpp_code, pyx_code]):
         with open(path, "w") as fh:
