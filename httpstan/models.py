@@ -68,7 +68,6 @@ def calculate_model_name(program_code: str) -> str:
 
 
 def import_services_extension_module(model_name: str) -> ModuleType:
-
     """Load an existing model-specific stan::services extension module.
 
     Arguments:
@@ -76,7 +75,6 @@ def import_services_extension_module(model_name: str) -> ModuleType:
 
     Returns:
         module: loaded module handle.
-        str: Compiler output.
 
     Raises:
         KeyError: Model not found.
