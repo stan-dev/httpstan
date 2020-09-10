@@ -77,9 +77,9 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
     program_code = args["program_code"]
     model_name = httpstan.models.calculate_model_name(program_code)
 
-    # compile `program_code` twice, first time only to check for errors and get warnings
+    # compile `program_code` to check for fatal errors
     try:
-        stanc_warnings = await httpstan.models.stanc_warnings(program_code)
+        await httpstan.compile.compile(program_code, model_name)
     except ValueError as exc:
         message, status = f"Exception while compiling `program_code`: `{repr(exc)}`", 400
         logger.critical(message)
@@ -90,6 +90,7 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
     except KeyError:
         logger.info(f"Building model-specific services extension module for `{model_name}`.")
         try:
+            # `build_services_extension_module` has side-effect of storing extension module in cache
             compiler_output = await httpstan.models.build_services_extension_module(program_code)
         except Exception as exc:
             message, status = (

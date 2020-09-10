@@ -40,6 +40,26 @@ def load_services_extension_module_compiler_output(model_name: str) -> str:
     with open(model_directory_ / "stderr.log") as fh:
         return fh.read()
 
+def dump_stanc_warnings(stanc_warnings: str, model_name: str) -> None:
+    """Dump stanc warnings associated with a model."""
+    # may raise KeyError
+    model_directory_ = pathlib.Path(model_directory(model_name))
+    if not model_directory_.exists():
+        raise KeyError(f"Directory for `{model_name}` at `{model_directory}` does not exist.")
+    with open(model_directory_ / "stanc.log", "w") as fh:
+        fh.write(stanc_warnings)
+
+
+def load_stanc_warnings(model_name: str) -> str:
+    """Load stanc output associated with a model."""
+    # may raise KeyError
+    model_directory_ = pathlib.Path(model_directory(model_name))
+    if not model_directory_.exists():
+        raise KeyError(f"Directory for `{model_name}` at `{model_directory}` does not exist.")
+    with open(model_directory_ / "stanc.log") as fh:
+        return fh.read()
+
+
 
 def dump_fit(fit_bytes: bytes, name: str) -> None:
     """Store Stan fit in filesystem-based cache.
