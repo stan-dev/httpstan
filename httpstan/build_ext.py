@@ -29,14 +29,14 @@ def _get_build_extension() -> distutils.command.build_ext.build_ext:  # type: ig
     return build_extension
 
 
-def run_build_ext(extensions: List[distutils.core.Extension], build_lib: str) -> None:
+def run_build_ext(extensions: List[distutils.core.Extension], build_lib: str) -> str:
     """Configure and call `build_ext.run()`, capturing stderr.
 
     Compiled extension module will be placed in `build_lib`.
 
     `Extension`s are passed through ` Cython.Build.cythonize`.
 
-    All messages sent to stderr will be placed in `build_lib/stderr.log`. These
+    All messages sent to stderr will be saved and returned. These
     messages are typically messages from the compiler or linker.
 
     """
@@ -105,5 +105,5 @@ def run_build_ext(extensions: List[distutils.core.Extension], build_lib: str) ->
             # restore
             os.dup2(orig_stderr, sys.stderr.fileno())
             os.dup2(orig_stdout, sys.stdout.fileno())
-        with open(os.path.join(build_lib, "stderr.log"), "w") as fh:
-            fh.write(compiler_output)
+
+    return compiler_output
