@@ -135,7 +135,7 @@ async def call(
                 await asyncio.sleep(0.001)
 
     messages_file.flush()
-    httpstan.cache.dump_fit(fit_name, messages_file.getvalue())
+    httpstan.cache.dump_fit(messages_file.getvalue(), fit_name)
     messages_file.close()
     # `result()` method will raise exceptions, if any
     future.result()
