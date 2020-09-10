@@ -14,7 +14,7 @@ def compile(program_code: str, stan_model_name: str) -> Tuple[str, str]:
         stan_model_name
 
     Returns:
-        (str, str): C++ code, warnings
+        (str, str): C++ code, stanc warnings
 
     Raises:
         ValueError: Syntax or semantic error in program code.

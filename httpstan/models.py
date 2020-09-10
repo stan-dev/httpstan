@@ -93,43 +93,6 @@ def import_services_extension_module(model_name: str) -> ModuleType:
     return module
 
 
-async def stanc_warnings(program_code: str) -> str:
-    """Call external `stanc` program, returning warnings.
-
-    Raises an exception if `program_code` does not compile.
-
-    """
-    # C++ model name must be a valid C++ identifier. Cannot start with number.
-    stan_model_name = f"model_{calculate_model_name(program_code).split('/')[1]}"
-    _, warnings = await asyncio.get_event_loop().run_in_executor(
-        None, httpstan.compile.compile, program_code, stan_model_name
-    )
-    return warnings
-
-
-async def generate_model_cpp_code(program_code: str) -> str:
-    """Call external `stanc` program to generate C++ code from `program_code`.
-
-    This is a coroutine function.
-
-    Arguments:
-        program_code: Stan program code.
-        stan_model_name: C++ model name.
-
-    Returns:
-        str: C++ code.
-
-    """
-    model_name = calculate_model_name(program_code)
-    # C++ model name must be a valid C++ identifier. Cannot start with number.
-    stan_model_name = f"model_{model_name.split('/')[1]}"
-    logger.info(f"generating cpp for `{model_name}`.")
-    cpp_code, _ = await asyncio.get_event_loop().run_in_executor(
-        None, httpstan.compile.compile, program_code, stan_model_name
-    )
-    return cpp_code
-
-
 def services_extension_module_pyx_code(cpp_code_path: pathlib.Path) -> str:
     """Return Cython code wrapping model-specific stan::services functions.
 
@@ -173,8 +136,9 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     module_name = f"services_{model_name.split('/')[1]}"
     cpp_code_path = model_directory_path / f"{module_name}.hpp"
     pyx_code_path = cpp_code_path.with_suffix(".pyx")
-
-    cpp_code = await generate_model_cpp_code(program_code)
+    cpp_code, _ = await asyncio.get_event_loop().run_in_executor(
+        None, httpstan.compile.compile, program_code, model_name
+    )
     pyx_code = services_extension_module_pyx_code(cpp_code_path)
     for path, code in zip([cpp_code_path, pyx_code_path], [cpp_code, pyx_code]):
         with open(path, "w") as fh:
