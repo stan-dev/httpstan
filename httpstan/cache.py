@@ -6,6 +6,7 @@ import gzip
 import logging
 import os
 import pathlib
+import shutil
 
 import appdirs
 
@@ -21,12 +22,15 @@ def model_directory(model_name: str) -> str:
     return os.path.join(cache_path, "models", model_id)
 
 
+def delete_model_directory(model_name: str) -> None:
+    """Delete the directory in which a model and associated fits are stored."""
+    shutil.rmtree(model_directory(model_name), ignore_errors=True)
+
+
 def dump_services_extension_module_compiler_output(compiler_output: str, model_name: str) -> None:
     """Dump compiler output from building a model-specific stan::services extension module."""
-    # may raise KeyError
     model_directory_ = pathlib.Path(model_directory(model_name))
-    if not model_directory_.exists():
-        raise KeyError(f"Directory for `{model_name}` at `{model_directory}` does not exist.")
+    model_directory_.mkdir(parents=True, exist_ok=True)
     with open(model_directory_ / "stderr.log", "w") as fh:
         fh.write(compiler_output)
 
@@ -40,12 +44,11 @@ def load_services_extension_module_compiler_output(model_name: str) -> str:
     with open(model_directory_ / "stderr.log") as fh:
         return fh.read()
 
+
 def dump_stanc_warnings(stanc_warnings: str, model_name: str) -> None:
     """Dump stanc warnings associated with a model."""
-    # may raise KeyError
     model_directory_ = pathlib.Path(model_directory(model_name))
-    if not model_directory_.exists():
-        raise KeyError(f"Directory for `{model_name}` at `{model_directory}` does not exist.")
+    model_directory_.mkdir(parents=True, exist_ok=True)
     with open(model_directory_ / "stanc.log", "w") as fh:
         fh.write(stanc_warnings)
 
@@ -58,7 +61,6 @@ def load_stanc_warnings(model_name: str) -> str:
         raise KeyError(f"Directory for `{model_name}` at `{model_directory}` does not exist.")
     with open(model_directory_ / "stanc.log") as fh:
         return fh.read()
-
 
 
 def dump_fit(fit_bytes: bytes, name: str) -> None:

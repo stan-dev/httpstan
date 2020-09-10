@@ -77,32 +77,48 @@ async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
     program_code = args["program_code"]
     model_name = httpstan.models.calculate_model_name(program_code)
 
-    # compile `program_code` to check for fatal errors
+    # check if extension module is present in cache
     try:
-        await httpstan.compile.compile(program_code, model_name)
+        httpstan.models.import_services_extension_module(model_name)
+    except KeyError:
+        pass
+    else:
+        logger.info(f"Found Stan model in cache (`{model_name}`).")
+        compiler_output = httpstan.cache.load_services_extension_module_compiler_output(model_name)
+        stanc_warnings = httpstan.cache.load_stanc_warnings(model_name)
+        response_dict = schemas.Model().load(
+            {"name": model_name, "compiler_output": compiler_output, "stanc_warnings": stanc_warnings}
+        )
+        return aiohttp.web.json_response(response_dict, status=201)
+
+    # extension module is not in cache
+
+    # clean the directory in which the model will be compiled.
+    httpstan.cache.delete_model_directory(model_name)
+
+    # compile `program_code` to check for fatal errors. If none, save stanc warnings
+    stan_model_name = f"model_{model_name.split('/')[1]}"  # stan name cannot start with number
+    try:
+        _, stanc_warnings = httpstan.compile.compile(program_code, stan_model_name)
     except ValueError as exc:
         message, status = f"Exception while compiling `program_code`: `{repr(exc)}`", 400
         logger.critical(message)
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+    httpstan.cache.dump_stanc_warnings(stanc_warnings, model_name)
 
+    # no fatal stanc errors, continue
+    logger.info(f"Building model-specific services extension module for `{model_name}`.")
     try:
-        httpstan.models.import_services_extension_module(model_name)
-    except KeyError:
-        logger.info(f"Building model-specific services extension module for `{model_name}`.")
-        try:
-            # `build_services_extension_module` has side-effect of storing extension module in cache
-            compiler_output = await httpstan.models.build_services_extension_module(program_code)
-        except Exception as exc:
-            message, status = (
-                f"Exception while building model extension module: `{repr(exc)}`, traceback: `{traceback.format_tb(exc.__traceback__)}`",
-                400,
-            )
-            logger.critical(message)
-            return aiohttp.web.json_response(_make_error(message, status=status), status=status)
-        httpstan.cache.dump_services_extension_module_compiler_output(compiler_output, model_name)
-    else:
-        logger.info(f"Found Stan model in cache (`{model_name}`).")
-    compiler_output = httpstan.cache.load_services_extension_module_compiler_output(model_name)
+        # `build_services_extension_module` has side-effect of storing extension module in cache
+        compiler_output = await httpstan.models.build_services_extension_module(program_code)
+    except Exception as exc:
+        message, status = (
+            f"Exception while building model extension module: `{repr(exc)}`, traceback: `{traceback.format_tb(exc.__traceback__)}`",
+            400,
+        )
+        logger.critical(message)
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+    httpstan.cache.dump_services_extension_module_compiler_output(compiler_output, model_name)
     response_dict = schemas.Model().load(
         {"name": model_name, "compiler_output": compiler_output, "stanc_warnings": stanc_warnings}
     )
