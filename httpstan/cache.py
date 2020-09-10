@@ -31,7 +31,7 @@ def services_extension_module_compiler_output(model_name: str) -> str:
         return fh.read()
 
 
-def dump_fit(name: str, fit_bytes: bytes) -> None:
+def dump_fit(fit_bytes: bytes, name: str) -> None:
     """Store Stan fit in filesystem-based cache.
 
     The Stan fit is passed via ``fit_bytes``.
