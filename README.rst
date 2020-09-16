@@ -29,7 +29,7 @@ Documentation: `https://httpstan.readthedocs.org <https://httpstan.readthedocs.o
 Requirements
 ============
 
-- Python version 3.6 or higher.
+- Python version 3.7 or higher.
 - macOS or Linux.
 
 Background
@@ -70,7 +70,7 @@ program::
 
 This request will return a model name along with all the compiler output::
 
-    {"name": "models/xc2pdjb4", "compiler_output": "In file included from …"}
+    {"compiler_output": "In file included from …", "stanc_warnings": "", "name": "models/xc2pdjb4"}
 
 (The model ``name`` depends on the platform and the version of Stan.)
 
