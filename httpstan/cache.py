@@ -7,6 +7,8 @@ import logging
 import os
 import pathlib
 import shutil
+import typing
+from importlib.machinery import EXTENSION_SUFFIXES
 
 import appdirs
 
@@ -43,6 +45,26 @@ def load_services_extension_module_compiler_output(model_name: str) -> str:
         raise KeyError(f"Directory for `{model_name}` at `{model_directory}` does not exist.")
     with open(model_directory_ / "stderr.log") as fh:
         return fh.read()
+
+
+def list_model_names() -> typing.List[str]:
+    """Return model names (e.g., `models/dyeicfn2`) for models in cache."""
+    cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
+    models_directory = pathlib.Path(os.path.join(cache_path, "models"))
+    if not models_directory.exists():
+        return []
+
+    def has_extension_suffix(path: pathlib.Path) -> bool:
+        return path.suffix in EXTENSION_SUFFIXES
+
+    model_names = []
+    for item in models_directory.iterdir():
+        if not item.is_dir():
+            continue
+        # look for a compiled extension module, file with a suffix in EXTENSION_SUFFIXES
+        if any(map(has_extension_suffix, item.iterdir())):
+            model_names.append(f"models/{item.name}")
+    return model_names
 
 
 def dump_stanc_warnings(stanc_warnings: str, model_name: str) -> None:

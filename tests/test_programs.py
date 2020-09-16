@@ -14,7 +14,7 @@ program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 
 
 @pytest.mark.asyncio
-async def test_models(api_url: str) -> None:
+async def test_create_model(api_url: str) -> None:
     """Test compilation of an extension module."""
 
     models_url = f"{api_url}/models"
@@ -24,6 +24,22 @@ async def test_models(api_url: str) -> None:
             assert resp.status == 201
             response_payload = await resp.json()
             assert "name" in response_payload
+
+
+@pytest.mark.asyncio
+async def test_list_models(api_url: str) -> None:
+    """Test cached model listing."""
+
+    models_url = f"{api_url}/models"
+    payload = {"program_code": program_code}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(models_url, json=payload) as resp:
+            assert resp.status == 200
+            response_payload = await resp.json()
+    assert "models" in response_payload
+    assert "name" in response_payload["models"].pop()
+    assert "compiler_output" in response_payload["models"].pop()
+    assert "stanc_warnings" in response_payload["models"].pop()
 
 
 @pytest.mark.asyncio
