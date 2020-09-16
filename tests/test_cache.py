@@ -1,8 +1,13 @@
 """Test services function argument lookups."""
 import pathlib
 
+import pytest
+
 import httpstan.app
 import httpstan.cache
+import httpstan.models
+
+import helpers
 
 
 def test_model_directory() -> None:
@@ -10,3 +15,14 @@ def test_model_directory() -> None:
     model_directory = httpstan.cache.model_directory(model_name)
     model_dirpath = pathlib.Path(model_directory)
     assert model_dirpath.name == "abcdef"
+
+
+@pytest.mark.asyncio
+async def test_list_model_names(api_url: str) -> None:
+    program_code = "parameters {real y;} model {y ~ normal(0,1);}"
+    model_name = httpstan.models.calculate_model_name(program_code)
+    payload = {"function": "stan::services::sample::hmc_nuts_diag_e_adapt"}
+    operation = await helpers.sample(api_url, program_code, payload)
+    assert operation
+    model_names = httpstan.cache.list_model_names()
+    assert len(model_names) > 0 and model_name in model_names

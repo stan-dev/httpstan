@@ -125,6 +125,38 @@ async def handle_create_model(request: aiohttp.web.Request) -> aiohttp.web.Respo
     return aiohttp.web.json_response(response_dict, status=201)
 
 
+async def handle_list_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    """List cached models.
+
+    ---
+    get:
+      description: List cached models.
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Identifier for compiled Stan model and compiler output.
+          schema: Model
+          schema:
+            type: object
+            properties:
+              models:
+                type: array
+                items: Model
+    """
+
+    models = []
+    for model_name in httpstan.cache.list_model_names():
+        compiler_output = httpstan.cache.load_services_extension_module_compiler_output(model_name)
+        stanc_warnings = httpstan.cache.load_stanc_warnings(model_name)
+        models.append(
+            schemas.Model().load(
+                {"name": model_name, "compiler_output": compiler_output, "stanc_warnings": stanc_warnings}
+            )
+        )
+    return aiohttp.web.json_response({"models": models}, status=200)
+
+
 async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Show parameter names and dimensions.
 
