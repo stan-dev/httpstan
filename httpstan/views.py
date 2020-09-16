@@ -47,7 +47,7 @@ async def handle_health(request: aiohttp.web.Request) -> aiohttp.web.Response:
     return aiohttp.web.Response(text="httpstan is running.")
 
 
-async def handle_models(request: aiohttp.web.Request) -> aiohttp.web.Response:
+async def handle_create_model(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Compile Stan model.
 
     ---
