@@ -414,6 +414,49 @@ async def handle_get_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
     return aiohttp.web.Response(body=fit_bytes)
 
 
+async def handle_delete_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    """Delete a fit.
+
+    Delete a fit which has been saved in the cache.
+
+    ---
+    delete:
+      summary: Delete a fit.
+      description: Delete a fit which has been saved in the cache.
+      produces:
+        - application/json
+      parameters:
+        - name: model_id
+          in: path
+          description: ID of Stan model associated with the fit.
+          required: true
+          type: string
+        - name: fit_id
+          in: path
+          description: ID of fit to be deleted.
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Fit successfully deleted.
+        "404":
+          description: Fit not found.
+          schema: Status
+    """
+    model_name = f"models/{request.match_info['model_id']}"
+    fit_name = f"{model_name}/fits/{request.match_info['fit_id']}"
+
+    try:
+        httpstan.cache.load_fit(fit_name)
+    except KeyError:
+        message, status = f"Fit `{fit_name}` not found.", 404
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+
+    httpstan.cache.delete_fit(fit_name)
+
+    return aiohttp.web.Response(text="OK")
+
+
 async def handle_get_operation(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Get Operation.
 
