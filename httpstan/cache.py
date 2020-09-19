@@ -132,3 +132,15 @@ def load_fit(name: str) -> bytes:
             return fh.read()
     except FileNotFoundError:
         raise KeyError(f"Fit `{name}` not found.")
+
+
+def delete_fit(name: str) -> None:
+    """Delete Stan fit from the filesystem-based cache.
+
+    Arguments:
+        name: Stan fit name
+    """
+    cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
+    fits_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
+    fit_id = name.split("/")[-1]
+    pathlib.Path(os.path.join(fits_path, f"{fit_id}.dat.gz")).unlink()
