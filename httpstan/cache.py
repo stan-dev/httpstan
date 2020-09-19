@@ -99,9 +99,9 @@ def dump_fit(fit_bytes: bytes, name: str) -> None:
     """
     cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
     # fits are stored under their "parent" models
-    fit_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
-    fit_filename = os.path.join(fit_path, f'{name.split("/")[-1]}.dat.gz')
-    os.makedirs(fit_path, exist_ok=True)
+    fits_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
+    fit_filename = os.path.join(fits_path, f'{name.split("/")[-1]}.dat.gz')
+    os.makedirs(fits_path, exist_ok=True)
     with gzip.open(fit_filename, mode="wb") as fh:
         fh.write(fit_bytes)
 
@@ -121,8 +121,8 @@ def load_fit(name: str) -> bytes:
     """
     cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
     # fits are stored under their "parent" models
-    fit_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
-    fit_filename = os.path.join(fit_path, f'{name.split("/")[-1]}.dat.gz')
+    fits_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
+    fit_filename = os.path.join(fits_path, f'{name.split("/")[-1]}.dat.gz')
     try:
         with gzip.open(fit_filename, mode="rb") as fh:
             return fh.read()
