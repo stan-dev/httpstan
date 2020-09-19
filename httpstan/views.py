@@ -157,6 +157,46 @@ async def handle_list_models(request: aiohttp.web.Request) -> aiohttp.web.Respon
     return aiohttp.web.json_response({"models": models}, status=200)
 
 
+async def handle_delete_model(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    """Delete a model and any associated fits.
+
+    Delete a model which has been saved in the cache. Any fits associated
+    with the model will also be deleted.
+
+    ---
+    delete:
+      summary: Delete a model and any associated fits.
+      description: >-
+        Delete a model which has been saved in the cache.
+      produces:
+        - application/json
+      parameters:
+        - name: model_id
+          in: path
+          description: ID of Stan model
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Model successfully deleted.
+        "404":
+          description: Model not found.
+          schema: Status
+    """
+    model_name = f"models/{request.match_info['model_id']}"
+
+    try:
+        httpstan.models.import_services_extension_module(model_name)
+    except KeyError:
+        message, status = f"Model `{model_name}` not found.", 404
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+
+    # delete the directory in which the model and fits are stored
+    httpstan.cache.delete_model_directory(model_name)
+
+    return aiohttp.web.Response(text="OK")
+
+
 async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Show parameter names and dimensions.
 
