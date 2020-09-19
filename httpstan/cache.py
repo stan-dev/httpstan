@@ -90,8 +90,6 @@ def dump_fit(fit_bytes: bytes, name: str) -> None:
 
     The Stan fit is passed via ``fit_bytes``.
 
-    This function is a coroutine.
-
     This function uses gzip to compress the cache.
 
     Arguments:
@@ -110,8 +108,6 @@ def dump_fit(fit_bytes: bytes, name: str) -> None:
 
 def load_fit(name: str) -> bytes:
     """Load Stan fit from the filesystem-based cache.
-
-    This function is a coroutine.
 
     This function uses gzip to decompress the cache.
 
