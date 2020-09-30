@@ -19,6 +19,8 @@ from httpstan.config import HTTPSTAN_DEBUG
 
 
 def _get_build_extension() -> distutils.command.build_ext.build_ext:  # type: ignore
+    if HTTPSTAN_DEBUG:
+        distutils.log.set_verbosity(distutils.log.DEBUG)  # type: ignore
     dist = distutils.core.Distribution()
     # Make sure build respects distutils configuration
     dist.parse_config_files(dist.find_config_files())  # type: ignore
