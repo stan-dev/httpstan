@@ -89,7 +89,7 @@ class CreateFitRequest(marshmallow.Schema):
 
     Only one algorithm is currently supported: ``hmc_nuts_diag_e_adapt``.
 
-    Sampler parameters can be found in ``httpstan/stan.pxd``.
+    Sampler parameters can be found in ``httpstan/stan_services.cpp``.
 
     """
 

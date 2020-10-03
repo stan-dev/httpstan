@@ -13,7 +13,6 @@ import logging
 import os
 import pathlib
 import platform
-import string
 import sys
 from importlib.machinery import EXTENSION_SUFFIXES
 from types import ModuleType
@@ -84,26 +83,15 @@ def import_services_extension_module(model_name: str) -> ModuleType:
         module_path = next(filter(lambda p: p.suffix in EXTENSION_SUFFIXES, model_directory.iterdir()))
     except (FileNotFoundError, StopIteration):
         raise KeyError(f"No module for `{model_name}` found in `{model_directory}`")
-    module_name = pathlib.Path(module_path.stem).stem
-    spec = importlib.util.spec_from_file_location(module_name, module_path)  # type: ignore
+    # The module name, which is independent of the filename, is always "stan_services". The module
+    # name must be defined in stan_services.cpp, which is compiled before we know with which
+    # specific stan model it will be linked with. Since we want to compile stan_services.cpp in
+    # advance, we are stuck with a fixed module name.
+    spec = importlib.util.spec_from_file_location("stan_services", module_path)  # type: ignore
     module: ModuleType = importlib.util.module_from_spec(spec)  # type: ignore
     spec.loader.exec_module(module)
 
     return module
-
-
-def services_extension_module_pyx_code(cpp_code_path: pathlib.Path) -> str:
-    """Return Cython code wrapping model-specific stan::services functions.
-
-    Arguments:
-        cpp_code_path: Path to Stan model C++ code.
-
-    Returns:
-        str: Cython wrapping code.
-    """
-
-    pyx_code_template = importlib.resources.read_text(__package__, "anonymous_stan_model_services.pyx.template")
-    return string.Template(pyx_code_template).substitute(cpp_filename=cpp_code_path.as_posix())
 
 
 async def build_services_extension_module(program_code: str, extra_compile_args: Optional[List[str]] = None) -> str:
@@ -130,15 +118,11 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
 
     os.makedirs(model_directory_path, exist_ok=True)
 
-    module_name = f"services_{model_name.split('/')[1]}"
-    cpp_code_path = model_directory_path / f"{module_name}.hpp"
-    pyx_code_path = cpp_code_path.with_suffix(".pyx")
     stan_model_name = f"model_{model_name.split('/')[1]}"
     cpp_code, _ = httpstan.compile.compile(program_code, stan_model_name)
-    pyx_code = services_extension_module_pyx_code(cpp_code_path)
-    for path, code in zip([cpp_code_path, pyx_code_path], [cpp_code, pyx_code]):
-        with open(path, "w") as fh:
-            fh.write(code)
+    cpp_code_path = model_directory_path / f"{stan_model_name}.cpp"
+    with open(cpp_code_path, "w") as fh:
+        fh.write(cpp_code)
 
     httpstan_dir = os.path.dirname(__file__)
     callbacks_writer_pb_path = pathlib.Path(httpstan_dir) / "callbacks_writer.pb.cc"
@@ -171,9 +155,13 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     if platform.system() == "Darwin":
         libraries.extend(["tbbmalloc", "tbbmalloc_proxy"])
     extension = setuptools.Extension(
-        module_name,
+        f"stan_services_{stan_model_name}",  # filename only. Module name is "stan_services"
         language="c++",
-        sources=[pyx_code_path.as_posix(), callbacks_writer_pb_path.as_posix()],
+        sources=[
+            f"{PACKAGE_DIR / 'stan_services.cpp'}",
+            cpp_code_path.as_posix(),
+            callbacks_writer_pb_path.as_posix(),
+        ],
         define_macros=stan_macros,
         include_dirs=include_dirs,
         library_dirs=[f"{PACKAGE_DIR / 'lib'}"],

@@ -2,8 +2,8 @@
 import enum
 import functools
 import importlib.resources
-import inspect
 import json
+import re
 import time
 import types
 import typing
@@ -77,6 +77,10 @@ def lookup_default(method: Method, arg: str) -> typing.Union[float, int]:
 def function_arguments(function_name: str, services_module: types.ModuleType) -> typing.List[str]:
     """Get function arguments for stan::services `function_name`.
 
+    This function parses a function's docstring to get argument names. This is
+    an inferior method to using `inspect.Signature.from_callable(function)`.
+    Unfortunately, pybind11 does not support this use of `inspect`.
+
     A compiled `services_module` is required for the lookup. Only simple function
     arguments are returned. For example, callback writers and var_context
     arguments are dropped.
@@ -90,7 +94,10 @@ def function_arguments(function_name: str, services_module: types.ModuleType) ->
 
     """
     function = getattr(services_module, f"{function_name}_wrapper")
-    sig = inspect.Signature.from_callable(function)
+    docstring = function.__doc__
+    # first line look something like this: function_name(arg1: int, arg2: int, ...) -> int
+    function_name_with_arguments = docstring.split(" -> ", 1).pop(0)
+    parameters = re.findall(r"(\w+): \w+", function_name_with_arguments)
     # remove arguments which are specific to the wrapper
     arguments_exclude = {"socket_filename"}
-    return list(filter(lambda arg: arg not in arguments_exclude, sig.parameters))
+    return list(filter(lambda arg: arg not in arguments_exclude, parameters))

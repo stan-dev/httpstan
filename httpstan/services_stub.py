@@ -89,7 +89,7 @@ async def call(
         socket_.listen(4)  # three stan callback writers, one stan callback logger
 
         lazy_function_wrapper = _make_lazy_function_wrapper(function_basename, model_name)
-        lazy_function_wrapper_partial = functools.partial(lazy_function_wrapper, socket_filename.encode(), **kwargs)
+        lazy_function_wrapper_partial = functools.partial(lazy_function_wrapper, socket_filename, **kwargs)
 
         # If HTTPSTAN_DEBUG is set block until sampling is complete. Do not use an executor.
         if HTTPSTAN_DEBUG:
