@@ -16,7 +16,6 @@ build = "build.py"
 classifiers = [
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: ISC License (ISCL)",
-  "Programming Language :: Cython",
 ]
 include = [
   # poetry automatically excludes paths mentioned in .gitignore, selectively add back
@@ -42,7 +41,6 @@ appdirs = "^1.4"
 webargs = "^6.1"
 marshmallow = "^3.2"
 numpy = "^1.7"
-Cython = "^0.29"
 protobuf = "^3.11"
 
 [tool.poetry.dev-dependencies]

@@ -1,4 +1,4 @@
-"""Lightly modified build_ext which captures stdout and stderr.
+"""Lightly modified build_ext which captures stderr.
 
 isort:skip_file
 """
@@ -14,8 +14,6 @@ import os
 import sys
 import tempfile
 from typing import IO, Any, List, TextIO
-
-import Cython.Build
 
 from httpstan.config import HTTPSTAN_DEBUG
 
@@ -34,8 +32,6 @@ def run_build_ext(extensions: List[distutils.core.Extension], build_lib: str) ->
 
     Compiled extension module will be placed in `build_lib`.
 
-    `Extension`s are passed through ` Cython.Build.cythonize`.
-
     All messages sent to stderr will be saved and returned. These
     messages are typically messages from the compiler or linker.
 
@@ -53,21 +49,6 @@ def run_build_ext(extensions: List[distutils.core.Extension], build_lib: str) ->
             return False
         return True
 
-    def _redirect_stdout() -> int:
-        """Redirect stdout for subprocesses to /dev/null.
-
-        Returns
-        -------
-        orig_stderr: copy of original stderr file descriptor
-        """
-        sys.stdout.flush()
-        stdout_fileno = sys.stdout.fileno()
-        orig_stdout = os.dup(stdout_fileno)
-        devnull = os.open(os.devnull, os.O_WRONLY)
-        os.dup2(devnull, stdout_fileno)
-        os.close(devnull)
-        return orig_stdout
-
     def _redirect_stderr_to(stream: IO[Any]) -> int:
         """Redirect stderr for subprocesses to /dev/null.
 
@@ -84,16 +65,14 @@ def run_build_ext(extensions: List[distutils.core.Extension], build_lib: str) ->
     build_extension = _get_build_extension()
     build_extension.build_lib = build_lib
 
-    # silence stdout and stderr for compilation, if stderr is silenceable
-    # silence stdout too as cythonize prints a couple of lines to stdout
+    # silence stderr for compilation, if stderr is silenceable
     stream = tempfile.TemporaryFile(prefix="httpstan_")
     redirect_stderr = _has_fileno(sys.stderr) and not HTTPSTAN_DEBUG
     compiler_output = ""
     if redirect_stderr:
-        orig_stdout = _redirect_stdout()
         orig_stderr = _redirect_stderr_to(stream)
 
-    build_extension.extensions = Cython.Build.cythonize(extensions)
+    build_extension.extensions = extensions
 
     try:
         build_extension.run()
@@ -104,6 +83,5 @@ def run_build_ext(extensions: List[distutils.core.Extension], build_lib: str) ->
             stream.close()
             # restore
             os.dup2(orig_stderr, sys.stderr.fileno())
-            os.dup2(orig_stdout, sys.stdout.fileno())
 
     return compiler_output
