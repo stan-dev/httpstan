@@ -1,14 +1,14 @@
 #ifndef HTTPSTAN_SOCKET_WRITER_HPP
 #define HTTPSTAN_SOCKET_WRITER_HPP
 
-#include <iostream>
-#include <vector>
-#include <string>
+#include "callbacks_writer.pb.h"
 #include <boost/asio.hpp>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <iostream>
 #include <stan/callbacks/writer.hpp>
-#include "callbacks_writer.pb.h"
+#include <string>
+#include <vector>
 
 /**
  * NOTE: httpstan makes use of `message_prefix` in an unexpected way!
@@ -52,19 +52,18 @@ namespace callbacks {
 
 /* Enum used by sample writer only. Keeps track of state. */
 enum class ProcessingAdaptationState {
-  BEFORE_PROCESSING_ADAPTATION,  // if no adaptation, stay here
+  BEFORE_PROCESSING_ADAPTATION, // if no adaptation, stay here
   PROCESSING_ADAPTATION,
   FINAL_ADAPTATION_MESSAGE,
   AFTER_PROCESSING_ADAPTATION
 };
-
 
 /**
  * <code>socket_writer</code> is an implementation
  * of <code>writer</code> that writes Protobuf-encoded values to a socket.
  */
 class socket_writer : public writer {
- private:
+private:
   /**
    * Output
    */
@@ -83,7 +82,7 @@ class socket_writer : public writer {
   /**
    * Send a protocol buffer message to a socket using length-prefix encoding.
    */
-  size_t send_message(const stan::WriterMessage& message, boost::asio::local::stream_protocol::socket& socket) {
+  size_t send_message(const stan::WriterMessage &message, boost::asio::local::stream_protocol::socket &socket) {
     boost::asio::streambuf stream_buffer;
     std::ostream output_stream(&stream_buffer);
     {
@@ -96,7 +95,7 @@ class socket_writer : public writer {
     return socket.send(stream_buffer.data());
   }
 
- public:
+public:
   /**
    * Constructs a writer with an output socket
    * and an optional prefix for comments.
@@ -104,30 +103,27 @@ class socket_writer : public writer {
    * @param[in, out] output ostream
    * @param[in] message_prefix will be prefixed to each string which is sent to the socket. Default is "".
    */
-  explicit socket_writer(const std::string& socket_filename, const std::string& message_prefix = ""):
-    socket(io_service), message_prefix_(message_prefix) {
-      boost::asio::local::stream_protocol::endpoint ep(socket_filename);
-      socket.connect(ep);
-    }
+  explicit socket_writer(const std::string &socket_filename, const std::string &message_prefix = "")
+      : socket(io_service), message_prefix_(message_prefix) {
+    boost::asio::local::stream_protocol::endpoint ep(socket_filename);
+    socket.connect(ep);
+  }
 
   /**
    * Destructor
    */
-  ~socket_writer() {
-    socket.close();
-   }
+  ~socket_writer() { socket.close(); }
 
   /**
    * Writes a sequence of names.
    *
    * @param[in] names Names in a std::vector
    */
-  void operator()(const std::vector<std::string>& names) {
+  void operator()(const std::vector<std::string> &names) {
     std::vector<std::string>::const_iterator last = names.end();
     if (message_prefix_ == "diagnostic_writer:") {
       if (diagnostic_fields_.empty()) {
-        for (std::vector<std::string>::const_iterator it = names.begin();
-            it != last; ++it) {
+        for (std::vector<std::string>::const_iterator it = names.begin(); it != last; ++it) {
           diagnostic_fields_.push_back(*it);
         }
         return;
@@ -135,10 +131,9 @@ class socket_writer : public writer {
       stan::WriterMessage writer_message;
       writer_message.set_topic(stan::WriterMessage_Topic_DIAGNOSTIC);
 
-      stan::WriterMessage_Feature * feature = writer_message.add_feature();
-      stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
-      for (std::vector<std::string>::const_iterator it = names.begin();
-           it != last; ++it) {
+      stan::WriterMessage_Feature *feature = writer_message.add_feature();
+      stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
+      for (std::vector<std::string>::const_iterator it = names.begin(); it != last; ++it) {
         string_list->add_value(*it);
       }
       feature->set_allocated_string_list(string_list);
@@ -151,8 +146,7 @@ class socket_writer : public writer {
       // sample writer receives only one string vector message, the column header
       if (!sample_fields_.empty())
         throw std::runtime_error("Unexpected string vector in sample writer after column header.");
-      for (std::vector<std::string>::const_iterator it = names.begin();
-           it != last; ++it) {
+      for (std::vector<std::string>::const_iterator it = names.begin(); it != last; ++it) {
         sample_fields_.push_back(*it);
       }
       return;
@@ -164,7 +158,7 @@ class socket_writer : public writer {
    *
    * @param[in] state Values in a std::vector
    */
-  void operator()(const std::vector<double>& state) {
+  void operator()(const std::vector<double> &state) {
     std::vector<double>::const_iterator last = state.end();
 
     if (message_prefix_ == "diagnostic_writer:") {
@@ -175,9 +169,9 @@ class socket_writer : public writer {
       stan::WriterMessage writer_message;
       writer_message.set_topic(stan::WriterMessage_Topic_DIAGNOSTIC);
       for (std::size_t i = 0; i < diagnostic_fields_.size(); ++i) {
-        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_Feature *feature = writer_message.add_feature();
         feature->set_name(diagnostic_fields_[i]);
-        stan::WriterMessage_DoubleList * double_list = new stan::WriterMessage_DoubleList;
+        stan::WriterMessage_DoubleList *double_list = new stan::WriterMessage_DoubleList;
         double_list->add_value(state[i]);
         feature->set_allocated_double_list(double_list);
       }
@@ -188,10 +182,9 @@ class socket_writer : public writer {
       stan::WriterMessage writer_message;
       writer_message.set_topic(stan::WriterMessage_Topic_INITIALIZATION);
 
-      stan::WriterMessage_Feature * feature = writer_message.add_feature();
-      stan::WriterMessage_DoubleList * double_list = new stan::WriterMessage_DoubleList;
-      for (std::vector<double>::const_iterator it = state.begin();
-          it != last; ++it) {
+      stan::WriterMessage_Feature *feature = writer_message.add_feature();
+      stan::WriterMessage_DoubleList *double_list = new stan::WriterMessage_DoubleList;
+      for (std::vector<double>::const_iterator it = state.begin(); it != last; ++it) {
         double_list->add_value(*it);
       }
       feature->set_allocated_double_list(double_list);
@@ -210,9 +203,9 @@ class socket_writer : public writer {
       writer_message.set_topic(stan::WriterMessage_Topic_SAMPLE);
 
       for (std::size_t i = 0; i < sample_fields_.size(); ++i) {
-        stan::WriterMessage_Feature * feature = writer_message.add_feature();
+        stan::WriterMessage_Feature *feature = writer_message.add_feature();
         feature->set_name(sample_fields_[i]);
-        stan::WriterMessage_DoubleList * double_list = new stan::WriterMessage_DoubleList;
+        stan::WriterMessage_DoubleList *double_list = new stan::WriterMessage_DoubleList;
         double_list->add_value(state[i]);
         feature->set_allocated_double_list(double_list);
       }
@@ -235,14 +228,14 @@ class socket_writer : public writer {
    *
    * @param[in] message A string
    */
-  void operator()(const std::string& message) {
+  void operator()(const std::string &message) {
     if (message_prefix_ == "diagnostic_writer:") {
       // DEBUG: prototype here
       stan::WriterMessage writer_message;
       writer_message.set_topic(stan::WriterMessage_Topic_DIAGNOSTIC);
 
-      stan::WriterMessage_Feature * feature = writer_message.add_feature();
-      stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+      stan::WriterMessage_Feature *feature = writer_message.add_feature();
+      stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
       string_list->add_value(message);
       feature->set_allocated_string_list(string_list);
 
@@ -271,8 +264,8 @@ class socket_writer : public writer {
       stan::WriterMessage writer_message;
       writer_message.set_topic(stan::WriterMessage_Topic_SAMPLE);
 
-      stan::WriterMessage_Feature * feature = writer_message.add_feature();
-      stan::WriterMessage_StringList * string_list = new stan::WriterMessage_StringList;
+      stan::WriterMessage_Feature *feature = writer_message.add_feature();
+      stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
       string_list->add_value(message);
       feature->set_allocated_string_list(string_list);
 
@@ -282,6 +275,6 @@ class socket_writer : public writer {
   }
 };
 
-}  // namespace callbacks
-}  // namespace stan
-#endif  // HTTPSTAN_SOCKET_WRITER_HPP
+} // namespace callbacks
+} // namespace stan
+#endif // HTTPSTAN_SOCKET_WRITER_HPP
