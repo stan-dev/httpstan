@@ -44,9 +44,9 @@ INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_$(BOOST_VERSION) httpstan/
 INCLUDES_STAN := httpstan/include/stan httpstan/include/stan/math $(INCLUDES_STAN_MATH_LIBS)
 INCLUDES := httpstan/include/google/protobuf httpstan/include/pybind11 $(INCLUDES_STAN)
 STANC := httpstan/stanc
+PRECOMPILED_OBJECTS = httpstan/callbacks_writer.pb.o
 
-
-default: $(PROTOBUF_FILES) $(STUB_FILES) $(LIBRARIES) $(INCLUDES) $(STANC)
+default: $(PROTOBUF_FILES) $(STUB_FILES) $(LIBRARIES) $(INCLUDES) $(STANC) $(PRECOMPILED_OBJECTS)
 
 
 ###############################################################################
@@ -227,3 +227,32 @@ endif
 
 $(TBB_LIBRARIES_BUILD_LOCATIONS) $(SUNDIALS_LIBRARIES_BUILD_LOCATIONS): | build/math-$(MATH_VERSION)
 	$(MAKE) -f Makefile.libraries $@
+
+###############################################################################
+# Precompile httpstan-related objects, eventually linked in httpstan/models.py
+###############################################################################
+
+
+PYTHON_CC ?= $(shell python3 -c 'import sysconfig;print(" ".join(sysconfig.get_config_vars("CC")))')
+PYTHON_CFLAGS ?= $(shell python3 -c 'import sysconfig;print(" ".join(sysconfig.get_config_vars("CFLAGS")))')
+PYTHON_CCSHARED ?= $(shell python3 -c 'import sysconfig;print(" ".join(sysconfig.get_config_vars("CCSHARED")))')
+PYTHON_INCLUDE ?= -I$(shell python3 -c'import sysconfig;print(sysconfig.get_path("include"))')
+PYTHON_PLATINCLUDE ?= -I$(shell python3 -c'import sysconfig;print(sysconfig.get_path("platinclude"))')
+
+# the following variables should match those in httpstan/models.py
+# One include directory is absent: `model_directory_path` as this only
+# exists when the extension module is ready to be linked
+HTTPSTAN_EXTRA_COMPILE_ARGS ?= -O3 -std=c++14
+HTTPSTAN_MACROS = -DBOOST_DISABLE_ASSERTS -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION -DSTAN_THREADS -D_REENTRANT -D_GLIBCXX_USE_CXX11_ABI=0
+HTTPSTAN_INCLUDE_DIRS = -Ihttpstan -Ihttpstan/include -Ihttpstan/include/lib/eigen_$(EIGEN_VERSION) -Ihttpstan/include/lib/boost_$(BOOST_VERSION) -Ihttpstan/include/lib/sundials_$(SUNDIALS_VERSION)/include -Ihttpstan/include/lib/tbb_$(TBB_VERSION)/include
+
+httpstan/callbacks_writer.pb.o: httpstan/callbacks_writer.pb.cc
+	$(PYTHON_CC) \
+		$(PYTHON_CFLAGS) \
+		$(PYTHON_CCSHARED) \
+		$(HTTPSTAN_MACROS) \
+		$(HTTPSTAN_INCLUDE_DIRS) \
+		$(PYTHON_INCLUDE) \
+		$(PYTHON_PLATINCLUDE) \
+		-c $< -o $@ \
+		$(HTTPSTAN_EXTRA_COMPILE_ARGS)

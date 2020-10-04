@@ -73,3 +73,4 @@ httpstan/lib
 httpstan/include
 httpstan/stanc
 doc/openapi.yaml
+httpstan/*.o
