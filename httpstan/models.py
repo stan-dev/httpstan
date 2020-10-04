@@ -160,7 +160,6 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
         sources=[
             f"{PACKAGE_DIR / 'stan_services.cpp'}",
             cpp_code_path.as_posix(),
-            callbacks_writer_pb_path.as_posix(),
         ],
         define_macros=stan_macros,
         include_dirs=include_dirs,
@@ -168,6 +167,7 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
         libraries=libraries,
         extra_compile_args=extra_compile_args,
         extra_link_args=[f"-Wl,-rpath,{PACKAGE_DIR / 'lib'}"],
+        extra_objects=[callbacks_writer_pb_path.with_suffix(".o").as_posix()],
     )
 
     extensions = [extension]

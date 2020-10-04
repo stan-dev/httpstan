@@ -19,6 +19,7 @@ classifiers = [
 ]
 include = [
   # poetry automatically excludes paths mentioned in .gitignore, selectively add back
+  "httpstan/*.o",
   "httpstan/*.cpp",
   "httpstan/*_pb2.py",
   "httpstan/*_pb2.pyi",
