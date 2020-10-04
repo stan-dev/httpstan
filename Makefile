@@ -42,7 +42,7 @@ LIBRARIES += httpstan/lib/libprotobuf-lite.so
 endif
 INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_$(BOOST_VERSION) httpstan/include/lib/eigen_$(EIGEN_VERSION) httpstan/include/lib/sundials_$(SUNDIALS_VERSION) httpstan/include/lib/tbb_$(TBB_VERSION)
 INCLUDES_STAN := httpstan/include/stan httpstan/include/stan/math $(INCLUDES_STAN_MATH_LIBS)
-INCLUDES := httpstan/include/google/protobuf httpstan/include/pybind11 $(INCLUDES_STAN)
+INCLUDES := httpstan/include/google httpstan/include/pybind11 $(INCLUDES_STAN)
 STANC := httpstan/stanc
 PRECOMPILED_OBJECTS = httpstan/callbacks_writer.pb.o httpstan/stan_services.o
 
@@ -114,7 +114,7 @@ httpstan/include/google: build/protobuf-$(PROTOBUF_VERSION)/src/google | build/p
 	@rm -rf $@
 	cp -r $< $@
 
-# For context on the use of install_name_tool see https://github.com/PixarAnimationStudios/USD/pull/1125 
+# For context on the use of install_name_tool see https://github.com/PixarAnimationStudios/USD/pull/1125
 ifeq ($(shell uname -s),Darwin)
 httpstan/lib/libprotobuf-lite.dylib httpstan/bin/protoc: | build/protobuf-$(PROTOBUF_VERSION)
 	@echo compiling with -D_GLIBCXX_USE_CXX11_ABI=0 for manylinux2014 wheel compatibility
