@@ -40,3 +40,7 @@ script:
   - scripts/check || travis_terminate 1
   - poetry build -v && python -m pip install dist/*.whl
   - mkdir testdir && cd testdir && python -m pytest -s -v --cov=httpstan --cov-fail-under=93 ../tests
+  # verify that this version of httpstan does not break pystan
+  - |
+    pip install --pre pystan &&
+    python3 -c'import stan;assert stan.build("parameters {real y;} model {y ~ normal(0,1);}").sample()["y"] is not None'
