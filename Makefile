@@ -44,7 +44,7 @@ INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_$(BOOST_VERSION) httpstan/
 INCLUDES_STAN := httpstan/include/stan httpstan/include/stan/math $(INCLUDES_STAN_MATH_LIBS)
 INCLUDES := httpstan/include/google/protobuf httpstan/include/pybind11 $(INCLUDES_STAN)
 STANC := httpstan/stanc
-PRECOMPILED_OBJECTS = httpstan/callbacks_writer.pb.o
+PRECOMPILED_OBJECTS = httpstan/callbacks_writer.pb.o httpstan/stan_services.o
 
 default: $(PROTOBUF_FILES) $(STUB_FILES) $(LIBRARIES) $(INCLUDES) $(STANC) $(PRECOMPILED_OBJECTS)
 
@@ -247,6 +247,9 @@ HTTPSTAN_MACROS = -DBOOST_DISABLE_ASSERTS -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION
 HTTPSTAN_INCLUDE_DIRS = -Ihttpstan -Ihttpstan/include -Ihttpstan/include/lib/eigen_$(EIGEN_VERSION) -Ihttpstan/include/lib/boost_$(BOOST_VERSION) -Ihttpstan/include/lib/sundials_$(SUNDIALS_VERSION)/include -Ihttpstan/include/lib/tbb_$(TBB_VERSION)/include
 
 httpstan/callbacks_writer.pb.o: httpstan/callbacks_writer.pb.cc
+httpstan/stan_services.o: httpstan/stan_services.cpp
+
+httpstan/callbacks_writer.pb.o httpstan/stan_services.o:
 	$(PYTHON_CC) \
 		$(PYTHON_CFLAGS) \
 		$(PYTHON_CCSHARED) \

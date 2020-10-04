@@ -157,17 +157,17 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     extension = setuptools.Extension(
         f"stan_services_{stan_model_name}",  # filename only. Module name is "stan_services"
         language="c++",
-        sources=[
-            f"{PACKAGE_DIR / 'stan_services.cpp'}",
-            cpp_code_path.as_posix(),
-        ],
+        sources=[cpp_code_path.as_posix()],
         define_macros=stan_macros,
         include_dirs=include_dirs,
         library_dirs=[f"{PACKAGE_DIR / 'lib'}"],
         libraries=libraries,
         extra_compile_args=extra_compile_args,
         extra_link_args=[f"-Wl,-rpath,{PACKAGE_DIR / 'lib'}"],
-        extra_objects=[callbacks_writer_pb_path.with_suffix(".o").as_posix()],
+        extra_objects=[
+            callbacks_writer_pb_path.with_suffix(".o").as_posix(),
+            (PACKAGE_DIR / "stan_services.cpp").with_suffix(".o").as_posix(),
+        ],
     )
 
     extensions = [extension]
