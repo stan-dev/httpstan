@@ -41,14 +41,14 @@ aiohttp = "^3.6"
 appdirs = "^1.4"
 webargs = "^6.1"
 marshmallow = "^3.2"
-numpy = "^1.7"
-protobuf = "^3.11"
+numpy = "^1.16"
+protobuf = "^3.13"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4"
 pytest-cov = "^2.8"
 pytest-asyncio = "^0.10"
-apispec = {version = "^3.1", extras = ["yaml", "validation"]}
+apispec = {version = "^4.0", extras = ["yaml", "validation"]}
 autoflake = "^1.4"
 black = "^20.8b1"
 isort = "^5.4.2"
