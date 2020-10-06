@@ -9,7 +9,7 @@
 # this Makefile copy libraries built by the other Makefile into their
 # httpstan-specific directories.
 
-PROTOBUF_VERSION := 3.11.3
+PROTOBUF_VERSION := 3.13.0
 PYBIND11_VERSION := 2.5.0
 STAN_VERSION := 2.24.0
 STANC_VERSION := 2.24.1
@@ -57,7 +57,7 @@ build/archives:
 
 $(PROTOBUF_ARCHIVE): | build/archives
 	@echo downloading $@
-	@curl --silent --location https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/protobuf-cpp-3.11.3.tar.gz -o $@
+	@curl --silent --location https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/protobuf-cpp-$(PROTOBUF_VERSION).tar.gz -o $@
 
 $(PYBIND11_ARCHIVE): | build/archives
 	@echo downloading $@
