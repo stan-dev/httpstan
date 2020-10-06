@@ -34,7 +34,8 @@ before_install:
   - python --version
   - if [[ -n $CC ]]; then $CC --version; fi
 install:
-  - pip install "poetry<2,>=1.1.1"
+  # required poetry version can be relaxed when this is fixed: https://github.com/python-poetry/poetry/issues/2909
+  - pip install "poetry==1.0.9"
   # These are build requirements. poetry does not offer a way to specify build requirements.
   - pip install "mypy-protobuf==1.21"
   - make  # generate Python protobuf files and build shared libraries
