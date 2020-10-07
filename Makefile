@@ -233,7 +233,7 @@ $(TBB_LIBRARIES_BUILD_LOCATIONS) $(SUNDIALS_LIBRARIES_BUILD_LOCATIONS): | build/
 ###############################################################################
 
 
-PYTHON_CC ?= $(shell python3 -c 'import sysconfig;print(" ".join(sysconfig.get_config_vars("CC")))')
+PYTHON_CXX ?= $(shell python3 -c 'import sysconfig;print(" ".join(sysconfig.get_config_vars("CXX")))')
 PYTHON_CFLAGS ?= $(shell python3 -c 'import sysconfig;print(" ".join(sysconfig.get_config_vars("CFLAGS")))')
 PYTHON_CCSHARED ?= $(shell python3 -c 'import sysconfig;print(" ".join(sysconfig.get_config_vars("CCSHARED")))')
 PYTHON_INCLUDE ?= -I$(shell python3 -c'import sysconfig;print(sysconfig.get_path("include"))')
@@ -250,7 +250,7 @@ httpstan/callbacks_writer.pb.o: httpstan/callbacks_writer.pb.cc
 httpstan/stan_services.o: httpstan/stan_services.cpp
 
 httpstan/callbacks_writer.pb.o httpstan/stan_services.o:
-	$(PYTHON_CC) \
+	$(PYTHON_CXX) \
 		$(PYTHON_CFLAGS) \
 		$(PYTHON_CCSHARED) \
 		$(HTTPSTAN_MACROS) \
