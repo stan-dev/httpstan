@@ -10,6 +10,8 @@
 # httpstan-specific directories.
 
 PROTOBUF_VERSION := 3.13.0
+# The filename of the libbrotobuf-lite shared library on macOS is not predictable
+LIBPROTOBUF_LITE_DYLIB = libprotobuf-lite.24.dylib
 PYBIND11_VERSION := 2.5.0
 STAN_VERSION := 2.24.0
 STANC_VERSION := 2.24.1
@@ -120,7 +122,7 @@ httpstan/lib/libprotobuf-lite.dylib httpstan/bin/protoc: | build/protobuf-$(PROT
 	@echo compiling with -D_GLIBCXX_USE_CXX11_ABI=0 for manylinux2014 wheel compatibility
 	cd build/protobuf-$(PROTOBUF_VERSION) && ./configure --prefix="$(shell pwd)/httpstan" CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && make -j 8 install
 	install_name_tool -id @rpath/libprotobuf-lite.dylib httpstan/lib/libprotobuf-lite.dylib
-	install_name_tool -id @rpath/libprotobuf-lite.22.dylib httpstan/lib/libprotobuf-lite.22.dylib
+	install_name_tool -id @rpath/$(LIBPROTOBUF_LITE_DYLIB) httpstan/lib/$(LIBPROTOBUF_LITE_DYLIB)
 else
 httpstan/lib/libprotobuf-lite.so httpstan/bin/protoc: | build/protobuf-$(PROTOBUF_VERSION)
 	@echo compiling with -D_GLIBCXX_USE_CXX11_ABI=0 for manylinux2014 wheel compatibility
