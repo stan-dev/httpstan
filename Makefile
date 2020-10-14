@@ -13,9 +13,9 @@ PROTOBUF_VERSION := 3.13.0
 # The filename of the libbrotobuf-lite shared library on macOS is not predictable
 LIBPROTOBUF_LITE_DYLIB = libprotobuf-lite.24.dylib
 PYBIND11_VERSION := 2.5.0
-STAN_VERSION := 2.24.0
-STANC_VERSION := 2.24.1
-MATH_VERSION := 3.3.0
+STAN_VERSION := 2.25.0-rc1
+STANC_VERSION := 2.25.0-rc1
+MATH_VERSION := 3.4.0-rc1
 BOOST_VERSION := 1.72.0
 EIGEN_VERSION := 3.3.7
 SUNDIALS_VERSION := 5.2.0
