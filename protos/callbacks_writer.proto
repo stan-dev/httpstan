@@ -19,13 +19,13 @@ package stan;
 // different uses while still providing a highly predictable structure.
 //
 // A WriterMessage contains a key-value store (features), where each key
-// (string) maps to a Feature message (which is either a list of strings, a
+// (bytes) maps to a Feature message (which is either a list of bytes, a
 // list of doubles, or a list of integers).
 //
-// A WriterMessage also has a string field `topic` which provides information
+// A WriterMessage also has a field `topic` which provides information
 // about what the WriterMessage concerns or what produced it. For example, the
 // `topic` associated with a WriterMessage written by `sample_writer` in the function
-// above might be the string "sample".
+// above might be "sample".
 //
 // A WriterMessage created by `sample_writer` in the above example might look like this:
 //
@@ -86,8 +86,8 @@ package stan;
 
 message WriterMessage {
 
-  message StringList {
-    repeated string value = 1;
+  message BytesList {
+    repeated bytes value = 1;
   }
   message DoubleList {
     repeated double value = 1;
@@ -97,9 +97,9 @@ message WriterMessage {
   }
 
   message Feature {
-    string name = 1;
+    bytes name = 1;
     oneof kind {
-      StringList string_list = 2;
+      BytesList bytes_list = 2;
       DoubleList double_list = 3;
       IntList int_list = 4;
     }

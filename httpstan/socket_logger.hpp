@@ -82,9 +82,9 @@ public:
     writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
 
     stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-    string_list->add_value(std::string("debug:") + message);
-    feature->set_allocated_string_list(string_list);
+    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+    bytes_list->add_value(std::string("debug:") + message);
+    feature->set_allocated_bytes_list(bytes_list);
 
     send_message(writer_message, socket);
   }
@@ -99,9 +99,9 @@ public:
     writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
 
     stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-    string_list->add_value(std::string("debug:") + message.str());
-    feature->set_allocated_string_list(string_list);
+    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+    bytes_list->add_value(std::string("debug:") + message.str());
+    feature->set_allocated_bytes_list(bytes_list);
 
     send_message(writer_message, socket);
   }
@@ -111,9 +111,9 @@ public:
     writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
 
     stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-    string_list->add_value(std::string("info:") + message);
-    feature->set_allocated_string_list(string_list);
+    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+    bytes_list->add_value(std::string("info:") + message);
+    feature->set_allocated_bytes_list(bytes_list);
 
     send_message(writer_message, socket);
   }
@@ -123,9 +123,9 @@ public:
     writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
 
     stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-    string_list->add_value(std::string("info:") + message.str());
-    feature->set_allocated_string_list(string_list);
+    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+    bytes_list->add_value(std::string("info:") + message.str());
+    feature->set_allocated_bytes_list(bytes_list);
 
     send_message(writer_message, socket);
   }
@@ -135,9 +135,9 @@ public:
     writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
 
     stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-    string_list->add_value(std::string("warn:") + message);
-    feature->set_allocated_string_list(string_list);
+    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+    bytes_list->add_value(std::string("warn:") + message);
+    feature->set_allocated_bytes_list(bytes_list);
 
     send_message(writer_message, socket);
   }
@@ -147,9 +147,9 @@ public:
     writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
 
     stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-    string_list->add_value(std::string("warn:") + message.str());
-    feature->set_allocated_string_list(string_list);
+    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+    bytes_list->add_value(std::string("warn:") + message.str());
+    feature->set_allocated_bytes_list(bytes_list);
 
     send_message(writer_message, socket);
   }
@@ -159,9 +159,9 @@ public:
     writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
 
     stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-    string_list->add_value(std::string("error:") + message);
-    feature->set_allocated_string_list(string_list);
+    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+    bytes_list->add_value(std::string("error:") + message);
+    feature->set_allocated_bytes_list(bytes_list);
 
     send_message(writer_message, socket);
   }
@@ -171,9 +171,9 @@ public:
     writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
 
     stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-    string_list->add_value(std::string("error:") + message.str());
-    feature->set_allocated_string_list(string_list);
+    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+    bytes_list->add_value(std::string("error:") + message.str());
+    feature->set_allocated_bytes_list(bytes_list);
 
     send_message(writer_message, socket);
   }
@@ -183,9 +183,9 @@ public:
     writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
 
     stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-    string_list->add_value(std::string("fatal:") + message);
-    feature->set_allocated_string_list(string_list);
+    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+    bytes_list->add_value(std::string("fatal:") + message);
+    feature->set_allocated_bytes_list(bytes_list);
 
     send_message(writer_message, socket);
   }
@@ -195,9 +195,9 @@ public:
     writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
 
     stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-    string_list->add_value(std::string("fatal:") + message.str());
-    feature->set_allocated_string_list(string_list);
+    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+    bytes_list->add_value(std::string("fatal:") + message.str());
+    feature->set_allocated_bytes_list(bytes_list);
 
     send_message(writer_message, socket);
   }
