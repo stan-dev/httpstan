@@ -65,7 +65,7 @@ def extract(param_name: str, fit_bytes: bytes) -> typing.List[typing.Union[int, 
         assert msg
         if msg.topic == callbacks_writer_pb2.WriterMessage.Topic.Value("SAMPLE"):
             for value_wrapped in msg.feature:
-                if param_name == value_wrapped.name:
+                if param_name == value_wrapped.name.decode():
                     fea = getattr(value_wrapped, "double_list") or getattr(value_wrapped, "int_list")
                     draws.append(fea.value.pop())
     if len(draws) == 0:

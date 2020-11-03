@@ -132,11 +132,11 @@ public:
       writer_message.set_topic(stan::WriterMessage_Topic_DIAGNOSTIC);
 
       stan::WriterMessage_Feature *feature = writer_message.add_feature();
-      stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
+      stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
       for (std::vector<std::string>::const_iterator it = names.begin(); it != last; ++it) {
-        string_list->add_value(*it);
+        bytes_list->add_value(*it);
       }
-      feature->set_allocated_string_list(string_list);
+      feature->set_allocated_bytes_list(bytes_list);
 
       send_message(writer_message, socket);
       return;
@@ -235,9 +235,9 @@ public:
       writer_message.set_topic(stan::WriterMessage_Topic_DIAGNOSTIC);
 
       stan::WriterMessage_Feature *feature = writer_message.add_feature();
-      stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-      string_list->add_value(message);
-      feature->set_allocated_string_list(string_list);
+      stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+      bytes_list->add_value(message);
+      feature->set_allocated_bytes_list(bytes_list);
 
       send_message(writer_message, socket);
       return;
@@ -265,9 +265,9 @@ public:
       writer_message.set_topic(stan::WriterMessage_Topic_SAMPLE);
 
       stan::WriterMessage_Feature *feature = writer_message.add_feature();
-      stan::WriterMessage_StringList *string_list = new stan::WriterMessage_StringList;
-      string_list->add_value(message);
-      feature->set_allocated_string_list(string_list);
+      stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+      bytes_list->add_value(message);
+      feature->set_allocated_bytes_list(bytes_list);
 
       send_message(writer_message, socket);
       return;

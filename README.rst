@@ -118,7 +118,7 @@ decoded message should resemble the following::
 
     topic: LOGGER
     feature {
-      string_list {
+      bytes_list {
         value: "info:"
       }
     }
@@ -128,7 +128,7 @@ The next message is more interesting. It reads::
 
    topic: LOGGER
    feature {
-     string_list {
+     bytes_list {
        value: "info:Gradient evaluation took 4.7e-05 seconds"
      }
    }

@@ -83,7 +83,7 @@ decoded message should resemble the following::
 
     topic: LOGGER
     feature {
-      string_list {
+      bytes_list {
         value: "Gradient evaluation took 1.3e-05 seconds"
       }
     }
