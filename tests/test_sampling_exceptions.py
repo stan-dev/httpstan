@@ -51,8 +51,8 @@ async def test_sampling_initialization_failed(api_url: str) -> None:
     assert len(messages) > 100
 
     # first message should be an "Rejecting initial value" message.
-    error_message = messages[0].feature[0].bytes_list.value[0]
-    assert b"Rejecting initial value" in error_message
+    error_message = messages[0]["values"].pop()
+    assert "Rejecting initial value" in error_message
 
 
 @pytest.mark.asyncio

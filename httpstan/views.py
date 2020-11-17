@@ -388,10 +388,6 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     # if a task is cancelled before finishing a warning will be issued (see
     # `on_cleanup` signal handler in main.py).
     def logger_callback(operation: dict, message: bytes) -> None:
-        # Hack: Use the raw protobuf-encoded message here. Raw message looks like this:
-        # b"\x08\x01\x120\x12.\n,info:Iteration:  500 / 2000 [ 25%]  (Warmup)"
-        # Using the raw message avoids having to deserialize the message.
-        # Deserializing it would be costly and require importing the protobuf Python module.
         if b"info:Iteration" not in message:
             return
         # When sampling completes rapidly, multiple iteration messages can be passed together. Use final one.

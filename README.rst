@@ -94,46 +94,13 @@ with a reference to a long-running fit operation::
 
 Once the operation is complete, the "fit" can be retrieved. The name of the fit,
 ``models/xc2pdjb4/fits/gkf54axb``, is included in the ``metadata`` field of the operation.
-The fit is saved as sequence of Protocol Buffer messages. These messages are strung together
-using `length-prefix encoding
-<https://eli.thegreenplace.net/2011/08/02/length-prefix-framing-for-protocol-buffers>`_.  To
-retrieve these messages, saving them locally in the file ``myfit.bin``, make the following request::
+The fit is saved as sequence of JSON-encoded messages. These messages are strung together
+with newlines. To retrieve these messages, saving them locally in the file
+``myfit.bin``, make the following request::
 
-    curl http://localhost:8080/v1/models/xc2pdjb4/fits/gkf54axb > myfit.bin
+    curl http://localhost:8080/v1/models/xc2pdjb4/fits/gkf54axb > myfit.jsonlines
 
-To read the messages you will need a library for reading the encoding that
-Protocol Buffer messages use.  In this example we will read the first message
-in the stream using the Protocol Buffer compiler tool ``protoc``. (On
-Debian-based Linux you can find this tool in the ``protobuf-compiler``
-package.) The following command skips the message length (one byte)
-and then decodes the message (which is 13 bytes in length)::
-
-    dd bs=1 skip=1 if=myfit.bin 2>/dev/null | head -c 13 | \
-      protoc --decode stan.WriterMessage protos/callbacks_writer.proto
-
-.. To get the 13 bytes, use google.protobuf.internal.decoder._DecodeVarint32(fit_bytes, 0)
-
-Running the command above decodes the first message in the stream. The
-decoded message should resemble the following::
-
-    topic: LOGGER
-    feature {
-      bytes_list {
-        value: "info:"
-      }
-    }
-
-This empty logger message is not particularly informative.
-The next message is more interesting. It reads::
-
-   topic: LOGGER
-   feature {
-     bytes_list {
-       value: "info:Gradient evaluation took 4.7e-05 seconds"
-     }
-   }
-
-The Stan "fit", saved in ``myfit.bin``, aggregates all messages. By reading
+The Stan "fit", saved in ``myfit.jsonlines``, aggregates all messages. By reading
 them one by one you can recover all messages sent by the Stan C++ library.
 
 Contribute

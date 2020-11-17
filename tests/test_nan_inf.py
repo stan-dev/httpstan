@@ -8,9 +8,6 @@ import helpers
 program_code = """
     parameters {
       real eta;
-      real positive_infinity;
-      real negative_infinity;
-      real not_a_number;
     }
     transformed parameters {
       real alpha;

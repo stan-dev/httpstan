@@ -117,10 +117,8 @@ async def call(
                     logger.debug("Closed socket connection to a socket_logger or socket_writer.")
                     potential_readers.remove(s)
                     continue
-                # Only trigger callback if message has topic LOGGER.  b'\0x08\x01' is how messages with Topic 1 (LOGGER) start.
-                # With length-prefix encoding a logger message looks like:
-                # b'6\x08\x01\x122\x120\n.info:Iteration: 2000 / 2000 [100%] (Sampling)' where b'6' indicates message length
-                if logger_callback and message[1:].startswith(b"\x08\x01"):
+                # Only trigger callback if message has topic `logger`.
+                if logger_callback and b'"logger"' in message:
                     logger_callback(message)
                 messages_file.write(message)
             # if `potential_readers == [socket_]` then either (1) no connections
