@@ -7,6 +7,7 @@ Unix domain socket.
 
 """
 import asyncio
+import collections
 import concurrent.futures
 import functools
 import io
@@ -65,7 +66,6 @@ async def call(
         logger_callback: Callback function for logger messages, including sampling progress messages
         kwargs: named stan::services function arguments, see CmdStan documentation.
     """
-    messages_file = io.BytesIO()
     method, function_basename = function_name.replace("stan::services::", "").split("::", 1)
 
     # Fetch defaults for missing arguments. This is an important step!
@@ -100,6 +100,7 @@ async def call(
         else:
             future = asyncio.get_running_loop().run_in_executor(executor, lazy_function_wrapper_partial)  # type: ignore
 
+        messages_files: typing.Mapping[socket.socket, io.BytesIO] = collections.defaultdict(io.BytesIO)
         potential_readers = [socket_]
         while True:
             # note: timeout of 0.01 seems to work well based on measurements
@@ -110,7 +111,7 @@ async def call(
                     logger.debug("Opened socket connection to a socket_logger or socket_writer.")
                     potential_readers.append(conn)
                     continue
-                message = s.recv(1024 * 256)
+                message = s.recv(8192)
                 if not len(message):
                     # `close` called on other end
                     s.close()
@@ -120,7 +121,7 @@ async def call(
                 # Only trigger callback if message has topic `logger`.
                 if logger_callback and b'"logger"' in message:
                     logger_callback(message)
-                messages_file.write(message)
+                messages_files[s].write(message)
             # if `potential_readers == [socket_]` then either (1) no connections
             # have been opened or (2) all connections have been closed.
             if not readable:
@@ -132,8 +133,10 @@ async def call(
                 # no messages right now and not done. Sleep briefly so other pending tasks get a chance to run.
                 await asyncio.sleep(0.001)
 
-    messages_file.flush()
-    httpstan.cache.dump_fit(messages_file.getvalue(), fit_name)
-    messages_file.close()
+    for fh in messages_files.values():
+        fh.flush()
+    httpstan.cache.dump_fit(b"".join(fh.getvalue() for fh in messages_files.values()), fit_name)
+    for fh in messages_files.values():
+        fh.close()
     # `result()` method will raise exceptions, if any
     future.result()
