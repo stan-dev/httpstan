@@ -79,14 +79,13 @@ private:
   /**
    * Send a JSON message followed by a newline to a socket.
    */
-  size_t send_message(const rapidjson::StringBuffer &buffer, boost::asio::local::stream_protocol::socket &socket) {
-
+  std::size_t send_message(const rapidjson::StringBuffer &buffer,
+                           boost::asio::local::stream_protocol::socket &socket) {
     boost::asio::streambuf stream_buffer;
     std::ostream output_stream(&stream_buffer);
     output_stream << buffer.GetString() << "\n";
-    return socket.send(stream_buffer.data());
+    return boost::asio::write(socket, stream_buffer);
   }
-
 
 public:
   /**

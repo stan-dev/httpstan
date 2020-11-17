@@ -2,9 +2,9 @@
 #define HTTPSTAN_SOCKET_LOGGER_HPP
 
 #include <boost/asio.hpp>
-#include <rapidjson/writer.h>
-#include <rapidjson/stringbuffer.h>
 #include <iostream>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 #include <sstream>
 #include <stan/callbacks/logger.hpp>
 #include <string>
@@ -39,14 +39,13 @@ private:
   /**
    * Send a JSON message followed by a newline to a socket.
    */
-  size_t send_message(const rapidjson::StringBuffer &buffer, boost::asio::local::stream_protocol::socket &socket) {
-
+  std::size_t send_message(const rapidjson::StringBuffer &buffer,
+                           boost::asio::local::stream_protocol::socket &socket) {
     boost::asio::streambuf stream_buffer;
     std::ostream output_stream(&stream_buffer);
     output_stream << buffer.GetString() << "\n";
-    return socket.send(stream_buffer.data());
+    return boost::asio::write(socket, stream_buffer);
   }
-
 
 public:
   /**
