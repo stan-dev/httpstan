@@ -1,10 +1,7 @@
 #ifndef HTTPSTAN_SOCKET_WRITER_HPP
 #define HTTPSTAN_SOCKET_WRITER_HPP
 
-#include "callbacks_writer.pb.h"
 #include <boost/asio.hpp>
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <iostream>
 #include <stan/callbacks/writer.hpp>
 #include <string>
@@ -60,7 +57,7 @@ enum class ProcessingAdaptationState {
 
 /**
  * <code>socket_writer</code> is an implementation
- * of <code>writer</code> that writes Protobuf-encoded values to a socket.
+ * of <code>writer</code> that writes JSON-encoded values to a socket.
  */
 class socket_writer : public writer {
 private:
@@ -80,20 +77,16 @@ private:
   ProcessingAdaptationState processing_adaptation_state_ = ProcessingAdaptationState::BEFORE_PROCESSING_ADAPTATION;
 
   /**
-   * Send a protocol buffer message to a socket using length-prefix encoding.
+   * Send a JSON message followed by a newline to a socket.
    */
-  size_t send_message(const stan::WriterMessage &message, boost::asio::local::stream_protocol::socket &socket) {
+  size_t send_message(const rapidjson::StringBuffer &buffer, boost::asio::local::stream_protocol::socket &socket) {
+
     boost::asio::streambuf stream_buffer;
     std::ostream output_stream(&stream_buffer);
-    {
-      ::google::protobuf::io::OstreamOutputStream raw_output_stream(&output_stream);
-      ::google::protobuf::io::CodedOutputStream coded_output_stream(&raw_output_stream);
-      coded_output_stream.WriteVarint32(message.ByteSizeLong());
-      message.SerializeToCodedStream(&coded_output_stream);
-      // IMPORTANT: In order to flush a CodedOutputStream it must be deleted.
-    }
+    output_stream << buffer.GetString() << "\n";
     return socket.send(stream_buffer.data());
   }
+
 
 public:
   /**
@@ -128,18 +121,27 @@ public:
         }
         return;
       }
-      stan::WriterMessage writer_message;
-      writer_message.set_topic(stan::WriterMessage_Topic_DIAGNOSTIC);
 
-      stan::WriterMessage_Feature *feature = writer_message.add_feature();
-      stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
+      rapidjson::StringBuffer buffer;
+      rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+      writer.StartObject();
+
+      writer.String("version");
+      writer.Int(1);
+      writer.String("topic");
+      writer.String("diagnostic");
+
+      writer.String("values");
+      writer.StartArray();
+
       for (std::vector<std::string>::const_iterator it = names.begin(); it != last; ++it) {
-        bytes_list->add_value(*it);
+        writer.String(it->c_str());
       }
-      feature->set_allocated_bytes_list(bytes_list);
+      writer.EndArray();
 
-      send_message(writer_message, socket);
+      send_message(buffer, socket);
       return;
+
     } else if (message_prefix_ == "init_writer:") {
       throw std::runtime_error("Unexpected string vector for init writer.");
     } else if (message_prefix_ == "sample_writer:") {
@@ -166,30 +168,47 @@ public:
         throw std::runtime_error("diagnostic fields must be set before receiving values");
       }
 
-      stan::WriterMessage writer_message;
-      writer_message.set_topic(stan::WriterMessage_Topic_DIAGNOSTIC);
-      for (std::size_t i = 0; i < diagnostic_fields_.size(); ++i) {
-        stan::WriterMessage_Feature *feature = writer_message.add_feature();
-        feature->set_name(diagnostic_fields_[i]);
-        stan::WriterMessage_DoubleList *double_list = new stan::WriterMessage_DoubleList;
-        double_list->add_value(state[i]);
-        feature->set_allocated_double_list(double_list);
-      }
+      rapidjson::StringBuffer buffer;
+      rapidjson::Writer<rapidjson::StringBuffer, rapidjson::UTF8<>, rapidjson::UTF8<>, rapidjson::CrtAllocator, rapidjson::kWriteNanAndInfFlag> writer(buffer);
+      writer.StartObject();
 
-      send_message(writer_message, socket);
+      writer.String("version");
+      writer.Int(1);
+      writer.String("topic");
+      writer.String("diagnostic");
+
+      writer.String("values");
+      writer.StartObject();
+      for (std::size_t i = 0; i < diagnostic_fields_.size(); ++i) {
+        writer.String(diagnostic_fields_[i].c_str());
+        writer.Double(state[i]);
+      }
+      writer.EndObject();
+
+      writer.EndObject();
+
+      send_message(buffer, socket);
       return;
     } else if (message_prefix_ == "init_writer:") {
-      stan::WriterMessage writer_message;
-      writer_message.set_topic(stan::WriterMessage_Topic_INITIALIZATION);
+      rapidjson::StringBuffer buffer;
+      rapidjson::Writer<rapidjson::StringBuffer, rapidjson::UTF8<>, rapidjson::UTF8<>, rapidjson::CrtAllocator, rapidjson::kWriteNanAndInfFlag> writer(buffer);
+      writer.StartObject();
 
-      stan::WriterMessage_Feature *feature = writer_message.add_feature();
-      stan::WriterMessage_DoubleList *double_list = new stan::WriterMessage_DoubleList;
+      writer.String("version");
+      writer.Int(1);
+      writer.String("topic");
+      writer.String("initialization");
+
+      writer.String("values");
+      writer.StartArray();
       for (std::vector<double>::const_iterator it = state.begin(); it != last; ++it) {
-        double_list->add_value(*it);
+        writer.Double(*it);
       }
-      feature->set_allocated_double_list(double_list);
+      writer.EndArray();
 
-      send_message(writer_message, socket);
+      writer.EndObject();
+
+      send_message(buffer, socket);
       return;
     } else if (message_prefix_ == "sample_writer:") {
       if (sample_fields_.empty())
@@ -199,18 +218,26 @@ public:
           (processing_adaptation_state_ == ProcessingAdaptationState::FINAL_ADAPTATION_MESSAGE))
         throw std::runtime_error("Adaptation should have completed before sample writer writes a vector of doubles.");
 
-      stan::WriterMessage writer_message;
-      writer_message.set_topic(stan::WriterMessage_Topic_SAMPLE);
+      rapidjson::StringBuffer buffer;
+      rapidjson::Writer<rapidjson::StringBuffer, rapidjson::UTF8<>, rapidjson::UTF8<>, rapidjson::CrtAllocator, rapidjson::kWriteNanAndInfFlag> writer(buffer);
+      writer.StartObject();
 
+      writer.String("version");
+      writer.Int(1);
+      writer.String("topic");
+      writer.String("sample");
+
+      writer.String("values");
+      writer.StartObject();
       for (std::size_t i = 0; i < sample_fields_.size(); ++i) {
-        stan::WriterMessage_Feature *feature = writer_message.add_feature();
-        feature->set_name(sample_fields_[i]);
-        stan::WriterMessage_DoubleList *double_list = new stan::WriterMessage_DoubleList;
-        double_list->add_value(state[i]);
-        feature->set_allocated_double_list(double_list);
+        writer.String(sample_fields_[i].c_str());
+        writer.Double(state[i]);
       }
+      writer.EndObject();
 
-      send_message(writer_message, socket);
+      writer.EndObject();
+
+      send_message(buffer, socket);
       return;
     }
   }
@@ -230,16 +257,23 @@ public:
    */
   void operator()(const std::string &message) {
     if (message_prefix_ == "diagnostic_writer:") {
-      // DEBUG: prototype here
-      stan::WriterMessage writer_message;
-      writer_message.set_topic(stan::WriterMessage_Topic_DIAGNOSTIC);
+      rapidjson::StringBuffer buffer;
+      rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+      writer.StartObject();
 
-      stan::WriterMessage_Feature *feature = writer_message.add_feature();
-      stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-      bytes_list->add_value(message);
-      feature->set_allocated_bytes_list(bytes_list);
+      writer.String("version");
+      writer.Int(1);
+      writer.String("topic");
+      writer.String("diagnostic");
 
-      send_message(writer_message, socket);
+      writer.String("values");
+      writer.StartArray();
+      writer.String(message.c_str());
+      writer.EndArray();
+
+      writer.EndObject();
+
+      send_message(buffer, socket);
       return;
     } else if (message_prefix_ == "init_writer:") {
       throw std::runtime_error("Unexpected string vector for init writer.");
@@ -261,15 +295,23 @@ public:
         processing_adaptation_state_ = ProcessingAdaptationState::AFTER_PROCESSING_ADAPTATION;
       }
 
-      stan::WriterMessage writer_message;
-      writer_message.set_topic(stan::WriterMessage_Topic_SAMPLE);
+      rapidjson::StringBuffer buffer;
+      rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+      writer.StartObject();
 
-      stan::WriterMessage_Feature *feature = writer_message.add_feature();
-      stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-      bytes_list->add_value(message);
-      feature->set_allocated_bytes_list(bytes_list);
+      writer.String("version");
+      writer.Int(1);
+      writer.String("topic");
+      writer.String("sample");
 
-      send_message(writer_message, socket);
+      writer.String("values");
+      writer.StartArray();
+      writer.String(message.c_str());
+      writer.EndArray();
+
+      writer.EndObject();
+
+      send_message(buffer, socket);
       return;
     }
   }

@@ -1,10 +1,9 @@
 #ifndef HTTPSTAN_SOCKET_LOGGER_HPP
 #define HTTPSTAN_SOCKET_LOGGER_HPP
 
-#include "callbacks_writer.pb.h"
 #include <boost/asio.hpp>
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 #include <iostream>
 #include <sstream>
 #include <stan/callbacks/logger.hpp>
@@ -38,20 +37,16 @@ private:
   std::string message_prefix_;
 
   /**
-   * Send a protocol buffer message to a socket using length-prefix encoding.
+   * Send a JSON message followed by a newline to a socket.
    */
-  size_t send_message(const stan::WriterMessage &message, boost::asio::local::stream_protocol::socket &socket) {
+  size_t send_message(const rapidjson::StringBuffer &buffer, boost::asio::local::stream_protocol::socket &socket) {
+
     boost::asio::streambuf stream_buffer;
     std::ostream output_stream(&stream_buffer);
-    {
-      ::google::protobuf::io::OstreamOutputStream raw_output_stream(&output_stream);
-      ::google::protobuf::io::CodedOutputStream coded_output_stream(&raw_output_stream);
-      coded_output_stream.WriteVarint32(message.ByteSizeLong());
-      message.SerializeToCodedStream(&coded_output_stream);
-      // IMPORTANT: In order to flush a CodedOutputStream it must be deleted.
-    }
+    output_stream << buffer.GetString() << "\n";
     return socket.send(stream_buffer.data());
   }
+
 
 public:
   /**
@@ -78,15 +73,24 @@ public:
    * @param[in] message message
    */
   void debug(const std::string &message) {
-    stan::WriterMessage writer_message;
-    writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
-    stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-    bytes_list->add_value(std::string("debug:") + message);
-    feature->set_allocated_bytes_list(bytes_list);
+    writer.StartObject();
 
-    send_message(writer_message, socket);
+    writer.String("version");
+    writer.Int(1);
+    writer.String("topic");
+    writer.String("logger");
+
+    writer.String("values");
+    writer.StartArray();
+    writer.String((std::string("debug:") + message).c_str());
+    writer.EndArray();
+
+    writer.EndObject();
+
+    send_message(buffer, socket);
   }
 
   /**
@@ -95,111 +99,192 @@ public:
    * @param[in] message message
    */
   void debug(const std::stringstream &message) {
-    stan::WriterMessage writer_message;
-    writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
-    stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-    bytes_list->add_value(std::string("debug:") + message.str());
-    feature->set_allocated_bytes_list(bytes_list);
+    writer.StartObject();
 
-    send_message(writer_message, socket);
+    writer.String("version");
+    writer.Int(1);
+    writer.String("topic");
+    writer.String("logger");
+
+    writer.String("values");
+    writer.StartArray();
+    writer.String((std::string("debug:") + message.str()).c_str());
+    writer.EndArray();
+
+    writer.EndObject();
+
+    send_message(buffer, socket);
   }
 
   void info(const std::string &message) {
-    stan::WriterMessage writer_message;
-    writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
-    stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-    bytes_list->add_value(std::string("info:") + message);
-    feature->set_allocated_bytes_list(bytes_list);
+    writer.StartObject();
 
-    send_message(writer_message, socket);
+    writer.String("version");
+    writer.Int(1);
+    writer.String("topic");
+    writer.String("logger");
+
+    writer.String("values");
+    writer.StartArray();
+    writer.String((std::string("info:") + message).c_str());
+    writer.EndArray();
+
+    writer.EndObject();
+
+    send_message(buffer, socket);
   }
 
   void info(const std::stringstream &message) {
-    stan::WriterMessage writer_message;
-    writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
-    stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-    bytes_list->add_value(std::string("info:") + message.str());
-    feature->set_allocated_bytes_list(bytes_list);
+    writer.StartObject();
 
-    send_message(writer_message, socket);
+    writer.String("version");
+    writer.Int(1);
+    writer.String("topic");
+    writer.String("logger");
+
+    writer.String("values");
+    writer.StartArray();
+    writer.String((std::string("info:") + message.str()).c_str());
+    writer.EndArray();
+
+    writer.EndObject();
+
+    send_message(buffer, socket);
   }
 
   void warn(const std::string &message) {
-    stan::WriterMessage writer_message;
-    writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
-    stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-    bytes_list->add_value(std::string("warn:") + message);
-    feature->set_allocated_bytes_list(bytes_list);
+    writer.StartObject();
 
-    send_message(writer_message, socket);
+    writer.String("version");
+    writer.Int(1);
+    writer.String("topic");
+    writer.String("logger");
+
+    writer.String("values");
+    writer.StartArray();
+    writer.String((std::string("warn:") + message).c_str());
+    writer.EndArray();
+
+    writer.EndObject();
+
+    send_message(buffer, socket);
   }
 
   void warn(const std::stringstream &message) {
-    stan::WriterMessage writer_message;
-    writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
-    stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-    bytes_list->add_value(std::string("warn:") + message.str());
-    feature->set_allocated_bytes_list(bytes_list);
+    writer.StartObject();
 
-    send_message(writer_message, socket);
+    writer.String("version");
+    writer.Int(1);
+    writer.String("topic");
+    writer.String("logger");
+
+    writer.String("values");
+    writer.StartArray();
+    writer.String((std::string("warn:") + message.str()).c_str());
+    writer.EndArray();
+
+    writer.EndObject();
+
+    send_message(buffer, socket);
   }
 
   void error(const std::string &message) {
-    stan::WriterMessage writer_message;
-    writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
-    stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-    bytes_list->add_value(std::string("error:") + message);
-    feature->set_allocated_bytes_list(bytes_list);
+    writer.StartObject();
 
-    send_message(writer_message, socket);
+    writer.String("version");
+    writer.Int(1);
+    writer.String("topic");
+    writer.String("logger");
+
+    writer.String("values");
+    writer.StartArray();
+    writer.String((std::string("error:") + message).c_str());
+    writer.EndArray();
+
+    writer.EndObject();
+
+    send_message(buffer, socket);
   }
 
   void error(const std::stringstream &message) {
-    stan::WriterMessage writer_message;
-    writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
-    stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-    bytes_list->add_value(std::string("error:") + message.str());
-    feature->set_allocated_bytes_list(bytes_list);
+    writer.StartObject();
 
-    send_message(writer_message, socket);
+    writer.String("version");
+    writer.Int(1);
+    writer.String("topic");
+    writer.String("logger");
+
+    writer.String("values");
+    writer.StartArray();
+    writer.String((std::string("error:") + message.str()).c_str());
+    writer.EndArray();
+
+    writer.EndObject();
+
+    send_message(buffer, socket);
   }
 
   void fatal(const std::string &message) {
-    stan::WriterMessage writer_message;
-    writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
-    stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-    bytes_list->add_value(std::string("fatal:") + message);
-    feature->set_allocated_bytes_list(bytes_list);
+    writer.StartObject();
 
-    send_message(writer_message, socket);
+    writer.String("version");
+    writer.Int(1);
+    writer.String("topic");
+    writer.String("logger");
+
+    writer.String("values");
+    writer.StartArray();
+    writer.String((std::string("fatal:") + message).c_str());
+    writer.EndArray();
+
+    writer.EndObject();
+
+    send_message(buffer, socket);
   }
 
   void fatal(const std::stringstream &message) {
-    stan::WriterMessage writer_message;
-    writer_message.set_topic(stan::WriterMessage_Topic_LOGGER);
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 
-    stan::WriterMessage_Feature *feature = writer_message.add_feature();
-    stan::WriterMessage_BytesList *bytes_list = new stan::WriterMessage_BytesList;
-    bytes_list->add_value(std::string("fatal:") + message.str());
-    feature->set_allocated_bytes_list(bytes_list);
+    writer.StartObject();
 
-    send_message(writer_message, socket);
+    writer.String("version");
+    writer.Int(1);
+    writer.String("topic");
+    writer.String("logger");
+
+    writer.String("values");
+    writer.StartArray();
+    writer.String((std::string("fatal:") + message.str()).c_str());
+    writer.EndArray();
+
+    writer.EndObject();
+
+    send_message(buffer, socket);
   }
 };
 

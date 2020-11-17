@@ -125,7 +125,6 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
         fh.write(cpp_code)
 
     httpstan_dir = os.path.dirname(__file__)
-    callbacks_writer_pb_path = pathlib.Path(httpstan_dir) / "callbacks_writer.pb.cc"
     include_dirs = [
         httpstan_dir,  # for socket_writer.hpp and socket_logger.hpp
         model_directory_path.as_posix(),
@@ -151,7 +150,7 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     # Note: `library_dirs` is only relevant for linking. It does not tell an extension
     # where to find shared libraries during execution. There are two ways for an
     # extension module to find shared libraries: LD_LIBRARY_PATH and rpath.
-    libraries = ["protobuf-lite", "sundials_cvodes", "sundials_idas", "sundials_nvecserial", "tbb"]
+    libraries = ["sundials_cvodes", "sundials_idas", "sundials_nvecserial", "tbb"]
     if platform.system() == "Darwin":
         libraries.extend(["tbbmalloc", "tbbmalloc_proxy"])
     extension = setuptools.Extension(
@@ -165,7 +164,6 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
         extra_compile_args=extra_compile_args,
         extra_link_args=[f"-Wl,-rpath,{PACKAGE_DIR / 'lib'}"],
         extra_objects=[
-            callbacks_writer_pb_path.with_suffix(".o").as_posix(),
             (PACKAGE_DIR / "stan_services.cpp").with_suffix(".o").as_posix(),
         ],
     )

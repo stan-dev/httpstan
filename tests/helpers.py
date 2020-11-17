@@ -1,11 +1,11 @@
 """Helper functions for tests."""
 import asyncio
+import json
 import typing
 
 import aiohttp
-import google.protobuf.internal.decoder
 
-import httpstan.callbacks_writer_pb2 as callbacks_writer_pb2
+import httpstan.schemas as schemas
 
 
 async def get_model_name(api_url: str, program_code: str) -> str:
@@ -24,7 +24,7 @@ async def get_model_name(api_url: str, program_code: str) -> str:
     return model_name
 
 
-def decode_messages(fit_bytes: bytes) -> typing.List[callbacks_writer_pb2.WriterMessage]:
+def decode_messages(fit_bytes: bytes) -> typing.List[typing.Dict]:
     """Decode serialized messages.
 
     Arguments:
@@ -34,21 +34,15 @@ def decode_messages(fit_bytes: bytes) -> typing.List[callbacks_writer_pb2.Writer
         Decoded messages
 
     """
-    varint_decoder = google.protobuf.internal.decoder._DecodeVarint32  # type: ignore
-    next_pos, pos = 0, 0
     messages = []
-    while pos < len(fit_bytes):
-        msg = callbacks_writer_pb2.WriterMessage()
-        next_pos, pos = varint_decoder(fit_bytes, pos)
-        msg.ParseFromString(fit_bytes[pos : pos + next_pos])
-        assert msg
-        pos += next_pos
-        messages.append(msg)
+    for line in fit_bytes.splitlines():
+        payload = json.loads(line)
+        messages.append(schemas.WriterMessage().load(payload))
     return messages
 
 
 def extract(param_name: str, fit_bytes: bytes) -> typing.List[typing.Union[int, float]]:
-    """Extract all draws for parameter from protobuf stream response.
+    """Extract all draws for a parameter.
 
     Only works with a single parameter.
 
@@ -63,11 +57,10 @@ def extract(param_name: str, fit_bytes: bytes) -> typing.List[typing.Union[int, 
     draws = []
     for msg in decode_messages(fit_bytes):
         assert msg
-        if msg.topic == callbacks_writer_pb2.WriterMessage.Topic.Value("SAMPLE"):
-            for value_wrapped in msg.feature:
-                if param_name == value_wrapped.name.decode():
-                    fea = getattr(value_wrapped, "double_list") or getattr(value_wrapped, "int_list")
-                    draws.append(fea.value.pop())
+        if msg["topic"] == "sample":
+            for key_maybe in msg["values"]:
+                if param_name == key_maybe:
+                    draws.append(msg["values"][key_maybe])
     if len(draws) == 0:
         raise KeyError(f"No draws found for parameter `{param_name}`.")
     return draws

@@ -131,3 +131,53 @@ class Parameter(marshmallow.Schema):  # noqa
     name = fields.String(required=True)
     dims = fields.List(fields.Integer(), required=True)
     constrained_names = fields.List(fields.String(), required=True)
+
+
+class WriterMessage(marshmallow.Schema):
+    """Messages from callback writers and loggers in ``stan::callbacks``.
+
+    NOTE: You SHOULD NOT use this schema. This schema exists for testing and
+    for documentation. It SHOULD NOT be used to process a large number of JSON
+    messages. Doing so will slow down any program.
+
+    This schema is intended for messages emitted by C++ classes which inherit
+    from
+
+    - ``stan/callbacks/writer.hpp``, and
+    - ``stan/callbacks/logger.hpp``.
+
+    In particular, the schema matches a JSON-based "version" of the CSV-focused
+    ``stan/callbacks/stream_writer.hpp`` and
+    ``stan/callbacks/stream_logger.hpp``.
+
+    This version is found "inside" the httpstan-specific
+    ``httpstan/socket_writer.hpp`` and ``httpstan/socket_logger.hpp``.
+
+    `WriterMessage` is a data format for all messages written by the callback
+    writers defined in ``stan::callbacks``.  These writers are used by the
+    functions defined in ``stan::services``. For example,
+    ``stan::services::sample::hmc_nuts_diag_e`` uses one logger and three
+    writers:
+
+    - ``logger`` Logger for informational and error messages
+    - ``init_writer`` Writer callback for unconstrained inits
+    - ``sample_writer`` Writer for draws
+    - ``diagnostic_writer`` Writer for diagnostic information
+
+    WriterMessage is a format which is flexible enough to accommodate these
+    different uses while still providing a predictable structure.
+
+    A WriterMessage has a field ``topic`` which provides information about what
+    the WriterMessage concerns or what produced it. For example, the `topic`
+    associated with a WriterMessage written by `sample_writer` in the function
+    is ``sample``.
+
+    The "content" of a message is stored in the field ``values``. This is either
+    a list or a mapping.
+
+    """
+
+    version = fields.Integer(required=True)
+    topic = fields.String(required=True, validate=validate.OneOf(["logger", "initialization", "sample", "diagnostic"]))
+    # values is either a List or a Mapping. Marshmallow lacks a union type.
+    values = fields.Raw(required=True)
