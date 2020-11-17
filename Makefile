@@ -209,7 +209,7 @@ HTTPSTAN_EXTRA_COMPILE_ARGS ?= -O3 -std=c++14
 HTTPSTAN_MACROS = -DBOOST_DISABLE_ASSERTS -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION -DSTAN_THREADS -D_REENTRANT -D_GLIBCXX_USE_CXX11_ABI=0
 HTTPSTAN_INCLUDE_DIRS = -Ihttpstan -Ihttpstan/include -Ihttpstan/include/lib/eigen_$(EIGEN_VERSION) -Ihttpstan/include/lib/boost_$(BOOST_VERSION) -Ihttpstan/include/lib/sundials_$(SUNDIALS_VERSION)/include -Ihttpstan/include/lib/tbb_$(TBB_VERSION)/include
 
-httpstan/stan_services.o: httpstan/stan_services.cpp | httpstan/include/rapidjson
+httpstan/stan_services.o: httpstan/stan_services.cpp httpstan/socket_logger.hpp httpstan/socket_writer.hpp | httpstan/include/rapidjson
 
 httpstan/stan_services.o:
 	$(PYTHON_CXX) \
