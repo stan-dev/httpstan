@@ -168,7 +168,9 @@ public:
       }
 
       rapidjson::StringBuffer buffer;
-      rapidjson::Writer<rapidjson::StringBuffer, rapidjson::UTF8<>, rapidjson::UTF8<>, rapidjson::CrtAllocator, rapidjson::kWriteNanAndInfFlag> writer(buffer);
+      rapidjson::Writer<rapidjson::StringBuffer, rapidjson::UTF8<>, rapidjson::UTF8<>, rapidjson::CrtAllocator,
+                        rapidjson::kWriteNanAndInfFlag>
+          writer(buffer);
       writer.StartObject();
 
       writer.String("version");
@@ -190,7 +192,9 @@ public:
       return;
     } else if (message_prefix_ == "init_writer:") {
       rapidjson::StringBuffer buffer;
-      rapidjson::Writer<rapidjson::StringBuffer, rapidjson::UTF8<>, rapidjson::UTF8<>, rapidjson::CrtAllocator, rapidjson::kWriteNanAndInfFlag> writer(buffer);
+      rapidjson::Writer<rapidjson::StringBuffer, rapidjson::UTF8<>, rapidjson::UTF8<>, rapidjson::CrtAllocator,
+                        rapidjson::kWriteNanAndInfFlag>
+          writer(buffer);
       writer.StartObject();
 
       writer.String("version");
@@ -218,7 +222,9 @@ public:
         throw std::runtime_error("Adaptation should have completed before sample writer writes a vector of doubles.");
 
       rapidjson::StringBuffer buffer;
-      rapidjson::Writer<rapidjson::StringBuffer, rapidjson::UTF8<>, rapidjson::UTF8<>, rapidjson::CrtAllocator, rapidjson::kWriteNanAndInfFlag> writer(buffer);
+      rapidjson::Writer<rapidjson::StringBuffer, rapidjson::UTF8<>, rapidjson::UTF8<>, rapidjson::CrtAllocator,
+                        rapidjson::kWriteNanAndInfFlag>
+          writer(buffer);
       writer.StartObject();
 
       writer.String("version");
