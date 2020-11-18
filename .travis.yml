@@ -7,17 +7,8 @@ os: linux
 dist: focal
 jobs:
   - python: 3.7
-  - python: 3.7
-    env:
-      - CC=clang
   - python: 3.8
-  - python: 3.8
-    env:
-      - CC=clang
   - python: 3.9-dev
-  - python: 3.9-dev
-    env:
-      - CC=clang
   - os: osx
     osx_image: xcode11.3
     language: generic
