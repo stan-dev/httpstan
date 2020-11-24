@@ -181,3 +181,11 @@ class WriterMessage(marshmallow.Schema):
     topic = fields.String(required=True, validate=validate.OneOf(["logger", "initialization", "sample", "diagnostic"]))
     # values is either a List or a Mapping. Marshmallow lacks a union type.
     values = fields.Raw(required=True)
+
+
+class ShowLogProbRequest(marshmallow.Schema):
+    """Schema for log_prob request."""
+
+    data = fields.Nested(Data(), missing={})
+    unconstrained_parameters = fields.List(fields.Float(), required=True)
+    adjust_transform = fields.Boolean(missing=True)

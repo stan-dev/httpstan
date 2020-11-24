@@ -558,3 +558,79 @@ async def handle_get_operation(request: aiohttp.web.Request) -> aiohttp.web.Resp
         message, status = f"Operation `{operation_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     return aiohttp.web.json_response(operation)
+
+
+async def handle_log_prob(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    """Calculate the log probability.
+
+    ---
+    post:
+      summary: Return the log probability of the unconstrained parameters.
+      description: >-
+        Returns the output of Stan C++ `stan::model::log_prob_propto`.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: model_id
+          in: path
+          description: ID of Stan model to use
+          required: true
+          type: string
+        - in: body
+          name: data
+          description: >-
+              Data for the Stan Model.
+          required: true
+          schema: Data
+        - in: body
+          name: unconstrained_parameters
+          description: >-
+              Unconstrained parameters to calculate log probability for.
+          required: true
+          schema:
+            type: boolean
+        - in: body
+          name: adjust_transform
+          description: >-
+              Boolean to control whether we apply a Jacobian adjust transform.
+          required: true
+          schema:
+            type: array
+            items:
+              type: number
+      responses:
+        "200":
+          description: Log probability of the unconstrained parameters.
+          schema:
+            type: object
+            properties:
+              log_prob:
+                type: number
+        "400":
+          description: Error associated with request.
+          schema: Status
+        "404":
+          description: Model not found.
+          schema: Status
+    """
+    args = await webargs.aiohttpparser.parser.parse(schemas.ShowLogProbRequest(), request)
+    model_name = f'models/{request.match_info["model_id"]}'
+    data = args["data"]
+    unconstrained_parameters = args["unconstrained_parameters"]
+    adjust_transform = args["adjust_transform"]
+
+    try:
+        services_module = httpstan.models.import_services_extension_module(model_name)
+    except KeyError:
+        message, status = f"Model `{model_name}` not found.", 404
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+
+    try:
+        lp = services_module.log_prob(data, unconstrained_parameters, adjust_transform)  # type: ignore
+    except Exception as exc:
+        message, status = f"Error calling log_prob: `{exc}`", 400
+        logger.critical(message)
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+    return aiohttp.web.json_response({"log_prob": lp}, status=200)
