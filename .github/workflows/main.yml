@@ -1,0 +1,51 @@
+name: httpstan
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    name: httpstan tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-10.14]
+        python-version: [3.7, 3.8]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install poetry
+        run: pip install "poetry==1.0.9"
+
+      - name: Build libraries used by Stan
+        run: make
+
+      # export test dependencies from pyproject.toml, install them
+      - name: Install dependencies
+        run: |
+          poetry export -f requirements.txt --dev -o requirements.txt \
+          && pip install -r requirements.txt
+
+      - name: Check code
+        run: scripts/check
+
+      - name: Build and Install wheel
+        run: |
+          poetry build -v
+          python -m pip install dist/*.whl
+
+      - name: Run tests
+        run: |
+          mkdir testdir
+          cd testdir
+          python -m pytest -s -v --cov=httpstan --cov-fail-under=93 ../tests
+
+      - name: Test PyStan compatibility
+        run: |
+          pip install --pre pystan
+          python -c'import stan;assert stan.build("parameters {real y;} model {y ~ normal(0,1);}").sample()["y"] is not None'
