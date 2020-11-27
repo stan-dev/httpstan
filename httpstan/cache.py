@@ -2,7 +2,6 @@
 
 Functions in this module manage the Stan model cache and related caches.
 """
-import gzip
 import logging
 import os
 import pathlib
@@ -88,43 +87,38 @@ def load_stanc_warnings(model_name: str) -> str:
 def dump_fit(fit_bytes: bytes, name: str) -> None:
     """Store Stan fit in filesystem-based cache.
 
-    The Stan fit is passed via ``fit_bytes``.
-
-    This function uses gzip to compress the cache.
+    The Stan fit is passed via ``fit_bytes``. The content
+    must already be compressed.
 
     Arguments:
         name: Stan fit name
-        fit_bytes: Bytes of the Stan fit.
-
+        fit_bytes: LZ4-compressed messages associated with Stan fit.
     """
     cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
     # fits are stored under their "parent" models
     fits_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
-    fit_filename = os.path.join(fits_path, f'{name.split("/")[-1]}.dat.gz')
+    fit_filename = os.path.join(fits_path, f'{name.split("/")[-1]}.jsonlines.lz4')
     os.makedirs(fits_path, exist_ok=True)
-    with gzip.open(fit_filename, mode="wb") as fh:
+    with open(fit_filename, mode="wb") as fh:
         fh.write(fit_bytes)
 
 
 def load_fit(name: str) -> bytes:
     """Load Stan fit from the filesystem-based cache.
 
-    This function uses gzip to decompress the cache.
-
     Arguments:
         name: Stan fit name
         model_name: Stan model name
 
     Returns
-        bytes: Bytes of fit.
-
+        LZ4-compressed messages associated with Stan fit.
     """
     cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
     # fits are stored under their "parent" models
     fits_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
-    fit_filename = os.path.join(fits_path, f'{name.split("/")[-1]}.dat.gz')
+    fit_filename = os.path.join(fits_path, f'{name.split("/")[-1]}.jsonlines.lz4')
     try:
-        with gzip.open(fit_filename, mode="rb") as fh:
+        with open(fit_filename, mode="rb") as fh:
             return fh.read()
     except FileNotFoundError:
         raise KeyError(f"Fit `{name}` not found.")
@@ -139,4 +133,4 @@ def delete_fit(name: str) -> None:
     cache_path = appdirs.user_cache_dir("httpstan", version=httpstan.__version__)
     fits_path = os.path.join(*([cache_path] + name.split("/")[:-1]))
     fit_id = name.split("/")[-1]
-    pathlib.Path(os.path.join(fits_path, f"{fit_id}.dat.gz")).unlink()
+    pathlib.Path(os.path.join(fits_path, f"{fit_id}.jsonlines.lz4")).unlink()

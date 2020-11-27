@@ -129,6 +129,6 @@ async def test_bernoulli_parallel(api_url: str) -> None:
         async with aiohttp.ClientSession() as session:
             async with session.get(fit_url) as resp:
                 assert resp.status == 200
-                assert resp.headers["Content-Type"] == "application/octet-stream"
+                assert resp.headers["Content-Type"] == "text/plain; charset=utf-8"
                 theta = helpers.extract("theta", await resp.read())
                 assert len(theta) == 1_000

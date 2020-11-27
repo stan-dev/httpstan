@@ -12,6 +12,7 @@ import traceback
 from typing import Optional, Sequence, cast
 
 import aiohttp.web
+import lz4.frame
 import webargs.aiohttpparser
 
 import httpstan.cache
@@ -424,11 +425,11 @@ async def handle_get_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
     ---
     get:
       summary: Get results returned by a function.
-      description: Result (e.g., draws) from calling a function defined in stan::services.
+      description: Result (draws, logger messages) from calling a function defined in stan::services.
       consumes:
         - application/json
       produces:
-        - application/octet-stream
+        - text/plain
       parameters:
         - name: model_id
           in: path
@@ -442,10 +443,7 @@ async def handle_get_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
           type: string
       responses:
         "200":
-          description: Result as a stream of Protocol Buffer messages.
-          schema:
-            type: string
-            format: binary
+          description: Newline-delimited JSON-encoded messages from Stan. Includes draws.
         "404":
           description: Fit not found.
           schema: Status
@@ -454,12 +452,13 @@ async def handle_get_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
     fit_name = f"{model_name}/fits/{request.match_info['fit_id']}"
 
     try:
-        fit_bytes = httpstan.cache.load_fit(fit_name)
+        fit_bytes_lz4 = httpstan.cache.load_fit(fit_name)
     except KeyError:
         message, status = f"Fit `{fit_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+    fit_bytes = lz4.frame.decompress(fit_bytes_lz4)
     assert isinstance(fit_bytes, bytes)
-    return aiohttp.web.Response(body=fit_bytes)
+    return aiohttp.web.Response(body=fit_bytes, content_type="text/plain", charset="utf-8")
 
 
 async def handle_delete_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
