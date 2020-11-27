@@ -280,10 +280,24 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
 async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Call function defined in stan::services.
 
+    A request to this endpoint starts a long-running operation. Users can
+    retrieve information about the status of the operation by making
+    a GET request to the operations resource endpoint.
+
+    When the operation is `done`, the "fit" may be downloaded. (A "fit"
+    collects all logger and writer messages from Stan.)
+
     ---
     post:
       summary: Call function defined in stan::services.
       description: >-
+        A request to this endpoint starts a long-running operation. Users can
+        retrieve information about the status of the operation by making
+        a GET request to the operations resource endpoint.
+
+        When the operation is `done`, the "fit" may be downloaded. (A "fit"
+        collects all logger and writer messages from Stan.)
+
         ``function`` indicates the name of the ``stan::services function`` which
         should be called given the Stan model associated with the id ``model_id``.
         For example, if sampling using
@@ -384,7 +398,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
     )
 
     # Launch the call to the services function in the background. Wire things up
-    # such that the database gets updated when the task finishes. Note that
+    # such that the operation gets updated when the task finishes. Note that
     # if a task is cancelled before finishing a warning will be issued (see
     # `on_cleanup` signal handler in main.py).
     def logger_callback(operation: dict, message: bytes) -> None:
@@ -494,10 +508,32 @@ async def handle_delete_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
 async def handle_get_operation(request: aiohttp.web.Request) -> aiohttp.web.Response:
     """Get Operation.
 
+    Details about an Operation include whether or not the operation is `done` and
+    information about the progress of sampling. Here is an example (pretty-printed)
+    of an operation associated with an in-progress sampling operation:
+
+    ```json
+    {
+      "done": false,
+      "name": "operations/9f9d701294",
+      "metadata": {
+        "progress": "Iteration: 1000 / 2000 [50%] (Sampling)",
+        "fit": {"name": "models/e1ca9f7ac7/fits/9f9d701294"}
+      }
+    }
+    ```
+
+    The schema for an Operation mirrors that of `operation.proto`_.
+
+    .. _operation.proto: https://github.com/googleapis/googleapis/blob/master/google/longrunning/operations.proto
+
     ---
     get:
       summary: Get Operation details.
-      description: Return Operation details.
+      description: >-
+        Return Operation details. Details about an Operation include whether or
+        not the operation is `done` and information about the progress of
+        sampling.
       consumes:
         - application/json
       produces:
