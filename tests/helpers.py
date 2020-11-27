@@ -121,7 +121,7 @@ async def fit_bytes(api_url: str, fit_name: str) -> bytes:
         fit_url = f"{api_url}/{fit_name}"
         async with session.get(fit_url) as resp:
             assert resp.status == 200
-            assert resp.headers["Content-Type"] == "application/octet-stream"
+            assert resp.headers["Content-Type"] == "text/plain; charset=utf-8"
             fit_bytes = await resp.read()
     return fit_bytes
 

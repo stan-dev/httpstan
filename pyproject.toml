@@ -36,6 +36,7 @@ appdirs = "^1.4"
 webargs = "^6.1"
 marshmallow = "^3.2"
 numpy = "^1.16"
+lz4 = "^3.0.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4"

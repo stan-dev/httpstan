@@ -18,6 +18,8 @@ import socket
 import tempfile
 import typing
 
+import lz4.frame
+
 import httpstan.cache
 import httpstan.models
 import httpstan.services.arguments as arguments
@@ -133,10 +135,16 @@ async def call(
                 # no messages right now and not done. Sleep briefly so other pending tasks get a chance to run.
                 await asyncio.sleep(0.001)
 
-    for fh in messages_files.values():
-        fh.flush()
-    httpstan.cache.dump_fit(b"".join(fh.getvalue() for fh in messages_files.values()), fit_name)
-    for fh in messages_files.values():
-        fh.close()
+    # WISHLIST: Here we compress messages after they all have arrived. Find a way to compress
+    # messages as they arrive.  Compressing messages as they arrive would use much less memory.
+    with lz4.frame.LZ4FrameCompressor() as compressor:
+        compressed = compressor.begin()
+        for fh in messages_files.values():
+            fh.flush()
+            compressed += compressor.compress(fh.getvalue())
+            fh.close()
+        compressed += compressor.flush()
+    httpstan.cache.dump_fit(compressed, fit_name)
+
     # `result()` method will raise exceptions, if any
     future.result()
