@@ -33,7 +33,7 @@ logger = logging.getLogger("httpstan")
 # because `pickle` (used by ProcessPoolExecutor) cannot pickle local functions.
 def _make_lazy_function_wrapper_helper(
     function_basename: str, model_name: str, *args: typing.Any, **kwargs: typing.Any
-) -> typing.Callable:
+) -> typing.Callable:  # pragma: no cover
     services_module = httpstan.models.import_services_extension_module(model_name)
     function = getattr(services_module, function_basename + "_wrapper")
     return function(*args, **kwargs)  # type: ignore
@@ -94,7 +94,7 @@ async def call(
         lazy_function_wrapper_partial = functools.partial(lazy_function_wrapper, socket_filename, **kwargs)
 
         # If HTTPSTAN_DEBUG is set block until sampling is complete. Do not use an executor.
-        if HTTPSTAN_DEBUG:
+        if HTTPSTAN_DEBUG:  # pragma: no cover
             future: asyncio.Future = asyncio.Future()
             logger.debug("Calling stan::services function with debug mode on.")
             print("Warning: httpstan debug mode is on! `num_samples` must be set to a small number (e.g., 10).")
