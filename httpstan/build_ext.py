@@ -19,7 +19,7 @@ from httpstan.config import HTTPSTAN_DEBUG
 
 
 def _get_build_extension() -> distutils.command.build_ext.build_ext:  # type: ignore
-    if HTTPSTAN_DEBUG:
+    if HTTPSTAN_DEBUG:  # pragma: no cover
         distutils.log.set_verbosity(distutils.log.DEBUG)  # type: ignore
     dist = distutils.core.Distribution()
     # Make sure build respects distutils configuration
@@ -47,7 +47,7 @@ def run_build_ext(extensions: List[distutils.core.Extension], build_lib: str) ->
         """
         try:
             stream.fileno()
-        except (AttributeError, OSError, IOError, io.UnsupportedOperation):
+        except (AttributeError, OSError, IOError, io.UnsupportedOperation):  # pragma: no cover
             return False
         return True
 

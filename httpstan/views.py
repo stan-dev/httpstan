@@ -188,7 +188,7 @@ async def handle_delete_model(request: aiohttp.web.Request) -> aiohttp.web.Respo
 
     try:
         httpstan.models.import_services_extension_module(model_name)
-    except KeyError:
+    except KeyError:  # pragma: no cover
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
 
@@ -251,7 +251,7 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
 
     try:
         services_module = httpstan.models.import_services_extension_module(model_name)
-    except KeyError:
+    except KeyError:  # pragma: no cover
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
 
@@ -342,7 +342,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
 
     try:
         httpstan.models.import_services_extension_module(model_name)
-    except KeyError:
+    except KeyError:  # pragma: no cover
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
 
@@ -453,7 +453,7 @@ async def handle_get_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
 
     try:
         fit_bytes_lz4 = httpstan.cache.load_fit(fit_name)
-    except KeyError:
+    except KeyError:  # pragma: no cover
         message, status = f"Fit `{fit_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     fit_bytes = lz4.frame.decompress(fit_bytes_lz4)
@@ -495,7 +495,7 @@ async def handle_delete_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
 
     try:
         httpstan.cache.load_fit(fit_name)
-    except KeyError:
+    except KeyError:  # pragma: no cover
         message, status = f"Fit `{fit_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
 
@@ -554,7 +554,7 @@ async def handle_get_operation(request: aiohttp.web.Request) -> aiohttp.web.Resp
     operation_name = f"operations/{request.match_info['operation_id']}"
     try:
         operation = request.app["operations"][operation_name]
-    except KeyError:
+    except KeyError:  # pragma: no cover
         message, status = f"Operation `{operation_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     return aiohttp.web.json_response(operation)
