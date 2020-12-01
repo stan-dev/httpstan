@@ -112,7 +112,7 @@ async def handle_create_model(request: aiohttp.web.Request) -> aiohttp.web.Respo
     try:
         # `build_services_extension_module` has side-effect of storing extension module in cache
         compiler_output = await httpstan.models.build_services_extension_module(program_code)
-    except Exception as exc:
+    except Exception as exc:  # pragma: no cover
         message, status = (
             f"Exception while building model extension module: `{repr(exc)}`, traceback: `{traceback.format_tb(exc.__traceback__)}`",
             400,

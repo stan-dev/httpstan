@@ -67,7 +67,7 @@ known_local_folder = "helpers"
 
 [tool.coverage.run]
 branch = true
-omit = httpstan/__main__.py
+omit = ["httpstan/__main__.py"]
 
 [tool.coverage.report]
 fail_under = 95

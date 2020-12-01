@@ -151,7 +151,7 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     # where to find shared libraries during execution. There are two ways for an
     # extension module to find shared libraries: LD_LIBRARY_PATH and rpath.
     libraries = ["sundials_cvodes", "sundials_idas", "sundials_nvecserial", "tbb"]
-    if platform.system() == "Darwin":
+    if platform.system() == "Darwin":  # pragma: no cover
         libraries.extend(["tbbmalloc", "tbbmalloc_proxy"])
     extension = setuptools.Extension(
         f"stan_services_{stan_model_name}",  # filename only. Module name is "stan_services"
