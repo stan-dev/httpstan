@@ -40,10 +40,7 @@ jobs:
           python -m pip install dist/*.whl
 
       - name: Run tests
-        run: |
-          mkdir testdir
-          cd testdir
-          python -m pytest -s -v --cov=httpstan --cov-fail-under=93 ../tests
+        run: "python -m pytest -s -v --cov=httpstan tests"
 
       - name: Test PyStan compatibility
         run: |
