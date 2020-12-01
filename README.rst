@@ -8,7 +8,7 @@ httpstan
     :width: 333px
     :scale: 40 %
 
-|pypi| |travis|
+|pypi|
 
 HTTP-based REST interface to Stan, a package for Bayesian inference.
 
@@ -131,7 +131,3 @@ ISC License.
 .. |pypi| image:: https://badge.fury.io/py/httpstan.png
     :target: https://badge.fury.io/py/httpstan
     :alt: pypi version
-
-.. |travis| image:: https://travis-ci.org/stan-dev/httpstan.png?branch=master
-    :target: https://travis-ci.org/stan-dev/httpstan
-    :alt: travis-ci build status

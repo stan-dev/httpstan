@@ -107,7 +107,3 @@ User Guide
 .. |pypi| image:: https://badge.fury.io/py/httpstan.png
     :target: https://badge.fury.io/py/httpstan
     :alt: pypi version
-
-.. |travis| image:: https://travis-ci.org/stan-dev/httpstan.png?branch=master
-    :target: https://travis-ci.org/stan-dev/httpstan
-    :alt: travis-ci build status
