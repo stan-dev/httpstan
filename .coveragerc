@@ -1,8 +1,0 @@
-[run]
-branch = True
-source = httpstan
-omit =
-    httpstan/__main__.py
-
-[report]
-ignore_errors = True
