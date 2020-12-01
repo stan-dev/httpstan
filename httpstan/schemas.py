@@ -23,9 +23,9 @@ class Operation(marshmallow.Schema):
     @marshmallow.validates_schema
     def validate_result(self, data: dict, many: bool, partial: bool) -> None:
         assert not many and not partial, "Use of `many` and `partial` with schema unsupported."
-        if data["done"] and data.get("result") is None:
+        if data["done"] and data.get("result") is None:  # pragma: no cover
             raise marshmallow.ValidationError("If `done` then `result` must be set.", "result")
-        if not data["done"] and data.get("result"):
+        if not data["done"] and data.get("result"):  # pragma: no cover
             raise marshmallow.ValidationError("If not `done` then `result` must be empty.", "result")
 
 
