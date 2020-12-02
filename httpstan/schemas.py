@@ -189,3 +189,11 @@ class ShowLogProbRequest(marshmallow.Schema):
     data = fields.Nested(Data(), missing={})
     unconstrained_parameters = fields.List(fields.Float(), required=True)
     adjust_transform = fields.Boolean(missing=True)
+
+
+class ShowLogProbGradRequest(marshmallow.Schema):
+    """Schema for log_prob_grad request."""
+
+    data = fields.Nested(Data(), missing={})
+    unconstrained_parameters = fields.List(fields.Float(), required=True)
+    adjust_transform = fields.Boolean(missing=True)

@@ -634,3 +634,81 @@ async def handle_log_prob(request: aiohttp.web.Request) -> aiohttp.web.Response:
         logger.critical(message)
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     return aiohttp.web.json_response({"log_prob": lp}, status=200)
+
+
+async def handle_log_prob_grad(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    """Calculate the gradient.
+
+    ---
+    post:
+      summary: Return the gradient of the log posterior evaluated at the unconstrained parameters.
+      description: >-
+        Returns the output of Stan C++ `stan::model::log_prob_grad`.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: model_id
+          in: path
+          description: ID of Stan model to use
+          required: true
+          type: string
+        - in: body
+          name: data
+          description: >-
+              Data for the Stan Model.
+          required: true
+          schema: Data
+        - in: body
+          name: unconstrained_parameters
+          description: >-
+              Unconstrained parameters to calculate gradient of.
+          required: true
+          schema:
+            type: boolean
+        - in: body
+          name: adjust_transform
+          description: >-
+              Boolean to control whether we apply a Jacobian adjust transform.
+          required: true
+          schema:
+            type: array
+            items:
+              type: number
+      responses:
+        "200":
+          description: Gradient of the log posterior evaluated at the unconstrained parameters.
+          schema:
+            type: object
+            properties:
+              grad_log_prob:
+                type: array
+                items:
+                  type: number
+        "400":
+          description: Error associated with request.
+          schema: Status
+        "404":
+          description: Model not found.
+          schema: Status
+    """
+    args = await webargs.aiohttpparser.parser.parse(schemas.ShowLogProbGradRequest(), request)
+    model_name = f'models/{request.match_info["model_id"]}'
+    data = args["data"]
+    unconstrained_parameters = args["unconstrained_parameters"]
+    adjust_transform = args["adjust_transform"]
+
+    try:
+        services_module = httpstan.models.import_services_extension_module(model_name)
+    except KeyError:
+        message, status = f"Model `{model_name}` not found.", 404
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+
+    try:
+        gradient = services_module.log_prob_grad(data, unconstrained_parameters, adjust_transform)  # type: ignore
+    except Exception as exc:
+        message, status = f"Error calling log_prob_grad: `{exc}`", 400
+        logger.critical(message)
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+    return aiohttp.web.json_response({"log_prob_grad": gradient}, status=200)
