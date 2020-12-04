@@ -125,6 +125,7 @@ std::vector<std::vector<size_t>> dims(py::dict data) {
 double log_prob(py::dict data,
                 const std::vector<double>& unconstrained_parameters,
                 bool adjust_transform) {
+  using stan::math::var;
   stan::io::array_var_context &var_context = new_array_var_context(data);
   // random_seed, the second argument, is unused but the function requires it.
   stan::model::model_base &model = new_model(var_context, (unsigned int)1, &std::cout);
@@ -134,19 +135,33 @@ double log_prob(py::dict data,
   // copy unconstrained_parameters -> params_r
   std::vector<double> params_r(unconstrained_parameters.size());
   std::memcpy(params_r.data(), unconstrained_parameters.data(), unconstrained_parameters.size()*sizeof(double));
+  std::vector<var> ad_params_r;
+  ad_params_r.reserve(model.num_params_r());
+  for (size_t i = 0; i < model.num_params_r(); i++) {
+    ad_params_r.push_back(params_r[i]);
+  }
   // calculate logprob
   std::vector<int> params_i(model.num_params_i(), 0);
-  double lp;
-  if(adjust_transform) {
-    lp = stan::model::log_prob_propto<true>(model, params_r, params_i, &std::cout);
-  } else {
-    lp = stan::model::log_prob_propto<false>(model, params_r, params_i, &std::cout);
+  std::exception_ptr p;
+  try {
+    double lp;
+    if(adjust_transform) {
+      lp = model.template log_prob<true, true>(ad_params_r, params_i, &std::cout).val();
+    } else {
+      lp = model.template log_prob<true, false>(ad_params_r, params_i, &std::cout).val();
+    }
+    stan::math::recover_memory();
+    return lp;
+  } catch (std::exception& ex) {
+    stan::math::recover_memory();
+    p = std::current_exception();
   }
 
   delete &model;
   delete &var_context;
 
-  return lp;
+  if (p)
+    std::rethrow_exception(p);
 }
 
 // See exported docstring
@@ -206,7 +221,7 @@ PYBIND11_MODULE(stan_services, m) {
         "Call the ``constrained_param_names`` method of the model.");
   m.def("dims", &dims, py::arg("data"), "Call the ``get_dims`` method of the model.");
   m.def("log_prob", &log_prob, py::arg("data"), py::arg("unconstrained_parameters"), py::arg("adjust_transform"),
-        "Call stan::model::log_prob_propto");
+        "Call the ``log_prob`` method of the model.");
   m.def("hmc_nuts_diag_e_adapt_wrapper", &hmc_nuts_diag_e_adapt_wrapper, py::arg("socket_filename"), py::arg("data"),
         py::arg("init"), py::arg("random_seed"), py::arg("chain"), py::arg("init_radius"), py::arg("num_warmup"),
         py::arg("num_samples"), py::arg("num_thin"), py::arg("save_warmup"), py::arg("refresh"), py::arg("stepsize"),
