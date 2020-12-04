@@ -567,7 +567,7 @@ async def handle_log_prob(request: aiohttp.web.Request) -> aiohttp.web.Response:
     post:
       summary: Return the log probability of the unconstrained parameters.
       description: >-
-        Returns the output of Stan C++ `stan::model::log_prob_propto`.
+        Returns the output of Stan C++ ``log_prob`` model class method.
       consumes:
         - application/json
       produces:
