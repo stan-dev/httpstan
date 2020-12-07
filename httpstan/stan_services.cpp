@@ -125,33 +125,29 @@ std::vector<std::vector<size_t>> dims(py::dict data) {
 double log_prob(py::dict data,
                 const std::vector<double>& unconstrained_parameters,
                 bool adjust_transform) {
-  using stan::math::var;
+  double lp;
   stan::io::array_var_context &var_context = new_array_var_context(data);
   // random_seed, the second argument, is unused but the function requires it.
   stan::model::model_base &model = new_model(var_context, (unsigned int)1, &std::cout);
   if(unconstrained_parameters.size() != model.num_params_r()) {
     throw std::runtime_error("The number of parameters does not match the number of unconstrained parameters in the model.");
   }
-  // copy unconstrained_parameters -> params_r
-  std::vector<double> params_r(unconstrained_parameters.size());
-  std::memcpy(params_r.data(), unconstrained_parameters.data(), unconstrained_parameters.size()*sizeof(double));
-  std::vector<var> ad_params_r;
+  std::vector<stan::math::var> ad_params_r;
   ad_params_r.reserve(model.num_params_r());
   for (size_t i = 0; i < model.num_params_r(); i++) {
-    ad_params_r.push_back(params_r[i]);
+    ad_params_r.push_back(unconstrained_parameters[i]);
   }
   // calculate logprob
   std::vector<int> params_i(model.num_params_i(), 0);
   std::exception_ptr p;
   try {
-    double lp;
+    // params_i, the second argument, is unused but the function requires it (see model_base.hpp).
     if(adjust_transform) {
       lp = model.template log_prob<true, true>(ad_params_r, params_i, &std::cout).val();
     } else {
       lp = model.template log_prob<true, false>(ad_params_r, params_i, &std::cout).val();
     }
     stan::math::recover_memory();
-    return lp;
   } catch (std::exception& ex) {
     stan::math::recover_memory();
     p = std::current_exception();
@@ -162,6 +158,8 @@ double log_prob(py::dict data,
 
   if (p)
     std::rethrow_exception(p);
+
+  return lp;
 }
 
 // See exported docstring
