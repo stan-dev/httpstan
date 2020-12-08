@@ -712,3 +712,97 @@ async def handle_log_prob_grad(request: aiohttp.web.Request) -> aiohttp.web.Resp
         logger.critical(message)
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     return aiohttp.web.json_response({"log_prob_grad": gradient}, status=200)
+
+
+async def handle_write_array(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    """Constrain parameters.
+
+    Transform a sequence of unconstrained parameters to their defined support,
+    optionally including transformed parameters and generated quantities.
+
+    Note: This endpoint exposes the ``write_array`` method of the model class.
+    This method is utilised in the ``constrain_pars`` function in PyStan and RStan.
+
+    ---
+    post:
+      summary: Return a sequence of unconstrained parameters.
+      description: >-
+        Returns the output of Stan C++ ``write_array`` model class method.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: model_id
+          in: path
+          description: ID of Stan model to use
+          required: true
+          type: string
+        - in: body
+          name: data
+          description: >-
+              Data for the Stan Model.
+          required: true
+          schema: Data
+        - in: body
+          name: unconstrained_parameters
+          description: >-
+              Sequence of unconstrained parameters.
+          required: true
+          schema:
+            type: array
+            items:
+              type: number
+        - in: body
+          name: include_tparams
+          description: >-
+              Boolean to control whether we include transformed parameters.
+          required: true
+          schema:
+            type: boolean
+        - in: body
+          name: include_gqs
+          description: >-
+              Boolean to control whether we include generated quantities.
+          required: true
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description:
+              Sequence of constrained parameters, optionally including transformed parameters
+              and generated quantities.
+          schema:
+            type: object
+            properties:
+              params_r_constrained:
+                type: array
+                items:
+                  type: number
+        "400":
+          description: Error associated with request.
+          schema: Status
+        "404":
+          description: Model not found.
+          schema: Status
+    """
+    args = await webargs.aiohttpparser.parser.parse(schemas.ShowWriteArrayRequest(), request)
+    model_name = f'models/{request.match_info["model_id"]}'
+    data = args["data"]
+    unconstrained_parameters = args["unconstrained_parameters"]
+    include_tparams = args["include_tparams"]
+    include_gqs = args["include_gqs"]
+
+    try:
+        services_module = httpstan.models.import_services_extension_module(model_name)
+    except KeyError:
+        message, status = f"Model `{model_name}` not found.", 404
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+
+    try:
+        params_r_constrained = services_module.write_array(data, unconstrained_parameters, include_tparams, include_gqs)  # type: ignore
+    except Exception as exc:
+        message, status = f"Error calling write_array: `{exc}`", 400
+        logger.critical(message)
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+    return aiohttp.web.json_response({"params_r_constrained": params_r_constrained}, status=200)
