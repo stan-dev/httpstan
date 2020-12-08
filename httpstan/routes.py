@@ -22,6 +22,7 @@ def setup_routes(app: aiohttp.web.Application) -> None:
     app.router.add_post("/v1/models/{model_id}/params", views.handle_show_params)
     app.router.add_post("/v1/models/{model_id}/log_prob", views.handle_log_prob)
     app.router.add_post("/v1/models/{model_id}/log_prob_grad", views.handle_log_prob_grad)
+    app.router.add_post("/v1/models/{model_id}/write_array", views.handle_write_array)
     app.router.add_post("/v1/models/{model_id}/fits", views.handle_create_fit)
     app.router.add_get("/v1/models/{model_id}/fits/{fit_id}", views.handle_get_fit)
     app.router.add_delete("/v1/models/{model_id}/fits/{fit_id}", views.handle_delete_fit)

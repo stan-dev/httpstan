@@ -200,6 +200,40 @@ std::vector<double> log_prob_grad(py::dict data,
 }
 
 // See exported docstring
+std::vector<double> write_array(py::dict data,
+                                const std::vector<double>& unconstrained_parameters,
+                                bool include_tparams = true, bool include_gqs = true) {
+  boost::ecuyer1988 base_rng(0);
+  std::vector<double> params_r_constrained;
+  stan::io::array_var_context &var_context = new_array_var_context(data);
+  // random_seed, the second argument, is unused but the function requires it.
+  stan::model::model_base &model = new_model(var_context, (unsigned int)1, &std::cout);
+  if(unconstrained_parameters.size() != model.num_params_r()) {
+    throw std::runtime_error("The number of parameters does not match the number of unconstrained parameters in the model.");
+  }
+  // The params_r parameter is incorrectly declared as non-const in Stan C++.
+  // Unconstrained_parameters are cast from const to non-const below, as required by Stan (see model_base.hpp).
+  std::vector<double>& params_r = const_cast<std::vector<double>&>(unconstrained_parameters);
+  // constrain parameters to their defined support
+  std::exception_ptr p;
+  std::vector<int> params_i(model.num_params_i(), 0);
+  try {
+    // params_i, the third argument, is unused but the function requires it (see model_base.hpp).
+    model.write_array(base_rng, params_r, params_i, params_r_constrained, include_tparams, include_gqs, &std::cout);
+  } catch (std::exception& ex) {
+    p = std::current_exception();
+  }
+
+  delete &model;
+  delete &var_context;
+
+  if (p)
+    std::rethrow_exception(p);
+
+  return params_r_constrained;
+}
+
+// See exported docstring
 int hmc_nuts_diag_e_adapt_wrapper(std::string socket_filename, py::dict data, py::dict init, int random_seed,
                                   int chain, double init_radius, int num_warmup, int num_samples, int num_thin,
                                   bool save_warmup, int refresh, double stepsize, double stepsize_jitter,
@@ -259,6 +293,8 @@ PYBIND11_MODULE(stan_services, m) {
         "Call the ``log_prob`` method of the model.");
   m.def("log_prob_grad", &log_prob_grad, py::arg("data"), py::arg("unconstrained_parameters"), py::arg("adjust_transform"),
         "Call stan::model::log_prob_grad");
+  m.def("write_array", &write_array, py::arg("data"), py::arg("unconstrained_parameters"), py::arg("include_tparams"),
+        py::arg("include_gqs"), "Call the ``write_array`` method of the model.");
   m.def("hmc_nuts_diag_e_adapt_wrapper", &hmc_nuts_diag_e_adapt_wrapper, py::arg("socket_filename"), py::arg("data"),
         py::arg("init"), py::arg("random_seed"), py::arg("chain"), py::arg("init_radius"), py::arg("num_warmup"),
         py::arg("num_samples"), py::arg("num_thin"), py::arg("save_warmup"), py::arg("refresh"), py::arg("stepsize"),
