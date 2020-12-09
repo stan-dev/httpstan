@@ -590,16 +590,16 @@ async def handle_log_prob(request: aiohttp.web.Request) -> aiohttp.web.Response:
               Unconstrained parameters to calculate log probability for.
           required: true
           schema:
-            type: boolean
+            type: array
+            items:
+              type: number
         - in: body
           name: adjust_transform
           description: >-
               Boolean to control whether we apply a Jacobian adjust transform.
-          required: true
+          required: false
           schema:
-            type: array
-            items:
-              type: number
+            type: boolean
       responses:
         "200":
           description: Log probability of the unconstrained parameters.
@@ -637,7 +637,7 @@ async def handle_log_prob(request: aiohttp.web.Request) -> aiohttp.web.Response:
 
 
 async def handle_log_prob_grad(request: aiohttp.web.Request) -> aiohttp.web.Response:
-    """Calculate the gradient.
+    """Calculate the gradient of the log posterior evaluated at the unconstrained parameters.
 
     ---
     post:
@@ -663,19 +663,19 @@ async def handle_log_prob_grad(request: aiohttp.web.Request) -> aiohttp.web.Resp
         - in: body
           name: unconstrained_parameters
           description: >-
-              Unconstrained parameters to calculate gradient of.
-          required: true
-          schema:
-            type: boolean
-        - in: body
-          name: adjust_transform
-          description: >-
-              Boolean to control whether we apply a Jacobian adjust transform.
+              Unconstrained parameters used to evaluate the gradient of the log posterior.
           required: true
           schema:
             type: array
             items:
               type: number
+        - in: body
+          name: adjust_transform
+          description: >-
+              Boolean to control whether we apply a Jacobian adjust transform.
+          required: false
+          schema:
+            type: boolean
       responses:
         "200":
           description: Gradient of the log posterior evaluated at the unconstrained parameters.
