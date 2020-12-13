@@ -32,27 +32,12 @@ async def test_sampling_initialization_failed(api_url: str) -> None:
     assert operation["result"].get("code") == 400
     assert "Initialization failed." in operation["result"]["message"]
 
-    # recover the error messages sent to `logger`
-    # note that the fit name is retrieved from metadata. If sampling had
-    # completed without error, it would be available under `result`.
+    # verify the partial fit has been deleted.
     fit_name = operation["metadata"]["fit"]["name"]
-
-    # verify operation finished and that fit is available
     async with aiohttp.ClientSession() as session:
         fit_url = f"{api_url}/{fit_name}"
         async with session.get(fit_url) as resp:
-            assert resp.status == 200
-
-    # verify (error) messages are available
-    fit_bytes_ = await helpers.fit_bytes(api_url, fit_name)
-    assert isinstance(fit_bytes_, bytes)
-    messages = helpers.decode_messages(fit_bytes_)
-
-    assert len(messages) > 100
-
-    # first message should be an "Rejecting initial value" message.
-    error_message = messages[0]["values"].pop()
-    assert "Rejecting initial value" in error_message
+            assert resp.status == 404
 
 
 @pytest.mark.asyncio
