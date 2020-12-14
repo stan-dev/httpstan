@@ -15,24 +15,16 @@ Installation from source
 ========================
 
 These instructions are for advanced users.
-The build process for httpstan is not simple.
+The build process for httpstan is complicated and atypical.
 
 ::
 
-    # 1. Create a virtual env
-    python3 -m venv httpstan-development
-    source httpstan-development/bin/activate
-
-    # 2. Clone repository
-    git clone https://github.com/stan-dev/httpstan
-
-    # 3. Build shared libraries and generate code
-    cd httpstan
+    # Build shared libraries and generate code
     python3 -m pip install poetry
     make
 
-    # 4. Build the httpstan wheel
+    # Build the httpstan wheel
     python3 -m poetry build
 
-    # 5. Install the wheel
+    # Install the wheel
     python3 -m pip install dist/*.whl
