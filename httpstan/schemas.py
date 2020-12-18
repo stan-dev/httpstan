@@ -200,9 +200,16 @@ class ShowLogProbGradRequest(marshmallow.Schema):
 
 
 class ShowWriteArrayRequest(marshmallow.Schema):
-    """Schema for log_prob_grad request."""
+    """Schema for write_array request."""
 
     data = fields.Nested(Data(), missing={})
     unconstrained_parameters = fields.List(fields.Float(), required=True)
     include_tparams = fields.Boolean(missing=True)
     include_gqs = fields.Boolean(missing=True)
+
+
+class ShowTransformInitsRequest(marshmallow.Schema):
+    """Schema for transform_inits request."""
+
+    data = fields.Nested(Data(), missing={})
+    constrained_parameters = fields.Nested(Data(), required=True)

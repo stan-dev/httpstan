@@ -6,6 +6,7 @@
 #include <stan/callbacks/stream_logger.hpp>
 #include <stan/callbacks/writer.hpp>
 #include <stan/io/array_var_context.hpp>
+#include <stan/io/var_context.hpp>
 #include <stan/model/model_base.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e_adapt.hpp>
 
@@ -234,6 +235,34 @@ std::vector<double> write_array(py::dict data,
 }
 
 // See exported docstring
+std::vector<double> transform_inits(py::dict data,
+                                    py::dict constrained_parameters) {
+  std::vector<double> params_r_unconstrained;
+  stan::io::array_var_context &var_context = new_array_var_context(data);
+  // random_seed, the second argument, is unused but the function requires it.
+  stan::model::model_base &model = new_model(var_context, (unsigned int)1, &std::cout);
+  stan::io::var_context &param_var_context = new_array_var_context(constrained_parameters);
+  // unconstrain parameters from their defined support
+  std::exception_ptr p;
+  std::vector<int> params_i(model.num_params_i(), 0);
+  try {
+    // params_i, the second argument, is unused but the function requires it (see model_base.hpp).
+    model.transform_inits(param_var_context, params_i, params_r_unconstrained, &std::cout);
+  } catch (std::exception& ex) {
+    p = std::current_exception();
+  }
+
+  delete &model;
+  delete &var_context;
+  delete &param_var_context;
+
+  if (p)
+    std::rethrow_exception(p);
+
+  return params_r_unconstrained;
+}
+
+// See exported docstring
 int hmc_nuts_diag_e_adapt_wrapper(std::string socket_filename, py::dict data, py::dict init, int random_seed,
                                   int chain, double init_radius, int num_warmup, int num_samples, int num_thin,
                                   bool save_warmup, int refresh, double stepsize, double stepsize_jitter,
@@ -295,6 +324,8 @@ PYBIND11_MODULE(stan_services, m) {
         "Call stan::model::log_prob_grad");
   m.def("write_array", &write_array, py::arg("data"), py::arg("unconstrained_parameters"), py::arg("include_tparams"),
         py::arg("include_gqs"), "Call the ``write_array`` method of the model.");
+  m.def("transform_inits", &transform_inits, py::arg("data"), py::arg("constrained_parameters"),
+        "Call the ``transform_inits`` method of the model.");
   m.def("hmc_nuts_diag_e_adapt_wrapper", &hmc_nuts_diag_e_adapt_wrapper, py::arg("socket_filename"), py::arg("data"),
         py::arg("init"), py::arg("random_seed"), py::arg("chain"), py::arg("init_radius"), py::arg("num_warmup"),
         py::arg("num_samples"), py::arg("num_thin"), py::arg("save_warmup"), py::arg("refresh"), py::arg("stepsize"),
