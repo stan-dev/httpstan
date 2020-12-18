@@ -45,6 +45,7 @@ def openapi_spec() -> apispec.APISpec:
     spec.path(path="/v1/models/{model_id}/log_prob", view=views.handle_log_prob)
     spec.path(path="/v1/models/{model_id}/log_prob_grad", view=views.handle_log_prob_grad)
     spec.path(path="/v1/models/{model_id}/write_array", view=views.handle_write_array)
+    spec.path(path="/v1/models/{model_id}/transform_inits", view=views.handle_transform_inits)
     spec.path(path="/v1/models/{model_id}/fits", view=views.handle_create_fit)
     spec.path(path="/v1/models/{model_id}/fits/{fit_id}", view=views.handle_get_fit)
     spec.path(path="/v1/models/{model_id}/fits/{fit_id}", view=views.handle_delete_fit)

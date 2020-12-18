@@ -728,7 +728,7 @@ async def handle_write_array(request: aiohttp.web.Request) -> aiohttp.web.Respon
 
     ---
     post:
-      summary: Return a sequence of unconstrained parameters.
+      summary: Return a sequence of constrained parameters.
       description: >-
         Returns the output of Stan C++ ``write_array`` model class method.
       consumes:
@@ -809,3 +809,77 @@ async def handle_write_array(request: aiohttp.web.Request) -> aiohttp.web.Respon
         logger.critical(message)
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
     return aiohttp.web.json_response({"params_r_constrained": params_r_constrained}, status=200)
+
+
+async def handle_transform_inits(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    """Unconstrain parameters.
+
+    Reads constrained parameter values from their specified context and returns a
+    sequence of unconstrained parameter values.
+
+    Note: This endpoint exposes the ``transform_inits`` method of the model class.
+    This method is utilised in the ``unconstrain_pars`` function in PyStan and RStan.
+
+    ---
+    post:
+      summary: Return a sequence of unconstrained parameters.
+      description: >-
+        Returns the output of Stan C++ ``transform_inits`` model class method.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: model_id
+          in: path
+          description: ID of Stan model to use
+          required: true
+          type: string
+        - in: body
+          name: data
+          description: >-
+              Data for the Stan Model.
+          required: true
+          schema: Data
+        - in: body
+          name: constrained_parameters
+          description: >-
+              Constrained parameter values and their specified context
+          required: true
+          schema: Data
+      responses:
+        "200":
+          description:
+              Sequence of unconstrained parameters.
+          schema:
+            type: object
+            properties:
+              params_r_unconstrained:
+                type: array
+                items:
+                  type: number
+        "400":
+          description: Error associated with request.
+          schema: Status
+        "404":
+          description: Model not found.
+          schema: Status
+    """
+    args = await webargs.aiohttpparser.parser.parse(schemas.ShowTransformInitsRequest(), request)
+    model_name = f'models/{request.match_info["model_id"]}'
+    data = args["data"]
+    constrained_parameters = args["constrained_parameters"]
+
+    try:
+        services_module = httpstan.models.import_services_extension_module(model_name)
+    except KeyError:
+        message, status = f"Model `{model_name}` not found.", 404
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+
+    try:
+        params_r_unconstrained = services_module.transform_inits(data, constrained_parameters)  # type: ignore
+    except Exception as exc:
+        message, status = f"Error calling write_array: `{exc}`", 400
+        logger.critical(message)
+        return aiohttp.web.json_response(_make_error(message, status=status), status=status)
+    return aiohttp.web.json_response({"params_r_unconstrained": params_r_unconstrained}, status=200)
