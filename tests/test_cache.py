@@ -1,6 +1,4 @@
 """Test services function argument lookups."""
-import pathlib
-
 import pytest
 
 import httpstan.app
@@ -13,8 +11,13 @@ import helpers
 def test_model_directory() -> None:
     model_name = "models/abcdef"
     model_directory = httpstan.cache.model_directory(model_name)
-    model_dirpath = pathlib.Path(model_directory)
-    assert model_dirpath.name == "abcdef"
+    assert model_directory.name == "abcdef"
+
+
+def test_fit_path() -> None:
+    fit_name = "models/abcdef/ghijklmn"
+    path = httpstan.cache.fit_path(fit_name)
+    assert path.name == "ghijklmn.jsonlines.lz4"
 
 
 @pytest.mark.asyncio
