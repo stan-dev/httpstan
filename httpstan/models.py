@@ -10,11 +10,10 @@ import hashlib
 import importlib
 import importlib.resources
 import logging
-import os
-import pathlib
 import platform
 import sys
 from importlib.machinery import EXTENSION_SUFFIXES
+from pathlib import Path
 from types import ModuleType
 from typing import List, Optional, Tuple
 
@@ -24,7 +23,7 @@ import httpstan.build_ext
 import httpstan.cache
 import httpstan.compile
 
-PACKAGE_DIR = pathlib.Path(__file__).resolve(strict=True).parents[0]
+PACKAGE_DIR = Path(__file__).parent.resolve(strict=True)
 logger = logging.getLogger("httpstan")
 
 
@@ -78,7 +77,7 @@ def import_services_extension_module(model_name: str) -> ModuleType:
         KeyError: Model not found.
 
     """
-    model_directory = pathlib.Path(httpstan.cache.model_directory(model_name))
+    model_directory = httpstan.cache.model_directory(model_name)
     try:
         module_path = next(filter(lambda p: p.suffix in EXTENSION_SUFFIXES, model_directory.iterdir()))
     except (FileNotFoundError, StopIteration):
@@ -114,25 +113,24 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
 
     """
     model_name = calculate_model_name(program_code)
-    model_directory_path = pathlib.Path(httpstan.cache.model_directory(model_name))
+    model_directory_path = httpstan.cache.model_directory(model_name)
 
-    os.makedirs(model_directory_path, exist_ok=True)
+    model_directory_path.mkdir(parents=True, exist_ok=True)
 
     stan_model_name = f"model_{model_name.split('/')[1]}"
     cpp_code, _ = httpstan.compile.compile(program_code, stan_model_name)
     cpp_code_path = model_directory_path / f"{stan_model_name}.cpp"
-    with open(cpp_code_path, "w") as fh:
+    with cpp_code_path.open("w") as fh:
         fh.write(cpp_code)
 
-    httpstan_dir = os.path.dirname(__file__)
     include_dirs = [
-        httpstan_dir,  # for socket_writer.hpp and socket_logger.hpp
-        model_directory_path.as_posix(),
-        os.path.join(httpstan_dir, "include"),
-        os.path.join(httpstan_dir, "include", "lib", "eigen_3.3.9"),
-        os.path.join(httpstan_dir, "include", "lib", "boost_1.72.0"),
-        os.path.join(httpstan_dir, "include", "lib", "sundials_5.6.1", "include"),
-        os.path.join(httpstan_dir, "include", "lib", "tbb_2019_U8", "include"),
+        str(PACKAGE_DIR),  # for socket_writer.hpp and socket_logger.hpp
+        str(model_directory_path),
+        str(PACKAGE_DIR / "include"),
+        str(PACKAGE_DIR / "include" / "lib" / "eigen_3.3.9"),
+        str(PACKAGE_DIR / "include" / "lib" / "boost_1.72.0"),
+        str(PACKAGE_DIR / "include" / "lib" / "sundials_5.6.1" / "include"),
+        str(PACKAGE_DIR / "include" / "lib" / "tbb_2019_U8" / "include"),
     ]
 
     stan_macros: List[Tuple[str, Optional[str]]] = [
@@ -156,20 +154,20 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     extension = setuptools.Extension(
         f"stan_services_{stan_model_name}",  # filename only. Module name is "stan_services"
         language="c++",
-        sources=[cpp_code_path.as_posix()],
+        sources=[str(cpp_code_path)],
         define_macros=stan_macros,
         include_dirs=include_dirs,
-        library_dirs=[f"{PACKAGE_DIR / 'lib'}"],
+        library_dirs=[str(PACKAGE_DIR / "lib")],
         libraries=libraries,
         extra_compile_args=extra_compile_args,
         extra_link_args=[f"-Wl,-rpath,{PACKAGE_DIR / 'lib'}"],
         extra_objects=[
-            (PACKAGE_DIR / "stan_services.cpp").with_suffix(".o").as_posix(),
+            str((PACKAGE_DIR / "stan_services.cpp").with_suffix(".o")),
         ],
     )
 
     extensions = [extension]
-    build_lib = model_directory_path.as_posix()
+    build_lib = str(model_directory_path)
 
     # Building the model takes a long time. Run in a different thread.
     compiler_output = await asyncio.get_event_loop().run_in_executor(
