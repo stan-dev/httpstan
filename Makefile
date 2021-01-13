@@ -149,26 +149,28 @@ httpstan/lib/%: build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/lib/
 	cp $< $@
 
 # Stan Math builds a library with suffix .so.2 by default. Python prefers .so.
+# Do not use symlinks since these will be ignored by Python wheel builders
+# WISHLIST: Understand why Python needs both .so and .so.2.
 ifeq ($(shell uname -s),Darwin)
 httpstan/lib/libtbb.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb.dylib
 	cp $< httpstan/lib/$(notdir $<)
 	@rm -f $@
-	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
+	cd $(dir $@) && cp $(notdir $<) $(notdir $@)
 
 httpstan/lib/libtbb%.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb%.dylib
 	cp $< httpstan/lib/$(notdir $<)
 	@rm -f $@
-	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
+	cd $(dir $@) && cp $(notdir $<) $(notdir $@)
 else
 httpstan/lib/libtbb.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb.so.2
 	cp $< httpstan/lib/$(notdir $<)
 	@rm -f $@
-	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
+	cd $(dir $@) && cp $(notdir $<) $(notdir $@)
 
 httpstan/lib/libtbb%.so: build/math-$(MATH_VERSION)/lib/tbb/libtbb%.so.2
 	cp $< httpstan/lib/$(notdir $<)
 	@rm -f $@
-	cd $(dir $@) && ln -s $(notdir $<) $(notdir $@)
+	cd $(dir $@) && cp $(notdir $<) $(notdir $@)
 endif
 
 ###############################################################################
