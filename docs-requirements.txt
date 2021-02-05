@@ -6,6 +6,7 @@
 aiohttp~=3.6
 webargs~=5.5
 appdirs~=1.4
+lz4~=3.0.2
 
 sphinx~=3.1 # BSD
 sphinx-autoapi~=1.2
