@@ -7,7 +7,7 @@ import numpy as np
 
 def _split_data(
     data: dict,
-) -> Tuple[List[str], List[float], List[List[int]], List[str], List[int], List[List[int]]]:
+) -> Tuple[List[str], List[float], List[Tuple[int, ...]], List[str], List[int], List[Tuple[int, ...]]]:
     """Prepare data for use in an array_var_context constructor.
 
     array_var_context is a C++ class defined in Stan. See
@@ -38,11 +38,11 @@ def _split_data(
 
     names_r: List[str] = []
     values_r: List[float] = []
-    dim_r: List[List[int]] = []
+    dim_r: List[Tuple[int, ...]] = []
 
     names_i: List[str] = []
     values_i: List[int] = []
-    dim_i: List[List[int]] = []
+    dim_i: List[Tuple[int, ...]] = []
 
     for k, v in data.items():
         if np.issubdtype(np.asarray(v).dtype, np.floating):
