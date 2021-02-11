@@ -78,7 +78,20 @@ We appreciate citations as they let us discover what people have been doing
 with the software. Citations also provide evidence of use which can help in
 obtaining grant funding.
 
-Allen Riddell, and Ari Hartikainen. 2019. Stan-Dev/Httpstan: V1.0.0. *Zenodo*. `<https://doi.org/10.5281/zenodo.3546351>`_.
+Allen Riddell & Ari Hartikainen. (2021). httpstan (Version 4.3.0). Zenodo. http://doi.org/10.5281/zenodo.4533304
+
+BibTeX::
+
+    @software{httpstan,
+      author       = {Allen Riddell and Ari Hartikainen},
+      title        = {httpstan},
+      year         = 2021,
+      publisher    = {Zenodo},
+      version      = {4.3.0},
+      doi          = {10.5281/zenodo.4533304},
+      url          = {https://doi.org/10.5281/zenodo.4533304}
+    }
+
 
 
 User Guide
