@@ -9,7 +9,7 @@
 # this Makefile copy libraries built by the other Makefile into their
 # httpstan-specific directories.
 
-PYBIND11_VERSION := 2.5.0
+PYBIND11_VERSION := 2.6.2
 RAPIDJSON_VERSION := 1.1.0
 STAN_VERSION := 2.26.0
 STANC_VERSION := 2.26.0
@@ -214,6 +214,7 @@ HTTPSTAN_INCLUDE_DIRS = -Ihttpstan -Ihttpstan/include -Ihttpstan/include/lib/eig
 httpstan/stan_services.o: httpstan/stan_services.cpp httpstan/socket_logger.hpp httpstan/socket_writer.hpp | httpstan/include/rapidjson
 
 httpstan/stan_services.o:
+	# -fvisibility=hidden required by pybind11
 	$(PYTHON_CXX) \
 		$(PYTHON_CFLAGS) \
 		$(PYTHON_CCSHARED) \
@@ -221,5 +222,6 @@ httpstan/stan_services.o:
 		$(HTTPSTAN_INCLUDE_DIRS) \
 		$(PYTHON_INCLUDE) \
 		$(PYTHON_PLATINCLUDE) \
+		-fvisibility=hidden \
 		-c $< -o $@ \
 		$(HTTPSTAN_EXTRA_COMPILE_ARGS)
