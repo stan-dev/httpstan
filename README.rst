@@ -128,6 +128,6 @@ ISC License.
 .. _Stan: http://mc-stan.org/
 .. _`OpenAPI documentation for httpstan`: api.html
 
-.. |pypi| image:: https://badge.fury.io/py/httpstan.png
-    :target: https://badge.fury.io/py/httpstan
+.. |pypi| image:: https://img.shields.io/pypi/v/httpstan.svg
+    :target: https://pypi.org/project/httpstan/
     :alt: pypi version
