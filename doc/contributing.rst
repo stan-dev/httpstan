@@ -37,6 +37,6 @@ to httpstan follow the same guidelines.
 There is one important difference between httpstan and PyStan.
 httpstan provides access to Stan functions via an HTTP-based REST API.
 This REST API follows the conventions described in the document `API Design Guide
-<https://cloud.google.com/apis/design/>`_.
+<https://cloud.google.com/apis/design/>`_ and the `Google JSON Style Guide <https://google.github.io/styleguide/jsoncstyleguide.xml>`.
 
 .. _Contributing to PyStan: https://pystan-next.readthedocs.io/en/latest/contributing.html
