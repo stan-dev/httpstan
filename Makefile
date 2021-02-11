@@ -14,6 +14,7 @@ RAPIDJSON_VERSION := 1.1.0
 STAN_VERSION := 2.26.1
 STANC_VERSION := 2.26.1
 MATH_VERSION := 4.0.1
+# NOTE: boost, eigen, sundials, and tbb versions must match those found in Stan Math
 BOOST_VERSION := 1.72.0
 EIGEN_VERSION := 3.3.9
 SUNDIALS_VERSION := 5.6.1
@@ -33,7 +34,7 @@ ifeq ($(shell uname -s),Darwin)
 endif
 STAN_LIBRARIES := $(SUNDIALS_LIBRARIES) $(TBB_LIBRARIES)
 LIBRARIES := $(STAN_LIBRARIES)
-INCLUDES_STAN_MATH_LIBS := httpstan/include/lib/boost_$(BOOST_VERSION) httpstan/include/lib/eigen_$(EIGEN_VERSION) httpstan/include/lib/sundials_$(SUNDIALS_VERSION) httpstan/include/lib/tbb_$(TBB_VERSION)
+INCLUDES_STAN_MATH_LIBS := httpstan/include/boost httpstan/include/Eigen httpstan/include/sundials httpstan/include/tbb
 INCLUDES_STAN := httpstan/include/stan httpstan/include/stan/math $(INCLUDES_STAN_MATH_LIBS)
 INCLUDES := httpstan/include/pybind11 $(INCLUDES_STAN)
 STANC := httpstan/stanc
@@ -116,28 +117,34 @@ httpstan/include/stan: | build/stan-$(STAN_VERSION)
 	@mkdir -p httpstan/include
 	@rm -rf $@
 	cp -r build/stan-$(STAN_VERSION)/src/stan $@
-	# delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
-	@find httpstan/include/stan -iname '*.py' -delete
 
 httpstan/include/stan/math: | build/math-$(MATH_VERSION)
 	@mkdir -p httpstan/include/stan
 	@rm -rf $@ httpstan/include/stan/math.hpp httpstan/include/stan/math
 	cp build/math-$(MATH_VERSION)/stan/math.hpp httpstan/include/stan
 	cp -r build/math-$(MATH_VERSION)/stan/math httpstan/include/stan
-	# delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
-	@find httpstan/include/stan -iname '*.py' -delete
 
+httpstan/include/boost: | build/math-$(MATH_VERSION)
+	@mkdir -p httpstan/include
+	@rm -rf $@
+	cp -r build/math-$(MATH_VERSION)/lib/boost_$(BOOST_VERSION)/boost $@
 
-httpstan/include/lib/boost_$(BOOST_VERSION): | build/math-$(MATH_VERSION)
-httpstan/include/lib/eigen_$(EIGEN_VERSION): | build/math-$(MATH_VERSION)
-httpstan/include/lib/sundials_$(SUNDIALS_VERSION): | build/math-$(MATH_VERSION)
-httpstan/include/lib/tbb_$(TBB_VERSION): | build/math-$(MATH_VERSION)
+EIGEN_INCLUDES := Eigen unsupported
+httpstan/include/Eigen: | build/math-$(MATH_VERSION)
+	@mkdir -p httpstan/include
+	@rm -rf $(addprefix httpstan/include/,$(EIGEN_INCLUDES))
+	cp -r $(addprefix build/math-$(MATH_VERSION)/lib/eigen_$(EIGEN_VERSION)/,$(EIGEN_INCLUDES)) httpstan/include
 
-$(INCLUDES_STAN_MATH_LIBS):
-	@mkdir -p httpstan/include/lib
-	cp -r build/math-$(MATH_VERSION)/lib/$(notdir $@) $@
-	@echo delete all Python files in the include directory. These files are unused and they confuse the Python build tool.
-	find $@ -iname '*.py' -delete
+SUNDIALS_INCLUDES := cvodes idas kinsol nvector sundials sunlinsol sunmatrix sunmemory sunnonlinsol stan_sundials_printf_override.hpp sundials_debug.h
+httpstan/include/sundials: | build/math-$(MATH_VERSION)
+	@mkdir -p httpstan/include
+	@rm -rf $(addprefix httpstan/include/,$(SUNDIALS_INCLUDES))
+	cp -r $(addprefix build/math-$(MATH_VERSION)/lib/sundials_$(SUNDIALS_VERSION)/include/,$(SUNDIALS_INCLUDES)) httpstan/include
+
+httpstan/include/tbb: | build/math-$(MATH_VERSION)
+	@mkdir -p httpstan/include
+	@rm -rf tbb
+	cp -r build/math-$(MATH_VERSION)/lib/tbb_$(TBB_VERSION)/include/tbb httpstan/include
 
 ###############################################################################
 # Make local copies of shared libraries built by Stan Math's Makefile rules
@@ -208,7 +215,7 @@ PYTHON_PLATINCLUDE ?= -I$(shell python3 -c'import sysconfig;print(sysconfig.get_
 # exists when the extension module is ready to be linked
 HTTPSTAN_EXTRA_COMPILE_ARGS ?= -O3 -std=c++14
 HTTPSTAN_MACROS = -DBOOST_DISABLE_ASSERTS -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION -DSTAN_THREADS -D_REENTRANT -D_GLIBCXX_USE_CXX11_ABI=0
-HTTPSTAN_INCLUDE_DIRS = -Ihttpstan -Ihttpstan/include -Ihttpstan/include/lib/eigen_$(EIGEN_VERSION) -Ihttpstan/include/lib/boost_$(BOOST_VERSION) -Ihttpstan/include/lib/sundials_$(SUNDIALS_VERSION)/include -Ihttpstan/include/lib/tbb_$(TBB_VERSION)/include
+HTTPSTAN_INCLUDE_DIRS = -Ihttpstan -Ihttpstan/include
 
 httpstan/stan_services.o: httpstan/stan_services.cpp httpstan/socket_logger.hpp httpstan/socket_writer.hpp | httpstan/include/rapidjson
 

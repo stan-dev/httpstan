@@ -124,13 +124,8 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
         fh.write(cpp_code)
 
     include_dirs = [
-        str(PACKAGE_DIR),  # for socket_writer.hpp and socket_logger.hpp
         str(model_directory_path),
         str(PACKAGE_DIR / "include"),
-        str(PACKAGE_DIR / "include" / "lib" / "eigen_3.3.9"),
-        str(PACKAGE_DIR / "include" / "lib" / "boost_1.72.0"),
-        str(PACKAGE_DIR / "include" / "lib" / "sundials_5.6.1" / "include"),
-        str(PACKAGE_DIR / "include" / "lib" / "tbb_2019_U8" / "include"),
     ]
 
     stan_macros: List[Tuple[str, Optional[str]]] = [
