@@ -73,7 +73,7 @@ async def handle_create_model(request: aiohttp.web.Request) -> aiohttp.web.Respo
           schema: Status
 
     """
-    args = await webargs.aiohttpparser.parser.parse(schemas.CreateModelRequest(), request)
+    args = cast(dict, await webargs.aiohttpparser.parser.parse(schemas.CreateModelRequest(), request))
 
     program_code = args["program_code"]
     model_name = httpstan.models.calculate_model_name(program_code)
@@ -245,7 +245,7 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
           schema: Status
 
     """
-    args = await webargs.aiohttpparser.parser.parse(schemas.ShowParamsRequest(), request)
+    args = cast(dict, await webargs.aiohttpparser.parser.parse(schemas.ShowParamsRequest(), request))
     model_name = f'models/{request.match_info["model_id"]}'
     data = args["data"]
 
@@ -338,7 +338,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
           schema: Status
     """
     model_name = f'models/{request.match_info["model_id"]}'
-    args = await webargs.aiohttpparser.parser.parse(schemas.CreateFitRequest(), request)
+    args = cast(dict, await webargs.aiohttpparser.parser.parse(schemas.CreateFitRequest(), request))
 
     try:
         httpstan.models.import_services_extension_module(model_name)
@@ -618,7 +618,7 @@ async def handle_log_prob(request: aiohttp.web.Request) -> aiohttp.web.Response:
           description: Model not found.
           schema: Status
     """
-    args = await webargs.aiohttpparser.parser.parse(schemas.ShowLogProbRequest(), request)
+    args = cast(dict, await webargs.aiohttpparser.parser.parse(schemas.ShowLogProbRequest(), request))
     model_name = f'models/{request.match_info["model_id"]}'
     data = args["data"]
     unconstrained_parameters = args["unconstrained_parameters"]
@@ -696,7 +696,7 @@ async def handle_log_prob_grad(request: aiohttp.web.Request) -> aiohttp.web.Resp
           description: Model not found.
           schema: Status
     """
-    args = await webargs.aiohttpparser.parser.parse(schemas.ShowLogProbGradRequest(), request)
+    args = cast(dict, await webargs.aiohttpparser.parser.parse(schemas.ShowLogProbGradRequest(), request))
     model_name = f'models/{request.match_info["model_id"]}'
     data = args["data"]
     unconstrained_parameters = args["unconstrained_parameters"]
@@ -789,7 +789,7 @@ async def handle_write_array(request: aiohttp.web.Request) -> aiohttp.web.Respon
           description: Model not found.
           schema: Status
     """
-    args = await webargs.aiohttpparser.parser.parse(schemas.ShowWriteArrayRequest(), request)
+    args = cast(dict, await webargs.aiohttpparser.parser.parse(schemas.ShowWriteArrayRequest(), request))
     model_name = f'models/{request.match_info["model_id"]}'
     data = args["data"]
     unconstrained_parameters = args["unconstrained_parameters"]
@@ -865,7 +865,7 @@ async def handle_transform_inits(request: aiohttp.web.Request) -> aiohttp.web.Re
           description: Model not found.
           schema: Status
     """
-    args = await webargs.aiohttpparser.parser.parse(schemas.ShowTransformInitsRequest(), request)
+    args = cast(dict, await webargs.aiohttpparser.parser.parse(schemas.ShowTransformInitsRequest(), request))
     model_name = f'models/{request.match_info["model_id"]}'
     data = args["data"]
     constrained_parameters = args["constrained_parameters"]
