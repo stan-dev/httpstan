@@ -130,7 +130,7 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
         model_directory_path.as_posix(),
         os.path.join(httpstan_dir, "include"),
         os.path.join(httpstan_dir, "include", "lib", "eigen_3.3.9"),
-        os.path.join(httpstan_dir, "include", "lib", "boost_1.75.0"),
+        os.path.join(httpstan_dir, "include", "lib", "boost_1.72.0"),
         os.path.join(httpstan_dir, "include", "lib", "sundials_5.6.1", "include"),
         os.path.join(httpstan_dir, "include", "lib", "tbb_2019_U8", "include"),
     ]
