@@ -165,7 +165,7 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     build_lib = str(model_directory_path)
 
     # Building the model takes a long time. Run in a different thread.
-    compiler_output = await asyncio.get_event_loop().run_in_executor(
+    compiler_output = await asyncio.get_running_loop().run_in_executor(
         None, httpstan.build_ext.run_build_ext, extensions, build_lib
     )
     return compiler_output
