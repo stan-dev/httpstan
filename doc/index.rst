@@ -63,7 +63,7 @@ Once the operation is complete, the "fit" can be retrieved. The name of the fit,
 ``models/xc2pdjb4/fits/gkf54axb``, is included in the ``metadata`` field of the operation.
 The fit is saved as sequence of JSON-encoded messages. These messages are strung together
 with newlines. To retrieve these messages, saving them locally in the file
-``myfit.bin``, make the following request::
+``myfit.jsonlines``, make the following request::
 
     curl http://localhost:8080/v1/models/xc2pdjb4/fits/gkf54axb > myfit.jsonlines
 
