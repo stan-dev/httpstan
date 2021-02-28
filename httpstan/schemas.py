@@ -87,13 +87,18 @@ class Data(marshmallow.Schema):
 class CreateFitRequest(marshmallow.Schema):
     """Schema for request to start sampling.
 
-    Only one algorithm is currently supported: ``hmc_nuts_diag_e_adapt``.
+    Only two algorithms are supported: ``hmc_nuts_diag_e_adapt`` and ``fixed_param``.
 
     Sampler parameters can be found in ``httpstan/stan_services.cpp``.
 
     """
 
-    function = fields.String(required=True, validate=validate.Equal("stan::services::sample::hmc_nuts_diag_e_adapt"))
+    function = fields.String(
+        required=True,
+        validate=validate.OneOf(
+            ["stan::services::sample::hmc_nuts_diag_e_adapt", "stan::services::sample::fixed_param"]
+        ),
+    )
     data = fields.Nested(Data(), missing={})
     init = fields.Nested(Data(), missing={})
     random_seed = fields.Integer(validate=validate.Range(min=0))
