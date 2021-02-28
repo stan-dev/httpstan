@@ -8,6 +8,7 @@
 #include <stan/io/array_var_context.hpp>
 #include <stan/io/var_context.hpp>
 #include <stan/model/model_base.hpp>
+#include <stan/services/sample/fixed_param.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e_adapt.hpp>
 
 #include <pybind11/pybind11.h>
@@ -303,6 +304,43 @@ int hmc_nuts_diag_e_adapt_wrapper(std::string socket_filename, py::dict data, py
   return return_code;
 }
 
+// See exported docstring
+int fixed_param_wrapper(std::string socket_filename, py::dict data, py::dict init, int random_seed, int chain,
+                        double init_radius, int num_samples, int num_thin, int refresh) {
+  int return_code;
+  stan::io::array_var_context &var_context = new_array_var_context(data);
+  stan::model::model_base &model = new_model(var_context, (unsigned int)random_seed, &std::cout);
+  stan::io::array_var_context &init_var_context = new_array_var_context(init);
+  stan::callbacks::interrupt interrupt;
+  stan::callbacks::logger *logger = new stan::callbacks::socket_logger(socket_filename, "logger:");
+  stan::callbacks::writer *init_writer = new stan::callbacks::socket_writer(socket_filename, "init_writer:");
+  stan::callbacks::writer *sample_writer = new stan::callbacks::socket_writer(socket_filename, "sample_writer:");
+  stan::callbacks::writer *diagnostic_writer =
+      new stan::callbacks::socket_writer(socket_filename, "diagnostic_writer:");
+  std::exception_ptr p;
+  py::gil_scoped_release release;
+  try {
+    return_code = stan::services::sample::fixed_param(model, init_var_context, random_seed, chain, init_radius,
+                                                      num_samples, num_thin, refresh, interrupt, *logger, *init_writer,
+                                                      *sample_writer, *diagnostic_writer);
+  } catch (const std::exception &e) {
+    p = std::current_exception();
+  }
+
+  delete &model;
+  delete &init_var_context;
+  delete logger;
+  delete init_writer;
+  delete sample_writer;
+  delete diagnostic_writer;
+  delete &var_context;
+
+  if (p)
+    std::rethrow_exception(p);
+
+  return return_code;
+}
+
 PYBIND11_MODULE(stan_services, m) {
   m.doc() = R"pbdoc(
         Wrapped functions defined in the `stan::services` namespace.
@@ -332,4 +370,7 @@ PYBIND11_MODULE(stan_services, m) {
         py::arg("stepsize_jitter"), py::arg("max_depth"), py::arg("delta"), py::arg("gamma"), py::arg("kappa"),
         py::arg("t0"), py::arg("init_buffer"), py::arg("term_buffer"), py::arg("window"),
         "Call stan::services::sample::hmc_nuts_diag_e_adapt");
+  m.def("fixed_param_wrapper", &fixed_param_wrapper, py::arg("socket_filename"), py::arg("data"), py::arg("init"),
+        py::arg("random_seed"), py::arg("chain"), py::arg("init_radius"), py::arg("num_samples"), py::arg("num_thin"),
+        py::arg("refresh"), "Call stan::services::sample::fixed_param");
 }
