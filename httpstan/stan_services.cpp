@@ -124,15 +124,14 @@ std::vector<std::vector<size_t>> dims(py::dict data) {
 }
 
 // See exported docstring
-double log_prob(py::dict data,
-                const std::vector<double>& unconstrained_parameters,
-                bool adjust_transform) {
+double log_prob(py::dict data, const std::vector<double> &unconstrained_parameters, bool adjust_transform) {
   double lp;
   stan::io::array_var_context &var_context = new_array_var_context(data);
   // random_seed, the second argument, is unused but the function requires it.
   stan::model::model_base &model = new_model(var_context, (unsigned int)1, &std::cout);
-  if(unconstrained_parameters.size() != model.num_params_r()) {
-    throw std::runtime_error("The number of parameters does not match the number of unconstrained parameters in the model.");
+  if (unconstrained_parameters.size() != model.num_params_r()) {
+    throw std::runtime_error(
+        "The number of parameters does not match the number of unconstrained parameters in the model.");
   }
   std::vector<stan::math::var> ad_params_r;
   ad_params_r.reserve(model.num_params_r());
@@ -144,13 +143,13 @@ double log_prob(py::dict data,
   std::exception_ptr p;
   try {
     // params_i, the second argument, is unused but the function requires it (see model_base.hpp).
-    if(adjust_transform) {
+    if (adjust_transform) {
       lp = model.template log_prob<true, true>(ad_params_r, params_i, &std::cout).val();
     } else {
       lp = model.template log_prob<true, false>(ad_params_r, params_i, &std::cout).val();
     }
     stan::math::recover_memory();
-  } catch (std::exception& ex) {
+  } catch (std::exception &ex) {
     stan::math::recover_memory();
     p = std::current_exception();
   }
@@ -165,30 +164,30 @@ double log_prob(py::dict data,
 }
 
 // See exported docstring
-std::vector<double> log_prob_grad(py::dict data,
-                                  const std::vector<double>& unconstrained_parameters,
+std::vector<double> log_prob_grad(py::dict data, const std::vector<double> &unconstrained_parameters,
                                   bool adjust_transform) {
   std::vector<double> gradient;
   stan::io::array_var_context &var_context = new_array_var_context(data);
   // random_seed, the second argument, is unused but the function requires it.
   stan::model::model_base &model = new_model(var_context, (unsigned int)1, &std::cout);
-  if(unconstrained_parameters.size() != model.num_params_r()) {
-    throw std::runtime_error("The number of parameters does not match the number of unconstrained parameters in the model.");
+  if (unconstrained_parameters.size() != model.num_params_r()) {
+    throw std::runtime_error(
+        "The number of parameters does not match the number of unconstrained parameters in the model.");
   }
   // The params_r parameter is incorrectly declared as non-const in Stan C++.
   // Unconstrained_parameters are cast from const to non-const below, as required by Stan (see model_base.hpp).
-  std::vector<double>& params_r = const_cast<std::vector<double>&>(unconstrained_parameters);
+  std::vector<double> &params_r = const_cast<std::vector<double> &>(unconstrained_parameters);
   // calculate gradient
   std::exception_ptr p;
   std::vector<int> params_i(model.num_params_i(), 0);
   try {
     // params_i, the third argument, is unused but the function requires it (see model_base.hpp).
-    if(adjust_transform) {
+    if (adjust_transform) {
       stan::model::log_prob_grad<true, true>(model, params_r, params_i, gradient, &std::cout);
     } else {
       stan::model::log_prob_grad<true, false>(model, params_r, params_i, gradient, &std::cout);
     }
-  } catch (std::exception& ex) {
+  } catch (std::exception &ex) {
     p = std::current_exception();
   }
 
@@ -202,27 +201,27 @@ std::vector<double> log_prob_grad(py::dict data,
 }
 
 // See exported docstring
-std::vector<double> write_array(py::dict data,
-                                const std::vector<double>& unconstrained_parameters,
+std::vector<double> write_array(py::dict data, const std::vector<double> &unconstrained_parameters,
                                 bool include_tparams = true, bool include_gqs = true) {
   boost::ecuyer1988 base_rng(0);
   std::vector<double> params_r_constrained;
   stan::io::array_var_context &var_context = new_array_var_context(data);
   // random_seed, the second argument, is unused but the function requires it.
   stan::model::model_base &model = new_model(var_context, (unsigned int)1, &std::cout);
-  if(unconstrained_parameters.size() != model.num_params_r()) {
-    throw std::runtime_error("The number of parameters does not match the number of unconstrained parameters in the model.");
+  if (unconstrained_parameters.size() != model.num_params_r()) {
+    throw std::runtime_error(
+        "The number of parameters does not match the number of unconstrained parameters in the model.");
   }
   // The params_r parameter is incorrectly declared as non-const in Stan C++.
   // Unconstrained_parameters are cast from const to non-const below, as required by Stan (see model_base.hpp).
-  std::vector<double>& params_r = const_cast<std::vector<double>&>(unconstrained_parameters);
+  std::vector<double> &params_r = const_cast<std::vector<double> &>(unconstrained_parameters);
   // constrain parameters to their defined support
   std::exception_ptr p;
   std::vector<int> params_i(model.num_params_i(), 0);
   try {
     // params_i, the third argument, is unused but the function requires it (see model_base.hpp).
     model.write_array(base_rng, params_r, params_i, params_r_constrained, include_tparams, include_gqs, &std::cout);
-  } catch (std::exception& ex) {
+  } catch (std::exception &ex) {
     p = std::current_exception();
   }
 
@@ -236,8 +235,7 @@ std::vector<double> write_array(py::dict data,
 }
 
 // See exported docstring
-std::vector<double> transform_inits(py::dict data,
-                                    py::dict constrained_parameters) {
+std::vector<double> transform_inits(py::dict data, py::dict constrained_parameters) {
   std::vector<double> params_r_unconstrained;
   stan::io::array_var_context &var_context = new_array_var_context(data);
   // random_seed, the second argument, is unused but the function requires it.
@@ -249,7 +247,7 @@ std::vector<double> transform_inits(py::dict data,
   try {
     // params_i, the second argument, is unused but the function requires it (see model_base.hpp).
     model.transform_inits(param_var_context, params_i, params_r_unconstrained, &std::cout);
-  } catch (std::exception& ex) {
+  } catch (std::exception &ex) {
     p = std::current_exception();
   }
 
@@ -358,8 +356,8 @@ PYBIND11_MODULE(stan_services, m) {
   m.def("dims", &dims, py::arg("data"), "Call the ``get_dims`` method of the model.");
   m.def("log_prob", &log_prob, py::arg("data"), py::arg("unconstrained_parameters"), py::arg("adjust_transform"),
         "Call the ``log_prob`` method of the model.");
-  m.def("log_prob_grad", &log_prob_grad, py::arg("data"), py::arg("unconstrained_parameters"), py::arg("adjust_transform"),
-        "Call stan::model::log_prob_grad");
+  m.def("log_prob_grad", &log_prob_grad, py::arg("data"), py::arg("unconstrained_parameters"),
+        py::arg("adjust_transform"), "Call stan::model::log_prob_grad");
   m.def("write_array", &write_array, py::arg("data"), py::arg("unconstrained_parameters"), py::arg("include_tparams"),
         py::arg("include_gqs"), "Call the ``write_array`` method of the model.");
   m.def("transform_inits", &transform_inits, py::arg("data"), py::arg("constrained_parameters"),
