@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 import unittest.mock
 
@@ -32,7 +33,8 @@ intersphinx_mapping = {
     "python": ("http://python.readthedocs.io/en/latest/", None),
 }
 
-version = release = httpstan.__version__
+# use `git describe` because `httpstan.__version__` is not available on readthedocs
+version = release = subprocess.check_output(["git", "describe", "--abbrev=0", "--always"]).decode().strip()
 
 autoapi_dirs = [os.path.join("..", "httpstan")]
 autoapi_ignore = [

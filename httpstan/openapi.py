@@ -15,6 +15,11 @@ import apispec.yaml_utils
 import httpstan
 import httpstan.views as views
 
+try:
+    version = httpstan.__version__
+except AttributeError:
+    from doc.conf import version  # type: ignore
+
 
 class DocPlugin(apispec.BasePlugin):
     def init_spec(self, spec: apispec.APISpec) -> None:
@@ -32,7 +37,7 @@ def openapi_spec() -> apispec.APISpec:
     """Return OpenAPI (fka Swagger) spec for API."""
     spec = apispec.APISpec(
         title="httpstan HTTP-based REST API",
-        version=httpstan.__version__,
+        version=version,
         openapi_version="2.0",
         # plugin order, MarshmallowPlugin resolves schema references created by DocPlugin
         plugins=[DocPlugin(), apispec.ext.marshmallow.MarshmallowPlugin()],
