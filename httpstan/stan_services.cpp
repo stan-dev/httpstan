@@ -82,7 +82,7 @@ std::string model_name() {
 }
 
 // See exported docstring
-std::vector<std::string> param_names(py::dict data) {
+std::vector<std::string> get_param_names(py::dict data) {
   std::vector<std::string> names;
   stan::io::array_var_context &var_context = new_array_var_context(data);
   // random_seed, the second argument, is unused but the function requires it.
@@ -110,7 +110,7 @@ std::vector<std::string> constrained_param_names(py::dict data) {
 }
 
 // See exported docstring
-std::vector<std::vector<size_t>> dims(py::dict data) {
+std::vector<std::vector<size_t>> get_dims(py::dict data) {
   stan::io::array_var_context &var_context = new_array_var_context(data);
   std::vector<std::vector<size_t>> dims_;
   // random_seed, the second argument, is unused but the function requires it.
@@ -350,10 +350,10 @@ PYBIND11_MODULE(stan_services, m) {
         `stan::model::model_base` returned by the `new_model` C++ function.
     )pbdoc";
   m.def("model_name", &model_name, "Call the ``model_name`` method of the model.");
-  m.def("param_names", &param_names, py::arg("data"), "Call the ``get_param_names`` method of the model.");
+  m.def("get_param_names", &get_param_names, py::arg("data"), "Call the ``get_param_names`` method of the model.");
   m.def("constrained_param_names", &constrained_param_names, py::arg("data"),
         "Call the ``constrained_param_names`` method of the model.");
-  m.def("dims", &dims, py::arg("data"), "Call the ``get_dims`` method of the model.");
+  m.def("get_dims", &get_dims, py::arg("data"), "Call the ``get_dims`` method of the model.");
   m.def("log_prob", &log_prob, py::arg("data"), py::arg("unconstrained_parameters"), py::arg("adjust_transform"),
         "Call the ``log_prob`` method of the model.");
   m.def("log_prob_grad", &log_prob_grad, py::arg("data"), py::arg("unconstrained_parameters"),

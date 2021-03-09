@@ -255,19 +255,19 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
         message, status = f"Model `{model_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
 
-    # ``param_names`` and ``dims`` are defined in ``stan_services.cpp``.
+    # ``get_param_names`` and ``get_dims`` are defined in ``stan_services.cpp``.
     # Apart from converting C++ types into corresponding Python types, they do no processing of the
     # output of ``get_param_names`` and ``get_dims``.
     # Ignoring types due to the difficulty of referring to an extension module
     # which is compiled during run time.
     try:
-        param_names = services_module.param_names(data)  # type: ignore
+        param_names = services_module.get_param_names(data)  # type: ignore
     except Exception as exc:
         # e.g., "N is -5, but must be greater than or equal to 0"
-        message, status = f"Error calling param_names: `{exc}`", 400
+        message, status = f"Error calling get_param_names: `{exc}`", 400
         logger.critical(message)
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
-    dims = services_module.dims(data)  # type: ignore
+    dims = services_module.get_dims(data)  # type: ignore
     constrained_param_names = services_module.constrained_param_names(data)  # type: ignore
     params = []
     for name, dims_ in zip(param_names, dims):
