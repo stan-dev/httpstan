@@ -23,7 +23,7 @@ jobs:
         run: pip install "poetry~=1.1.4"
 
       - name: Build libraries used by Stan
-        run: make
+        run: make -j2
 
       # export test dependencies from pyproject.toml, install them
       - name: Install dependencies
