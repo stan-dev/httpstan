@@ -36,7 +36,7 @@ STAN_LIBRARIES := $(SUNDIALS_LIBRARIES) $(TBB_LIBRARIES)
 LIBRARIES := $(STAN_LIBRARIES)
 INCLUDES_STAN_MATH_LIBS := httpstan/include/boost httpstan/include/Eigen httpstan/include/sundials httpstan/include/tbb
 INCLUDES_STAN := httpstan/include/stan httpstan/include/stan/math $(INCLUDES_STAN_MATH_LIBS)
-INCLUDES := httpstan/include/pybind11 $(INCLUDES_STAN)
+INCLUDES := httpstan/include/pybind11 httpstan/include/rapidjson $(INCLUDES_STAN)
 STANC := httpstan/stanc
 PRECOMPILED_OBJECTS = httpstan/stan_services.o
 
@@ -217,7 +217,7 @@ HTTPSTAN_EXTRA_COMPILE_ARGS ?= -O3 -std=c++14
 HTTPSTAN_MACROS = -DBOOST_DISABLE_ASSERTS -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION -DSTAN_THREADS -D_REENTRANT -D_GLIBCXX_USE_CXX11_ABI=0
 HTTPSTAN_INCLUDE_DIRS = -Ihttpstan -Ihttpstan/include
 
-httpstan/stan_services.o: httpstan/stan_services.cpp httpstan/socket_logger.hpp httpstan/socket_writer.hpp | httpstan/include/rapidjson
+httpstan/stan_services.o: httpstan/stan_services.cpp httpstan/socket_logger.hpp httpstan/socket_writer.hpp | $(INCLUDES)
 
 httpstan/stan_services.o:
 	# -fvisibility=hidden required by pybind11
