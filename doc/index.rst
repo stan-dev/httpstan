@@ -78,20 +78,21 @@ We appreciate citations as they let us discover what people have been doing
 with the software. Citations also provide evidence of use which can help in
 obtaining grant funding.
 
-Allen Riddell & Ari Hartikainen. (2021). httpstan (Version 4.3.0). Zenodo. http://doi.org/10.5281/zenodo.4533304
+To cite httpstan in publications use:
 
-BibTeX::
+Riddell, A., Hartikainen, A., & Carter, M. (2021). httpstan (4.4.0). https://pypi.org/project/httpstan
 
-    @software{httpstan,
-      author       = {Allen Riddell and Ari Hartikainen},
-      title        = {httpstan},
-      year         = 2021,
-      publisher    = {Zenodo},
-      version      = {4.3.0},
-      doi          = {10.5281/zenodo.4533304},
-      url          = {https://doi.org/10.5281/zenodo.4533304}
+Or use the following BibTeX entry::
+
+    @misc{httpstan,
+      title = {httpstan (4.4.0)},
+      author = {Riddell, Allen and Hartikainen, Ari and Carter, Matthew},
+      year = {2021},
+      month = mar,
+      howpublished = {PyPI}
     }
 
+Please also cite Stan.
 
 
 User Guide
