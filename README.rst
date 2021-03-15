@@ -103,11 +103,6 @@ with newlines. To retrieve these messages, saving them locally in the file
 The Stan "fit", saved in ``myfit.jsonlines``, aggregates all messages. By reading
 them one by one you can recover all messages sent by the Stan C++ library.
 
-Contribute
-==========
-
-Contribution guidelines are described in ``CONTRIBUTING.rst``.
-
 Citation
 ========
 
