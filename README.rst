@@ -31,6 +31,7 @@ Requirements
 
 - Python version 3.7 or higher.
 - macOS or Linux.
+- C++ compiler: gcc ≥9.0 or clang ≥10.0.
 
 Background
 ==========
