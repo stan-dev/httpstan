@@ -199,6 +199,9 @@ endif
 $(TBB_LIBRARIES_BUILD_LOCATIONS) $(SUNDIALS_LIBRARIES_BUILD_LOCATIONS): | build/math-$(MATH_VERSION)
 	$(MAKE) -f Makefile.libraries $@
 
+# the following rule is required for parallel make
+build/math-$(MATH_VERSION)/lib/tbb/libtbbmalloc_proxy.dylib: build/math-$(MATH_VERSION)/lib/tbb/libtbbmalloc.dylib
+
 ###############################################################################
 # Precompile httpstan-related objects, eventually linked in httpstan/models.py
 ###############################################################################
