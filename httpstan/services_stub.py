@@ -12,6 +12,7 @@ import concurrent.futures
 import functools
 import io
 import logging
+import multiprocessing as mp
 import os
 import select
 import socket
@@ -25,7 +26,9 @@ import httpstan.models
 import httpstan.services.arguments as arguments
 from httpstan.config import HTTPSTAN_DEBUG
 
-executor = concurrent.futures.ProcessPoolExecutor()
+# Use `get_context` to get a package-specific multiprocessing context.
+# See "Contexts and start methods" in the `multiprocessing` docs for details.
+executor = concurrent.futures.ProcessPoolExecutor(mp_context=mp.get_context("fork"))
 logger = logging.getLogger("httpstan")
 
 
