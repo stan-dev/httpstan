@@ -15,6 +15,7 @@ import logging
 import multiprocessing as mp
 import os
 import select
+import signal
 import socket
 import tempfile
 import typing
@@ -26,9 +27,14 @@ import httpstan.models
 import httpstan.services.arguments as arguments
 from httpstan.config import HTTPSTAN_DEBUG
 
+
 # Use `get_context` to get a package-specific multiprocessing context.
 # See "Contexts and start methods" in the `multiprocessing` docs for details.
-executor = concurrent.futures.ProcessPoolExecutor(mp_context=mp.get_context("fork"))
+def init_worker() -> None:
+    signal.signal(signal.SIGINT, signal.SIG_IGN)  # ignore KeyboardInterrupt
+
+
+executor = concurrent.futures.ProcessPoolExecutor(mp_context=mp.get_context("fork"), initializer=init_worker)
 logger = logging.getLogger("httpstan")
 
 

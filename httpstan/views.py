@@ -389,7 +389,11 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
             operation["result"] = _make_error(message, status=status)
             # Delete messages associated with the fit. If initialization
             # fails, for example, messages will exist on disk. Remove them.
-            httpstan.cache.delete_fit(operation["metadata"]["fit"]["name"])
+            try:
+                httpstan.cache.delete_fit(operation["metadata"]["fit"]["name"])
+            except FileNotFoundError:
+                # occurs when control-c stops sampling
+                pass
         else:
             logger.info(f"Operation `{operation['name']}` finished.")
             operation["result"] = schemas.Fit().load(operation["metadata"]["fit"])
