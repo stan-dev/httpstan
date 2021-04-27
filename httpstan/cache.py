@@ -137,4 +137,7 @@ def delete_fit(name: str) -> None:
         name: Stan fit name
     """
     path = fit_path(name)
-    path.unlink()
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        raise KeyError(f"Fit `{name}` not found.")

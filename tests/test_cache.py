@@ -45,3 +45,7 @@ def test_load_stanc_warnings_exception() -> None:
         httpstan.cache.load_stanc_warnings(model_name)
 
 
+def test_delete_fit_keyerror_exception() -> None:
+    fit_name = "models/abcdefghijklmnopqrs/fits/abcdefg"  # does not exist
+    with pytest.raises(KeyError):
+        httpstan.cache.delete_fit(fit_name)
