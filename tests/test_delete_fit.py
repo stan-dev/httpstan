@@ -10,7 +10,7 @@ program_code = "parameters {real y;} model {y ~ normal(0,1);}"
 
 @pytest.mark.asyncio
 async def test_delete_fit(api_url: str) -> None:
-    """Test compilation of an extension module."""
+    """Test deleting fit."""
     fit_payload = {"function": "stan::services::sample::hmc_nuts_diag_e_adapt"}
     operation = await helpers.sample(api_url, program_code, fit_payload)
 
