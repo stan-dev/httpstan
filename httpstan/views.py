@@ -391,8 +391,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
             # fails, for example, messages will exist on disk. Remove them.
             try:
                 httpstan.cache.delete_fit(operation["metadata"]["fit"]["name"])
-            except FileNotFoundError:
-                # occurs when control-c stops sampling
+            except KeyError:
                 pass
         else:
             logger.info(f"Operation `{operation['name']}` finished.")
