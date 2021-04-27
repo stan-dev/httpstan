@@ -28,22 +28,20 @@ async def test_list_model_names(api_url: str) -> None:
     operation = await helpers.sample(api_url, program_code, payload)
     assert operation
     model_names = httpstan.cache.list_model_names()
+    assert isinstance(model_names, list)
+    assert all(name.startswith("models/") for name in model_names)
     assert len(model_names) > 0 and model_name in model_names
 
 
-def load_services_extension_module_compiler_output_exception() -> None:
+def test_load_services_extension_module_compiler_output_exception() -> None:
     model_name = "models/abcdefghijklmnopqrs"  # does not exist
     with pytest.raises(KeyError):
         httpstan.cache.load_services_extension_module_compiler_output(model_name)
 
 
-def load_stanc_warnings_exception() -> None:
+def test_load_stanc_warnings_exception() -> None:
     model_name = "models/abcdefghijklmnopqrs"  # does not exist
     with pytest.raises(KeyError):
         httpstan.cache.load_stanc_warnings(model_name)
 
 
-def list_model_names() -> None:
-    model_names = httpstan.cache.list_model_names()
-    assert isinstance(model_names, list)
-    assert all(name.startswith("models/") for name in model_names)
