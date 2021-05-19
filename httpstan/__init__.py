@@ -7,4 +7,4 @@ Configures logging and exposes httpstan.__version__.
 import logging
 
 logging.getLogger("httpstan").addHandler(logging.NullHandler())
-__version__ = "4.4.2"
+__version__ = "4.5.0"
