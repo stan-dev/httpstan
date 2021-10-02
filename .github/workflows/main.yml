@@ -20,7 +20,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install poetry
-        run: pip install "poetry~=1.1.4"
+        run: pip install "poetry~=1.1.10"
 
       - name: Build libraries used by Stan
         run: make -j2
