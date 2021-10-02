@@ -99,3 +99,21 @@ async def test_build_warning(api_url: str) -> None:
         "assignment operator <- is deprecated in the Stan language; use = instead."
         in response_payload["stanc_warnings"]
     )
+
+
+@pytest.mark.asyncio
+async def test_build_integer_division_warning(api_url: str) -> None:
+    """Test building which succeeds but which generates an integer division warning."""
+
+    # prints integer division warning
+    program_code = "parameters {real y;} model {y ~ normal(0,1/5);}"
+
+    payload = {"program_code": program_code}
+    models_url = f"{api_url}/models"
+    async with aiohttp.ClientSession() as session:
+        async with session.post(models_url, json=payload) as resp:
+            assert resp.status == 201
+            response_payload = await resp.json()
+    assert "compiler_output" in response_payload
+    assert "stanc_warnings" in response_payload
+    assert "Found int division" in response_payload["stanc_warnings"]
