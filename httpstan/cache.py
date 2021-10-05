@@ -30,7 +30,7 @@ def fit_path(fit_name: str) -> Path:
     """Get the path to a fit file. File may not exist."""
     # fit_name structure: cache / models / model_id / fit_id
     fit_directory, fit_id = fit_name.rsplit("/", maxsplit=1)
-    fit_filename = fit_id + ".jsonlines.lz4"
+    fit_filename = fit_id + ".jsonlines.gz"
     return cache_directory() / fit_directory / fit_filename
 
 
@@ -102,7 +102,7 @@ def dump_fit(fit_bytes: bytes, name: str) -> None:
 
     Arguments:
         name: Stan fit name
-        fit_bytes: LZ4-compressed messages associated with Stan fit.
+        fit_bytes: gzip-compressed messages associated with Stan fit.
     """
     # fits are stored under their "parent" models
     path = fit_path(name)
@@ -119,7 +119,7 @@ def load_fit(name: str) -> bytes:
         model_name: Stan model name
 
     Returns
-        LZ4-compressed messages associated with Stan fit.
+        gzip-compressed messages associated with Stan fit.
     """
     # fits are stored under their "parent" models
     path = fit_path(name)

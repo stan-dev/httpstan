@@ -19,8 +19,7 @@ import signal
 import socket
 import tempfile
 import typing
-
-import lz4.frame
+import zlib
 
 import httpstan.cache
 import httpstan.models
@@ -112,7 +111,12 @@ async def call(
             future = asyncio.get_running_loop().run_in_executor(executor, lazy_function_wrapper_partial)  # type: ignore
 
         messages_files: typing.Mapping[socket.socket, io.BytesIO] = collections.defaultdict(io.BytesIO)
+        # using a wbits value which makes things compatible with gzip
+        messages_compressobjs: typing.Mapping[socket.socket, zlib._Compress] = collections.defaultdict(
+            functools.partial(zlib.compressobj, level=zlib.Z_BEST_SPEED, wbits=zlib.MAX_WBITS | 16)
+        )
         potential_readers = [socket_]
+
         while True:
             # note: timeout of 0.01 seems to work well based on measurements
             readable, writeable, errored = select.select(potential_readers, [], [], 0.01)
@@ -132,7 +136,7 @@ async def call(
                 # Only trigger callback if message has topic `logger`.
                 if logger_callback and b'"logger"' in message:
                     logger_callback(message)
-                messages_files[s].write(message)
+                messages_files[s].write(messages_compressobjs[s].compress(message))
             # if `potential_readers == [socket_]` then either (1) no connections
             # have been opened or (2) all connections have been closed.
             if not readable:
@@ -144,16 +148,13 @@ async def call(
                 # no messages right now and not done. Sleep briefly so other pending tasks get a chance to run.
                 await asyncio.sleep(0.001)
 
-    # WISHLIST: Here we compress messages after they all have arrived. Find a way to compress
-    # messages as they arrive.  Compressing messages as they arrive would use much less memory.
-    with lz4.frame.LZ4FrameCompressor() as compressor:
-        compressed = compressor.begin()
-        for fh in messages_files.values():
-            fh.flush()
-            compressed += compressor.compress(fh.getvalue())
-            fh.close()
-        compressed += compressor.flush()
-    httpstan.cache.dump_fit(compressed, fit_name)
+    compressed_parts = []
+    for s, fh in messages_files.items():
+        fh.write(messages_compressobjs[s].flush())
+        fh.flush()
+        compressed_parts.append(fh.getvalue())
+        fh.close()
+    httpstan.cache.dump_fit(b"".join(compressed_parts), fit_name)
 
     # `result()` method will raise exceptions, if any
     future.result()

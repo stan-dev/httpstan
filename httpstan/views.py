@@ -5,6 +5,7 @@ Handlers are separated from the endpoint names. Endpoints are defined in
 """
 import asyncio
 import functools
+import gzip
 import http
 import logging
 import re
@@ -12,7 +13,6 @@ import traceback
 from typing import Optional, Sequence, cast
 
 import aiohttp.web
-import lz4.frame
 import webargs.aiohttpparser
 
 import httpstan.cache
@@ -456,11 +456,11 @@ async def handle_get_fit(request: aiohttp.web.Request) -> aiohttp.web.Response:
     fit_name = f"{model_name}/fits/{request.match_info['fit_id']}"
 
     try:
-        fit_bytes_lz4 = httpstan.cache.load_fit(fit_name)
+        fit_bytes_gz = httpstan.cache.load_fit(fit_name)
     except KeyError:  # pragma: no cover
         message, status = f"Fit `{fit_name}` not found.", 404
         return aiohttp.web.json_response(_make_error(message, status=status), status=status)
-    fit_bytes = lz4.frame.decompress(fit_bytes_lz4)
+    fit_bytes = gzip.decompress(fit_bytes_gz)
     assert isinstance(fit_bytes, bytes)
     return aiohttp.web.Response(body=fit_bytes, content_type="text/plain", charset="utf-8")
 

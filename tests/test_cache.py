@@ -17,7 +17,7 @@ def test_model_directory() -> None:
 def test_fit_path() -> None:
     fit_name = "models/abcdef/ghijklmn"
     path = httpstan.cache.fit_path(fit_name)
-    assert path.name == "ghijklmn.jsonlines.lz4"
+    assert path.name == "ghijklmn.jsonlines.gz"
 
 
 @pytest.mark.asyncio
