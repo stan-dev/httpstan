@@ -88,7 +88,7 @@ def import_services_extension_module(model_name: str) -> ModuleType:
     # advance, we are stuck with a fixed module name.
     spec = importlib.util.spec_from_file_location("stan_services", module_path)  # type: ignore
     module: ModuleType = importlib.util.module_from_spec(spec)  # type: ignore
-    spec.loader.exec_module(module)
+    spec.loader.exec_module(module)  # type: ignore
 
     return module
 
