@@ -11,9 +11,9 @@
 
 PYBIND11_VERSION := 2.7.1
 RAPIDJSON_VERSION := 1.1.0
-STAN_VERSION := 2.28.0
-STANC_VERSION := 2.28.0
-MATH_VERSION := 4.2.0
+STAN_VERSION := 2.28.1
+STANC_VERSION := 2.28.1
+MATH_VERSION := 4.2.1
 # NOTE: boost, eigen, sundials, and tbb versions must match those found in Stan Math
 BOOST_VERSION := 1.75.0
 EIGEN_VERSION := 3.3.9
