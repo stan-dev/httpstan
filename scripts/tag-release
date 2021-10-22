@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+
+KEYID=85107A96512971B8C55932085D5D0CFF0A51A83D
+
+if [[ ! "$(git branch --show-current)" = "main" ]]; then
+  echo "Not on 'main' branch. Stopping." && exit 1
+fi
+
+# check that "Bump version" appears in most recent commit
+if ! git log -1 | grep -q -s version; then
+  echo "Did not find 'version' mentioned in commit message. Has the version been updated?" && exit 1
+fi
+
+VERSION=$(grep '^version' pyproject.toml | sed 's/version = "\([^"]\+\)"/\1/')
+read -r -p "About to create tag for $VERSION. Abort with control-c."
+git tag -s -u "$KEYID" "$VERSION" -m"httpstan $VERSION"
+echo "Commit tagged. Next step is to push the tag upstream. Run something like the following:"
+echo -e "\ngit push upstream $VERSION\n"
