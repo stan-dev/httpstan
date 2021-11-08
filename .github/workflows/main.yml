@@ -20,6 +20,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # default is gcc
+      - name: Set compiler to clang
+        run: CC=clang CXX=clang++
+        if: ${{ matrix.compiler == 'clang' }}
+
       - name: Install poetry
         run: pip install "poetry~=1.1.10"
 
