@@ -29,7 +29,8 @@ def test_compile_semantic_error() -> None:
 def test_compile_warning() -> None:
     program_code = """model { real x; x <- 5; }"""
     cpp_code, warnings = httpstan.compile.compile(program_code, "test_model")
-    assert cpp_code and "assignment operator <- is deprecated in the Stan language" in warnings
+    assert cpp_code
+    assert "operator <- is deprecated in the Stan language" in warnings
 
 
 @pytest.mark.asyncio
@@ -75,7 +76,7 @@ async def test_build_unknown_arg(api_url: str) -> None:
 async def test_build_warning(api_url: str) -> None:
     """Test building which succeeds but which generates a warning."""
 
-    # prints warning:
+    # prints warning like:
     # assignment operator <- is deprecated in the Stan language; use = instead.
     program_code = """
     parameters {
@@ -95,10 +96,7 @@ async def test_build_warning(api_url: str) -> None:
             response_payload = await resp.json()
     assert "compiler_output" in response_payload
     assert "stanc_warnings" in response_payload
-    assert (
-        "assignment operator <- is deprecated in the Stan language; use = instead."
-        in response_payload["stanc_warnings"]
-    )
+    assert "operator <- is deprecated in the Stan language" in response_payload["stanc_warnings"]
 
 
 @pytest.mark.asyncio
@@ -116,4 +114,4 @@ async def test_build_integer_division_warning(api_url: str) -> None:
             response_payload = await resp.json()
     assert "compiler_output" in response_payload
     assert "stanc_warnings" in response_payload
-    assert "Found int division" in response_payload["stanc_warnings"]
+    assert "int division" in response_payload["stanc_warnings"]
