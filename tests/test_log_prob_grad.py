@@ -22,7 +22,7 @@ x = random.uniform(0, 10)
 
 def gaussian_gradient(x: float, mean: float, var: float) -> List[float]:
     """Analytically evaluate Gaussian gradient."""
-    gradient = (mean - x) / (var ** 2)
+    gradient = (mean - x) / var**2
     return [gradient]
 
 

@@ -24,8 +24,8 @@ redoc = [
 
 source_suffix = ".rst"
 master_doc = "index"
-project = u"httpstan"
-copyright = u"2019, httpstan Developers"
+project = "httpstan"
+copyright = "2019, httpstan Developers"
 
 
 intersphinx_mapping = {
