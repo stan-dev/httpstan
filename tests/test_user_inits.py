@@ -25,7 +25,7 @@ data = {"x": 2}
 async def test_user_inits(api_url: str) -> None:
     """Test that user-provided initial values make some difference."""
 
-    random_seed = random.randrange(2 ** 16) + 1
+    random_seed = random.randrange(2**16) + 1
     sample_kwargs = {
         "function": "stan::services::sample::hmc_nuts_diag_e_adapt",
         "data": data,

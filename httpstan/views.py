@@ -271,7 +271,7 @@ async def handle_show_params(request: aiohttp.web.Request) -> aiohttp.web.Respon
     constrained_param_names = services_module.constrained_param_names(data)  # type: ignore
     params = []
     for name, dims_ in zip(param_names, dims):
-        constrained_names = tuple(filter(lambda s: re.match(fr"^{name}\.\S+|^{name}\Z", s), constrained_param_names))
+        constrained_names = tuple(filter(lambda s: re.match(rf"^{name}\.\S+|^{name}\Z", s), constrained_param_names))
         params.append(schemas.Parameter().load({"name": name, "dims": dims_, "constrained_names": constrained_names}))
     return aiohttp.web.json_response({"name": model_name, "params": params})
 
