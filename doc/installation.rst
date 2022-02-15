@@ -4,7 +4,7 @@ Installation
 
 .. These instructions appear in both README.rst and installation.rst
 
-**httpstan** requires Python ≥ 3.7. macOS and Linux are supported. A C++ compiler is also required (gcc ≥9.0 or clang ≥10.0).
+**httpstan** runs on Linux and macOS. A C++ compiler is also required (gcc ≥9.0 or clang ≥10.0).
 
 ::
 
