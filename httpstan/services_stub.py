@@ -156,5 +156,26 @@ async def call(
         fh.close()
     httpstan.cache.dump_fit(b"".join(compressed_parts), fit_name)
 
+    # if an exception has already occurred, grab relevant info messages, add as context
+    exception = future.exception()
+    if exception:
+        num_context_messages = 4
+        info_messages_for_context = []
+        import gzip
+        import json
+
+        jsonlines = gzip.decompress(b"".join(compressed_parts)).decode()
+        for line in jsonlines.split("\n")[:num_context_messages]:
+            try:
+                message = json.loads(line)
+                info_message = message["values"].pop().replace("info:", "")
+                info_messages_for_context.append(info_message.strip())
+            except json.JSONDecodeError:
+                pass
+        # hack to add the info messages to the first argument to the exception, for example
+        # ValueError("Initialization faied.") -> ValueError("Initialization faied. Rejecting initial value: Log probability ...")
+        if info_messages_for_context and len(exception.args) == 1:
+            exception.args = (f"{exception.args[0]} {' '.join(info_messages_for_context)} ...",)
+
     # `result()` method will raise exceptions, if any
     future.result()
