@@ -381,6 +381,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         if exc:
             # e.g., "hmc_nuts_diag_e_adapt_wrapper() got an unexpected keyword argument, ..."
             # e.g., dimension errors in variable declarations
+            # e.g., initialization failed
             message, status = (
                 f"Exception during call to services function: `{repr(exc)}`, traceback: `{traceback.format_tb(exc.__traceback__)}`",
                 400,

@@ -31,6 +31,7 @@ async def test_sampling_initialization_failed(api_url: str) -> None:
     # verify an error occurred
     assert operation["result"].get("code") == 400
     assert "Initialization failed." in operation["result"]["message"]
+    assert "Rejecting initial value" in operation["result"]["message"]
 
     # verify the partial fit has been deleted.
     fit_name = operation["metadata"]["fit"]["name"]
