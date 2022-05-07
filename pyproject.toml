@@ -43,7 +43,7 @@ pytest = "^6.2"
 pytest-asyncio = "^0.15"
 apispec = {version = "^4.0", extras = ["yaml", "validation"]}
 autoflake = "^1.4"
-black = "22.1.0"
+black = "22.3.0"
 isort = "^5.9"
 mypy = "0.910"
 flake8 = "^3.9"
