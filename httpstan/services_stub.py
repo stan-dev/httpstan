@@ -173,7 +173,7 @@ async def call(
             except json.JSONDecodeError:
                 pass
         # hack to add the info messages to the first argument to the exception, for example
-        # ValueError("Initialization faied.") -> ValueError("Initialization faied. Rejecting initial value: Log probability ...")
+        # ValueError("Initialization failed.") -> ValueError("Initialization faied. Rejecting initial value: Log probability ...")
         if info_messages_for_context and len(exception.args) == 1:
             exception.args = (f"{exception.args[0]} {' '.join(info_messages_for_context)} ...",)
 
