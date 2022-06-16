@@ -9,7 +9,7 @@
 # this Makefile copy libraries built by the other Makefile into their
 # httpstan-specific directories.
 
-PYBIND11_VERSION := 2.7.1
+PYBIND11_VERSION := 2.9.2
 RAPIDJSON_VERSION := 1.1.0
 STAN_VERSION := 2.29.2
 STANC_VERSION := 2.29.2
@@ -18,7 +18,7 @@ MATH_VERSION := 4.3.2
 BOOST_VERSION := 1.75.0
 EIGEN_VERSION := 3.3.9
 SUNDIALS_VERSION := 6.0.0
-TBB_VERSION := 2020.3
+TBB_VERSION := 2021.6
 PYBIND11_ARCHIVE := build/archives/pybind11-$(PYBIND11_VERSION).tar.gz
 RAPIDJSON_ARCHIVE := build/archives/rapidjson-$(RAPIDJSON_VERSION).tar.gz
 
@@ -216,7 +216,7 @@ PYTHON_PLATINCLUDE ?= -I$(shell python3 -c'import sysconfig;print(sysconfig.get_
 # One include directory is absent: `model_directory_path` as this only
 # exists when the extension module is ready to be linked
 HTTPSTAN_EXTRA_COMPILE_ARGS ?= -O3 -std=c++14
-HTTPSTAN_MACROS = -DBOOST_DISABLE_ASSERTS -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION -DSTAN_THREADS -D_REENTRANT -D_GLIBCXX_USE_CXX11_ABI=0
+HTTPSTAN_MACROS = -DBOOST_DISABLE_ASSERTS -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION -DSTAN_THREADS -D_REENTRANT -D_GLIBCXX_USE_CXX11_ABI=0 -DTBB_INTERFACE_NEW
 HTTPSTAN_INCLUDE_DIRS = -Ihttpstan -Ihttpstan/include
 
 httpstan/stan_services.o: httpstan/stan_services.cpp httpstan/socket_logger.hpp httpstan/socket_writer.hpp | $(INCLUDES)
