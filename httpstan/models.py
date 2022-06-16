@@ -138,7 +138,11 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     ]
 
     if extra_compile_args is None:
-        extra_compile_args = ["-O3", "-std=c++14"]
+        extra_compile_args = [
+            "-O3",
+            "-std=c++14",
+            "-Wno-sign-compare",
+        ]
 
     # Note: `library_dirs` is only relevant for linking. It does not tell an extension
     # where to find shared libraries during execution. There are two ways for an
