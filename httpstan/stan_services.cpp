@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <exception>
+#include <math.h>
 #include <ostream>
 #include <string>
 
@@ -11,8 +13,11 @@
 #include <stan/services/sample/fixed_param.hpp>
 #include <stan/services/sample/hmc_nuts_diag_e_adapt.hpp>
 
+#include <stan/math/rev/core/autodiffstackstorage.hpp>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
 #include "socket_logger.hpp"
 #include "socket_writer.hpp"
@@ -161,6 +166,128 @@ double log_prob(py::dict data, const std::vector<double> &unconstrained_paramete
     std::rethrow_exception(p);
 
   return lp;
+}
+
+
+struct StanLogpFunctionCtx {
+  py::dict data;
+  stan::io::var_context *var_context;
+  stan::model::model_base *model;
+};
+
+extern "C" {
+  int logp_gradient(size_t ndim, const double *unconstrained_parameters, double *gradient, double *logp, void *ctx) {
+    try {
+      const auto func = reinterpret_cast<const struct StanLogpFunctionCtx*>(ctx);
+
+      size_t num_params = func->model->num_params_r();
+
+      // Unfortunately this copies the data. But I think stan only accepts data that is owned by a vector.
+      std::vector<double> params_r = std::vector<double>(unconstrained_parameters, unconstrained_parameters + num_params);
+      std::vector<double> gradient_vector = std::vector<double>(num_params);
+      std::vector<int> params_i(func->model->num_params_i(), 0);
+
+      int returncode = 0;
+      try {
+        // params_i, the third argument, is unused but the function requires it (see model_base.hpp).
+        *logp = stan::model::log_prob_grad<true, true>(*func->model, params_r, params_i, gradient_vector, &std::cout);
+        std::copy(gradient_vector.begin(), gradient_vector.end(), gradient);
+      } catch (std::exception &ex) {
+        returncode = 1;
+      }
+
+      if (!isfinite(*logp)) {
+        returncode = 2;
+      }
+
+      auto has_nan = std::any_of(
+        gradient_vector.begin(),
+        gradient_vector.end(),
+        [](double const& val) { return !isfinite(val); }
+      );
+
+      if (has_nan) {
+        returncode = 3;
+      }
+
+      return returncode;
+    } catch (std::exception &ex) {
+      return -1;
+    }
+  }
+}
+
+std::uintptr_t new_logp_ctx(py::dict data) {
+  stan::io::array_var_context &var_context = new_array_var_context(data);
+  stan::model::model_base &model = new_model(var_context, (unsigned int)1, &std::cout);
+
+  stan::math::ChainableStack::instance_ = new stan::math::AutodiffStackSingleton<stan::math::vari_base, stan::math::chainable_alloc>::AutodiffStackStorage();
+
+  auto ctx = new StanLogpFunctionCtx {
+    data,
+    &var_context,
+    &model,
+  };
+
+  return reinterpret_cast<std::uintptr_t>(ctx);
+}
+
+void free_logp_ctx(std::uintptr_t ctx) {
+  auto func = reinterpret_cast<struct StanLogpFunctionCtx*>(ctx);
+  delete func->model;
+  delete func->var_context;
+  delete func;
+}
+
+std::uintptr_t logp_func(std::uintptr_t ctx) {
+  return reinterpret_cast<std::uintptr_t>(&logp_gradient);
+}
+
+size_t num_unconstrained_parameters(std::uintptr_t ctx) {
+  auto func = reinterpret_cast<struct StanLogpFunctionCtx*>(ctx);
+  return func->model->num_params_r();
+}
+
+py::array_t<double> write_array_ctx(std::uintptr_t ctx, const py::array_t<double> unconstrained_parameters,
+                                bool include_tparams = true, bool include_gqs = true, int seed = 0) {
+  auto func = reinterpret_cast<struct StanLogpFunctionCtx*>(ctx);
+  boost::ecuyer1988 base_rng(seed);
+  std::vector<double> params_r_constrained_vec;
+  if (unconstrained_parameters.size() != func->model->num_params_r()) {
+    throw std::runtime_error(
+        "The number of parameters does not match the number of unconstrained parameters in the model.");
+  }
+
+  if (unconstrained_parameters.ndim() != 1) {
+    throw std::runtime_error(
+      "Array of unconstrained parameters must be one dimensional"
+    );
+  }
+
+  // The params_r parameter is incorrectly declared as non-const in Stan C++.
+  // Unconstrained_parameters are cast from const to non-const below, as required by Stan (see model_base.hpp).
+  std::vector<double> params_r = std::vector<double>(unconstrained_parameters.data(), unconstrained_parameters.data() + unconstrained_parameters.size());
+  // constrain parameters to their defined support
+  std::exception_ptr p;
+  std::vector<int> params_i(func->model->num_params_i(), 0);
+  try {
+    // params_i, the third argument, is unused but the function requires it (see model_base.hpp).
+    func->model->write_array(base_rng, params_r, params_i, params_r_constrained_vec, include_tparams, include_gqs, &std::cout);
+  } catch (std::exception &ex) {
+    p = std::current_exception();
+  }
+
+  if (p)
+    std::rethrow_exception(p);
+
+  auto params_r_constrained = py::array_t<double>(params_r_constrained_vec.size());
+  double *ptr = static_cast<double *>(params_r_constrained.request().ptr);
+
+  for (size_t idx = 0; idx < params_r_constrained_vec.size(); idx++) {
+    ptr[idx] = params_r_constrained_vec[idx];
+  }
+
+  return params_r_constrained;
 }
 
 // See exported docstring
@@ -371,4 +498,10 @@ PYBIND11_MODULE(stan_services, m) {
   m.def("fixed_param_wrapper", &fixed_param_wrapper, py::arg("socket_filename"), py::arg("data"), py::arg("init"),
         py::arg("random_seed"), py::arg("chain"), py::arg("init_radius"), py::arg("num_samples"), py::arg("num_thin"),
         py::arg("refresh"), "Call stan::services::sample::fixed_param");
+  m.def("new_logp_ctx", &new_logp_ctx, py::arg("data"), "Create new logp function context");
+  m.def("free_logp_ctx", &free_logp_ctx, py::arg("ctx"), "Destroy a logp function context");
+  m.def("logp_func", &logp_func, py::arg("ctx"), "Return a C-function for computing logp values and gradients.");
+  m.def("num_unconstrained_parameters", &num_unconstrained_parameters, py::arg("ctx"), "Get the number of unconstrained parameters");
+  m.def("write_array_ctx", &write_array_ctx, py::arg("ctx"), py::arg("unconstrained_parameters"), py::arg("include_tparams"),
+        py::arg("include_gqs"), py::arg("seed"), "Save all parameters at unconstrained parameter position.");
 }
