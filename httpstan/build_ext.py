@@ -7,15 +7,37 @@ isort:skip_file
 # background: https://bugs.python.org/issue23102
 import setuptools  # noqa: F401
 
-import distutils.command.build_ext
+from distutils.command.build_ext import build_ext
+import distutils.sysconfig
 import distutils.core
 import io
 import os
 import sys
 import tempfile
 from typing import IO, Any, List, TextIO
+from pathlib import Path
 
 from httpstan.config import HTTPSTAN_DEBUG
+
+PACKAGE_DIR = Path(__file__).parent.resolve(strict=True)
+
+# Provide a custom function for building the stan_service module, so
+# that we can control library loading order.
+class stan_build_ext(build_ext):
+    def build_extensions(self) -> None:
+        self.compiler.set_executable(
+            "linker_so",
+            (
+                # The configured linking executable
+                f"{' '.join(distutils.sysconfig.get_config_vars('LDCXXSHARED'))} "
+                # Higher priority for the stan libraries
+                f"{self.compiler.library_dir_option(str(PACKAGE_DIR / 'lib'))} "
+                f"{self.compiler.runtime_library_dir_option(str(PACKAGE_DIR / 'lib'))} "
+                # The remaining default arguments specified in the system config
+                f"{' '.join(distutils.sysconfig.get_config_vars('LDFLAGS'))}"
+            )
+        )
+        return super().build_extensions()
 
 
 def _get_build_extension() -> distutils.command.build_ext.build_ext:  # type: ignore
@@ -24,7 +46,7 @@ def _get_build_extension() -> distutils.command.build_ext.build_ext:  # type: ig
     dist = distutils.core.Distribution()
     # Make sure build respects distutils configuration
     dist.parse_config_files(dist.find_config_files())  # type: ignore
-    build_extension = distutils.command.build_ext.build_ext(dist)  # type: ignore
+    build_extension = stan_build_ext(dist)
     build_extension.finalize_options()
     return build_extension
 

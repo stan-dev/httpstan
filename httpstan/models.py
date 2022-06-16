@@ -146,16 +146,20 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     libraries = ["sundials_cvodes", "sundials_idas", "sundials_nvecserial", "tbb"]
     if platform.system() == "Darwin":  # pragma: no cover
         libraries.extend(["tbbmalloc", "tbbmalloc_proxy"])
+
+    # Library dirs and runtime_library_dirs is injected in build_ext, so
+    # it doesn't need to be specified here.
+    # This is so that we can make sure the libraries are specified first in
+    # the command line arguments, so that the linker doesn't pick different
+    # versions of the libraries that might be available at some other location.
     extension = setuptools.Extension(
         f"stan_services_{stan_model_name}",  # filename only. Module name is "stan_services"
         language="c++",
         sources=[str(cpp_code_path)],
         define_macros=stan_macros,
         include_dirs=include_dirs,
-        library_dirs=[str(PACKAGE_DIR / "lib")],
         libraries=libraries,
         extra_compile_args=extra_compile_args,
-        extra_link_args=[f"-Wl,-rpath,{PACKAGE_DIR / 'lib'}"],
         extra_objects=[
             str((PACKAGE_DIR / "stan_services.cpp").with_suffix(".o")),
         ],
