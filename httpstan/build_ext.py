@@ -29,12 +29,12 @@ class stan_build_ext(build_ext):
             "linker_so",
             (
                 # The configured linking executable
-                f"{' '.join(distutils.sysconfig.get_config_vars('LDCXXSHARED'))} "
+                f"{distutils.sysconfig.get_config_vars().get('LDCXXSHARED', '')} "
                 # Higher priority for the stan libraries
                 f"{self.compiler.library_dir_option(str(PACKAGE_DIR / 'lib'))} "
                 f"{self.compiler.runtime_library_dir_option(str(PACKAGE_DIR / 'lib'))} "
                 # The remaining default arguments specified in the system config
-                f"{' '.join(distutils.sysconfig.get_config_vars('LDFLAGS'))}"
+                f"{distutils.sysconfig.get_config_vars().get('LDFLAGS', '')}"
             )
         )
         return super().build_extensions()
