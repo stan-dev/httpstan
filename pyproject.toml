@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "httpstan"
-version = "4.7.2"
+version = "4.8.0"
 description = "HTTP-based interface to Stan, a package for Bayesian inference."
 authors = [
   "Allen Riddell <riddella@indiana.edu>",
@@ -57,13 +57,14 @@ sphinxcontrib-redoc = "^1.6"
 
 [tool.black]
 line-length = 119
-exclude = 'httpstan/lib'
+exclude = 'httpstan/include'
 
 [tool.isort]
 profile = "black"
 combine_as_imports = true
 known_first_party = "httpstan,tests"
 known_local_folder = "helpers"
+skip_glob = ['httpstan/include/*']
 
 [tool.coverage.run]
 branch = true

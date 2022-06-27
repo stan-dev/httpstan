@@ -39,6 +39,7 @@ version = release = subprocess.check_output(["git", "describe", "--abbrev=0", "-
 autoapi_dirs = [os.path.join("..", "httpstan")]
 autoapi_ignore = [
     "*lib*",
+    "*include*",
     "*views.py",
     "*openapi.py",
 ]
