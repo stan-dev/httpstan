@@ -7,13 +7,13 @@ aiohttp~=3.6
 webargs~=5.5
 appdirs~=1.4
 
-sphinx~=3.1 # BSD
-sphinx-autoapi~=1.2
-sphinx-rtd-theme<0.6,>=0.5
-sphinxcontrib-openapi~=0.5
+sphinx~=4.2 # BSD
+sphinx-autoapi~=1.8.4
+sphinx-rtd-theme~=1.0.0
+sphinxcontrib-openapi~=0.7
 mistune==0.8.4  # see https://github.com/sphinx-contrib/openapi/issues/121
-sphinxcontrib-redoc~=1.5
+sphinxcontrib-redoc~=1.6
 
 # required for building OpenAPI spec
-apispec[yaml,validation]~=3.1
-marshmallow~=3.2  # needed for apidocs
+apispec[yaml,validation]~=4.0
+marshmallow~=3.10  # needed for apidocs
