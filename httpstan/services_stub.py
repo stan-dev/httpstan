@@ -158,11 +158,13 @@ async def call(
 
     # if an exception has already occurred, grab relevant info messages, add as context
     exception = future.exception()
-    if exception:
-        num_context_messages = 4
-        info_messages_for_context = []
+    if exception and len(exception.args) == 1:
         import gzip
         import json
+
+        original_exception_message = exception.args[0]  # e.g., from ValueError("Initialization failed.")
+        info_messages_for_context = []
+        num_context_messages = 4
 
         jsonlines = gzip.decompress(b"".join(compressed_parts)).decode()
         for line in jsonlines.split("\n")[:num_context_messages]:
@@ -172,10 +174,11 @@ async def call(
                 info_messages_for_context.append(info_message.strip())
             except json.JSONDecodeError:
                 pass
-        # hack to add the info messages to the first argument to the exception, for example
-        # ValueError("Initialization failed.") -> ValueError("Initialization faied. Rejecting initial value: Log probability ...")
-        if info_messages_for_context and len(exception.args) == 1:
-            exception.args = (f"{exception.args[0]} {' '.join(info_messages_for_context)} ...",)
+        # add the info messages to the original exception message. For example,
+        # ValueError("Initialization failed.") -> ValueError("Initialization failed. Rejecting initial value: Log probability ...")
+        if info_messages_for_context:
+            new_exception_message = f"{original_exception_message} {' '.join(info_messages_for_context)} ..."
+            exception.args = (new_exception_message,)
 
     # `result()` method will raise exceptions, if any
     future.result()
