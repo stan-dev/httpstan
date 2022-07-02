@@ -25,9 +25,22 @@ buffer space the stan::services call will never return.
 
 Signing key
 ===========
-The signing key for httpstan has id ``CB808C34B3BFFD03EFD2751597A78E5BFA431C9A``. Git tags are signed with this key
+The signing key for httpstan is the same as for pystan.
+The key has id ``85107A96512971B8C55932085D5D0CFF0A51A83D``.
+Git tags are signed with this key.
 
 Accounts with Continuous Integration, PyPI, and Readthedocs
 ===========================================================
 
 - readthedocs: riddell-stan
+
+Making a release of `httpstan`
+==============================
+
+The following assumes you are releasing httpstan version 4.8.0. Adjust as needed.
+
+- Tag a release: `git tag -u 85107A96512971B8C55932085D5D0CFF0A51A83D -m "httpstan 4.8.0" 4.8.0`
+- Push the tag to upstream: `git push upstream 4.8.0`
+- Wait a few days, the stan-dev/httpstan-wheels repository tries to build (and publish) new wheels every two days.
+
+If no wheels appear, check <https://github.com/stan-dev/httpstan-wheels/actions>.
