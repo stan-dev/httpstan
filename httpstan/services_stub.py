@@ -93,7 +93,8 @@ async def call(
             kwargs[arg] = typing.cast(typing.Any, arguments.lookup_default(arguments.Method[method.upper()], arg))
 
     with socket.socket(socket.AF_UNIX, type=socket.SOCK_STREAM) as socket_:
-        _, socket_filename = tempfile.mkstemp(prefix="httpstan_", suffix=".sock")
+        temp_fd, socket_filename = tempfile.mkstemp(prefix="httpstan_", suffix=".sock")
+        os.close(temp_fd)
         os.unlink(socket_filename)
         socket_.bind(socket_filename)
         socket_.listen(4)  # three stan callback writers, one stan callback logger
