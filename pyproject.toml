@@ -18,8 +18,8 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: ISC License (ISCL)",
 ]
+# include: poetry automatically excludes paths mentioned in .gitignore, selectively add back
 include = [
-  # poetry automatically excludes paths mentioned in .gitignore, selectively add back
   "httpstan/*.o",
   "httpstan/*.cpp",
   "httpstan/lib/libsundials*",
