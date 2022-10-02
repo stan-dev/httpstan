@@ -1,4 +1,4 @@
-from distutils.extension import Extension
+from setuptools.extension import Extension
 
 # empty extension module so build machinery recognizes package as platform-specific
 extensions = [
