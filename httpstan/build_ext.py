@@ -7,8 +7,8 @@ isort:skip_file
 # background: https://bugs.python.org/issue23102
 import setuptools  # noqa: F401
 
-import distutils.command.build_ext
-import distutils.core
+import setuptools._distutils.command.build_ext as build_ext
+import setuptools._distutils.core
 import io
 import os
 import sys
@@ -18,18 +18,18 @@ from typing import IO, Any, List, TextIO
 from httpstan.config import HTTPSTAN_DEBUG
 
 
-def _get_build_extension() -> distutils.command.build_ext.build_ext:  # type: ignore
+def _get_build_extension() -> build_ext.build_ext:  # type: ignore
     if HTTPSTAN_DEBUG:  # pragma: no cover
-        distutils.log.set_verbosity(distutils.log.DEBUG)  # type: ignore
-    dist = distutils.core.Distribution()
+        setuptools._distutils.log.set_verbosity(setuptools._distutils.log.DEBUG)  # type: ignore
+    dist = setuptools._distutils.core.Distribution()
     # Make sure build respects distutils configuration
     dist.parse_config_files(dist.find_config_files())  # type: ignore
-    build_extension = distutils.command.build_ext.build_ext(dist)  # type: ignore
+    build_extension = build_ext.build_ext(dist)  # type: ignore
     build_extension.finalize_options()
     return build_extension
 
 
-def run_build_ext(extensions: List[distutils.core.Extension], build_lib: str) -> str:
+def run_build_ext(extensions: List[setuptools._distutils.core.Extension], build_lib: str) -> str:
     """Configure and call `build_ext.run()`, capturing stderr.
 
     Compiled extension module will be placed in `build_lib`.
