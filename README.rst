@@ -29,7 +29,7 @@ Documentation: `https://httpstan.readthedocs.org <https://httpstan.readthedocs.o
 Requirements
 ============
 
-- macOS or Linux.
+- Linux or macOS
 - C++ compiler: gcc ≥9.0 or clang ≥10.0.
 
 Background
@@ -50,6 +50,26 @@ Install
 ::
 
     $ python3 -m pip install httpstan
+
+In order to install httpstan from PyPI make sure your system satisfies the requirements:
+
+- Linux or macOS
+- x86-64 CPU
+- C++ compiler: gcc ≥9.0 or clang ≥10.0.
+
+If your system uses a different kind of CPU, you should be able to install from source using the following commands:
+
+::
+
+    # Build shared libraries
+    make
+
+    # Build the httpstan wheel on your system
+    python3 -m pip install poetry
+    python3 -m poetry build
+
+    # Install the wheel
+    python3 -m pip install dist/*.whl
 
 
 Usage
