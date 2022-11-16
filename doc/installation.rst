@@ -21,7 +21,8 @@ If your system uses a different kind of CPU, you should be able to install from 
 Installation from source
 ========================
 
-Download the source code associated with a release from `https://github.com/stan-dev/httpstan/tags <https://github.com/stan-dev/httpstan/tags>`. Extract the contents of the ``zip`` or ``tar.gz`` release bundle. Alternatively, clone the git repository and checkout the commit associated with the version of httpstan you want.
+Download the source code associated with a release from `https://github.com/stan-dev/httpstan/tags <https://github.com/stan-dev/httpstan/tags>`_.
+Extract the contents of the ``zip`` or ``tar.gz`` release bundle. Alternatively, clone the git repository and checkout the commit associated with the version of httpstan you want.
 
 Executing the following commands will build and install httpstan from source:
 
