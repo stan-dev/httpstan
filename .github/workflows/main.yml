@@ -37,7 +37,7 @@ jobs:
       # export test dependencies from pyproject.toml, install them
       - name: Install dependencies
         run: |
-          poetry export -f requirements.txt --without-hashes --dev -o requirements.txt \
+          poetry export -f requirements.txt --without-hashes --with dev -o requirements.txt \
           && pip install -r requirements.txt
 
       - name: Check code
