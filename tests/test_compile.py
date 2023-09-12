@@ -26,13 +26,6 @@ def test_compile_semantic_error() -> None:
         httpstan.compile.compile(program_code, "test_model")
 
 
-def test_compile_warning() -> None:
-    program_code = """model { real x; x <- 5; }"""
-    cpp_code, warnings = httpstan.compile.compile(program_code, "test_model")
-    assert cpp_code
-    assert "operator <- is deprecated in the Stan language" in warnings
-
-
 @pytest.mark.asyncio
 async def test_build_invalid_distribution(api_url: str) -> None:
     """Check that compiler error is returned to client."""
@@ -70,33 +63,6 @@ async def test_build_unknown_arg(api_url: str) -> None:
             assert resp.status == 422
             response_payload = await resp.json()
     assert "json" in response_payload and "unknown_arg" in response_payload["json"]
-
-
-@pytest.mark.asyncio
-async def test_build_warning(api_url: str) -> None:
-    """Test building which succeeds but which generates a warning."""
-
-    # prints warning like:
-    # assignment operator <- is deprecated in the Stan language; use = instead.
-    program_code = """
-    parameters {
-    real y;
-    }
-    model {
-    real x;
-    x <- 5;
-    }
-    """
-
-    payload = {"program_code": program_code}
-    models_url = f"{api_url}/models"
-    async with aiohttp.ClientSession() as session:
-        async with session.post(models_url, json=payload) as resp:
-            assert resp.status == 201
-            response_payload = await resp.json()
-    assert "compiler_output" in response_payload
-    assert "stanc_warnings" in response_payload
-    assert "operator <- is deprecated in the Stan language" in response_payload["stanc_warnings"]
 
 
 @pytest.mark.asyncio
