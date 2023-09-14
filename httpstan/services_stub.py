@@ -157,29 +157,26 @@ async def call(
         fh.close()
     httpstan.cache.dump_fit(b"".join(compressed_parts), fit_name)
 
-    # if an exception has already occurred, grab relevant info messages, add as context
-    exception = future.exception()
-    if exception and len(exception.args) == 1:
+    # `result()` method will raise exceptions, if any
+    error_code = future.result()
+    # deal with error (but no exception)
+    if error_code != 0:  # 0 is OK
         import gzip
         import json
 
-        original_exception_message = exception.args[0]  # e.g., from ValueError("Initialization failed.")
-        info_messages_for_context = []
-        num_context_messages = 4
+        error_messages, warn_messages = [], []
+        num_warn_messages = 4
 
         jsonlines = gzip.decompress(b"".join(compressed_parts)).decode()
-        for line in jsonlines.split("\n")[:num_context_messages]:
+        for line in jsonlines.split("\n"):
             try:
                 message = json.loads(line)
-                info_message = message["values"].pop().replace("info:", "")
-                info_messages_for_context.append(info_message.strip())
+                logger_message = message["values"].pop()
+                if logger_message.startswith("warn:"):
+                    warn_messages.append(logger_message.replace("warn:", "").strip())
+                elif logger_message.startswith("error:"):
+                    error_messages.append(logger_message.replace("error:", "").strip())
             except json.JSONDecodeError:
                 pass
-        # add the info messages to the original exception message. For example,
-        # ValueError("Initialization failed.") -> ValueError("Initialization failed. Rejecting initial value: Log probability ...")
-        if info_messages_for_context:
-            new_exception_message = f"{original_exception_message} {' '.join(info_messages_for_context)} ..."
-            exception.args = (new_exception_message,)
-
-    # `result()` method will raise exceptions, if any
-    future.result()
+        exception_message = f"{' '.join(error_messages)} {' '.join(warn_messages[:num_warn_messages])}"
+        raise RuntimeError(exception_message)
