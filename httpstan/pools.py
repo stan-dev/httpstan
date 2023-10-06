@@ -19,8 +19,6 @@ def setup_pools(app: aiohttp.web.Application) -> None:
     """
     fit_executor = None
 
-    # Use `get_context` to get a package-specific multiprocessing context.
-    # See "Contexts and start methods" in the `multiprocessing` docs for details.
     def create_fit_executor(shutdown=False):
         nonlocal fit_executor
 
@@ -34,6 +32,8 @@ def setup_pools(app: aiohttp.web.Application) -> None:
         if fit_executor is not None:
             return fit_executor
 
+        # Use `get_context` to get a package-specific multiprocessing context.
+        # See "Contexts and start methods" in the `multiprocessing` docs for details.
         fit_executor = concurrent.futures.ProcessPoolExecutor(
             mp_context=mp.get_context("fork"), initializer=init_call_worker
         )
