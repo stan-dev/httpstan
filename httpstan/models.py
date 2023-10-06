@@ -164,7 +164,6 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
             str((PACKAGE_DIR / "stan_services.cpp").with_suffix(".o")),
         ],
     )
-
     extensions = [extension]
     build_lib = str(model_directory_path)
 
