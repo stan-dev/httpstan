@@ -21,8 +21,15 @@ def setup_pools(app: aiohttp.web.Application) -> None:
 
     # Use `get_context` to get a package-specific multiprocessing context.
     # See "Contexts and start methods" in the `multiprocessing` docs for details.
-    def create_fit_executor():
+    def create_fit_executor(shutdown=False):
         nonlocal fit_executor
+
+        if shutdown:
+            if fit_executor is None:
+                return
+
+            fit_executor.shutdown()
+            return
 
         if fit_executor is not None:
             return fit_executor
@@ -37,4 +44,4 @@ def setup_pools(app: aiohttp.web.Application) -> None:
 
 
 async def shutdown_pools(app: aiohttp.web.Application) -> None:
-    app["create_fit_executor"]().shutdown()
+    app["create_fit_executor"](shutdown=True)
