@@ -9,6 +9,8 @@
 # this Makefile copy libraries built by the other Makefile into their
 # httpstan-specific directories.
 
+.PHONY: clean default
+
 PYBIND11_VERSION := 2.9.2
 RAPIDJSON_VERSION := 1.1.0
 STAN_VERSION := 2.33.0
@@ -233,3 +235,11 @@ httpstan/stan_services.o:
 		-fvisibility=hidden \
 		-c $< -o $@ \
 		$(HTTPSTAN_EXTRA_COMPILE_ARGS)
+
+clean:
+	rm -rf dist
+	rm -rf build
+	rm -rf httpstan/include
+	rm -rf httpstan/lib
+	rm httpstan/stanc
+	rm httpstan/stan_services.o
