@@ -3,13 +3,13 @@
 Handlers are separated from the endpoint names. Endpoints are defined in
 `httpstan.routes`.
 """
-import asyncio
 import functools
 import gzip
 import http
 import logging
 import re
 import traceback
+from types import CoroutineType
 from typing import Optional, Sequence, cast
 
 import aiohttp.web
@@ -364,7 +364,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         request.app["operations"][operation_name] = operation_dict
         return aiohttp.web.json_response(operation_dict, status=201)
 
-    async def _services_call_done(operation: dict, coroutine: asyncio.Future) -> None:
+    async def _services_call_done(operation: dict, coroutine: CoroutineType) -> None:
         """Called when services call (i.e., an operation) is done.
 
         This needs to handle both successful and exception-raising calls.
