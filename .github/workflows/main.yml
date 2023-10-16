@@ -57,3 +57,59 @@ jobs:
         run: |
           pip install --pre pystan
           python -c'import stan;assert stan.build("parameters {real y;} model {y ~ normal(0,1);}").sample()["y"] is not None'
+
+
+  M1_builds:
+    name: httpstan builds on M1 MacOS
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest-xlarge]
+        python-version: ["3.10", "3.11"] # 3.{7,8,9} aren't released yet, see https://github.com/actions/python-versions/releases
+#        python-version: ["3.10", "3.11", "3.12"] # seems as though python 3.12 ships without distutils, need to revisit for a solution
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install poetry
+        run: pip install "poetry~=1.5"
+
+      - name: Build libraries used by Stan
+        env:
+          STANC_ARCH: ${{ matrix.stanc_vers }}
+        run: make -j2
+
+      # export test dependencies from pyproject.toml, install them
+      - name: Install dependencies
+        run: |
+          poetry export -f requirements.txt --without-hashes --with dev -o requirements.txt \
+          && pip install -r requirements.txt
+
+      - name: Check code
+        run: scripts/check
+
+      - name: Build and Install wheel
+        run: |
+          poetry build -v
+          python -m pip install dist/*.whl
+
+      - name: Run tests
+        run: python -m pytest -s -v tests
+
+      - name: Test PyStan compatibility
+        run: |
+          pip install --pre pystan
+          python -c'import stan;assert stan.build("parameters {real y;} model {y ~ normal(0,1);}").sample()["y"] is not None'
+
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: |
+            dist
+            !dist/*.tar.gz
