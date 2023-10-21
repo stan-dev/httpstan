@@ -21,6 +21,8 @@ jobs:
             python-version: "3.11"
           - os: macos-11.0
             python-version: "3.11"
+          - os: macos-12-large
+            python-version: "3.11"
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
