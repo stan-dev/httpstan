@@ -13,10 +13,14 @@ jobs:
         include:
           - os: ubuntu-22.04
             python-version: "3.11"
+          - os: ubuntu-22.04
+            python-version: "3.12"
           - os: macos-11.0
             python-version: "3.10"
           - os: macos-11.0
             python-version: "3.11"
+          - os: macos-11.0
+            python-version: "3.12"
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
@@ -38,8 +42,10 @@ jobs:
           poetry export -f requirements.txt --without-hashes --with dev -o requirements.txt \
           && pip install -r requirements.txt
 
+      # disable building docs (included in checks) under Python 3.12, sphinx dependencies do not work
       - name: Check code
         run: scripts/check
+        if: ${{ matrix.python-version != 3.12 }}
 
       - name: Build and Install wheel
         run: |
