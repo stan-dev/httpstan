@@ -15,5 +15,5 @@ jsonschema>=4.10.0,<4.18.0  # newer versions break sphinxcontrib-openapi
 sphinxcontrib-redoc~=1.6
 
 # required for building OpenAPI spec
-apispec[yaml,validation]~=4.0
+apispec[yaml,validation]~=6.0
 marshmallow~=3.10  # needed for apidocs
