@@ -7,6 +7,7 @@ import logging
 
 import aiohttp.web
 
+import httpstan.pools
 import httpstan.routes
 
 try:
@@ -41,5 +42,7 @@ def make_app() -> aiohttp.web.Application:
     httpstan.routes.setup_routes(app)
     # startup and shutdown tasks
     app["operations"] = {}
+    httpstan.pools.setup_pools(app)
     app.on_cleanup.append(_warn_unfinished_operations)
+    app.on_cleanup.append(httpstan.pools.shutdown_pools)
     return app

@@ -8,14 +8,11 @@ Unix domain socket.
 """
 import asyncio
 import collections
-import concurrent.futures
 import functools
 import io
 import logging
-import multiprocessing as mp
 import os
 import select
-import signal
 import socket
 import tempfile
 import typing
@@ -23,17 +20,9 @@ import zlib
 
 import httpstan.cache
 import httpstan.models
-import httpstan.services.arguments as arguments
 from httpstan.config import HTTPSTAN_DEBUG
+from httpstan.services import arguments
 
-
-# Use `get_context` to get a package-specific multiprocessing context.
-# See "Contexts and start methods" in the `multiprocessing` docs for details.
-def init_worker() -> None:
-    signal.signal(signal.SIGINT, signal.SIG_IGN)  # ignore KeyboardInterrupt
-
-
-executor = concurrent.futures.ProcessPoolExecutor(mp_context=mp.get_context("fork"), initializer=init_worker)
 logger = logging.getLogger("httpstan")
 
 
@@ -59,6 +48,7 @@ async def call(
     function_name: str,
     model_name: str,
     fit_name: str,
+    executor,
     logger_callback: typing.Optional[typing.Callable] = None,
     **kwargs: dict,
 ) -> None:
