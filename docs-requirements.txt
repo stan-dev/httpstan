@@ -7,8 +7,8 @@ aiohttp~=3.6
 webargs~=5.5
 appdirs~=1.4
 
-sphinx~=4.2 # BSD
-sphinx-autoapi~=1.8.4
+sphinx~=7.2 # BSD
+sphinx-autoapi~=3.0.0
 sphinx-rtd-theme~=1.0.0
 sphinxcontrib-openapi>=0.8.1,<0.9
 jsonschema>=4.10.0,<4.18.0  # newer versions break sphinxcontrib-openapi
