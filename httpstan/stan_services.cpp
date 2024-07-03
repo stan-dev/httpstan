@@ -19,6 +19,8 @@
 
 namespace py = pybind11;
 
+using rng_t = boost::random::mixmax;
+
 // forward declaration for function defined in another translation unit
 stan::model::model_base &new_model(stan::io::var_context &data_context, unsigned int seed, std::ostream *msg_stream);
 
@@ -203,7 +205,7 @@ std::vector<double> log_prob_grad(py::dict data, const std::vector<double> &unco
 // See exported docstring
 std::vector<double> write_array(py::dict data, const std::vector<double> &unconstrained_parameters,
                                 bool include_tparams = true, bool include_gqs = true) {
-  boost::ecuyer1988 base_rng(0);
+  rng_t base_rng(0);
   std::vector<double> params_r_constrained;
   stan::io::array_var_context &var_context = new_array_var_context(data);
   // random_seed, the second argument, is unused but the function requires it.
