@@ -5,7 +5,7 @@ they do they will likely encounter an ``ImportError`` due to the fact that they
 have not installed ``apispec``.
 
 """
-from typing import Callable
+from typing import Optional
 
 import apispec
 import apispec.ext.marshmallow
@@ -25,11 +25,12 @@ class DocPlugin(apispec.BasePlugin):
     def init_spec(self, spec: apispec.APISpec) -> None:
         super().init_spec(spec)
 
-    def operation_helper(self, operations: dict, view: Callable, **kwargs: dict) -> None:
+    def operation_helper(self, path: Optional[str], operations: dict, **kwargs: dict) -> None:  # type: ignore
         """Operation helper that parses docstrings for operations. Adds a
         ``func`` parameter to `apispec.APISpec.path`.
         """
-        doc_operations = apispec.yaml_utils.load_operations_from_docstring(view.__doc__)
+        view = kwargs["view"]
+        doc_operations = apispec.yaml_utils.load_operations_from_docstring(view.__doc__)  # type: ignore
         operations.update(doc_operations)
 
 
@@ -55,5 +56,4 @@ def openapi_spec() -> apispec.APISpec:
     spec.path(path="/v1/models/{model_id}/fits/{fit_id}", view=views.handle_get_fit)
     spec.path(path="/v1/models/{model_id}/fits/{fit_id}", view=views.handle_delete_fit)
     spec.path(path="/v1/operations/{operation_id}", view=views.handle_get_operation)
-    apispec.utils.validate_spec(spec)
     return spec

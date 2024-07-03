@@ -41,7 +41,7 @@ numpy = "^1.19"
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"
 pytest-asyncio = "^0.15"
-apispec = {version = "^4.0", extras = ["yaml", "validation"]}
+apispec = {version = "^6.0", extras = ["yaml"]}
 autoflake = "^1.4"
 black = "22.3.0"
 isort = "^5.9"
@@ -51,9 +51,8 @@ flake8 = "^7.0.0"
 # NOTE: when changing these, update docs-requirements.txt
 sphinx = "^7.2"
 sphinx-autoapi = "^3.0.0"
-sphinx-rtd-theme = "^1.0.0"
-sphinxcontrib-openapi = "^0.8.1"
-jsonschema = ">=4.10.0,<4.18.0"  # newer versions break sphinxcontrib-openapi
+sphinx-rtd-theme = "^2.0.0"
+sphinxcontrib-openapi = "^0.8.4"
 sphinxcontrib-redoc = "^1.6"
 
 [tool.black]
