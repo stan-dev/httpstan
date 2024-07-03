@@ -36,7 +36,7 @@ aiohttp = "^3.7"
 appdirs = "^1.4"
 webargs = "^8.0"
 marshmallow = "^3.10"
-numpy = "^1.19"
+numpy = ">=1.19"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"
