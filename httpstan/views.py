@@ -3,13 +3,13 @@
 Handlers are separated from the endpoint names. Endpoints are defined in
 `httpstan.routes`.
 """
-import asyncio
 import functools
 import gzip
 import http
 import logging
 import re
 import traceback
+from types import CoroutineType
 from typing import Optional, Sequence, cast
 
 import aiohttp.web
@@ -364,7 +364,7 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         request.app["operations"][operation_name] = operation_dict
         return aiohttp.web.json_response(operation_dict, status=201)
 
-    def _services_call_done(operation: dict, future: asyncio.Future) -> None:
+    async def _services_call_done(operation: dict, coroutine: CoroutineType) -> None:
         """Called when services call (i.e., an operation) is done.
 
         This needs to handle both successful and exception-raising calls.
@@ -374,11 +374,12 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
             future: Finished future
 
         """
-        # either the call succeeded or it raised an exception.
-        operation["done"] = True
 
-        exc = future.exception()
-        if exc:
+        try:
+            await coroutine
+            logger.info("Operation `%s` finished.", operation["name"])
+            operation["result"] = schemas.Fit().load(operation["metadata"]["fit"])
+        except Exception as exc:
             # e.g., "hmc_nuts_diag_e_adapt_wrapper() got an unexpected keyword argument, ..."
             # e.g., dimension errors in variable declarations
             # e.g., initialization failed
@@ -394,9 +395,9 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
                 httpstan.cache.delete_fit(operation["metadata"]["fit"]["name"])
             except KeyError:
                 pass
-        else:
-            logger.info(f"Operation `{operation['name']}` finished.")
-            operation["result"] = schemas.Fit().load(operation["metadata"]["fit"])
+        finally:
+            # either the call succeeded or it raised an exception.
+            operation["done"] = True
 
     operation_name = f'operations/{name.split("/")[-1]}'
     operation_dict = schemas.Operation().load(
@@ -414,12 +415,16 @@ async def handle_create_fit(request: aiohttp.web.Request) -> aiohttp.web.Respons
         operation["metadata"]["progress"] = iteration_info_re.findall(message).pop().decode()
 
     logger_callback_partial = functools.partial(logger_callback, operation_dict)
-    task = asyncio.create_task(
-        services_stub.call(
-            function, model_name, operation_dict["metadata"]["fit"]["name"], logger_callback_partial, **args
-        )
+
+    call = services_stub.call(
+        function,
+        model_name,
+        operation_dict["metadata"]["fit"]["name"],
+        request.app["create_fit_executor"](),
+        logger_callback_partial,
+        **args,
     )
-    task.add_done_callback(functools.partial(_services_call_done, operation_dict))
+    await _services_call_done(operation_dict, call)
     request.app["operations"][operation_name] = operation_dict
     return aiohttp.web.json_response(operation_dict, status=201)
 
