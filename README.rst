@@ -65,7 +65,7 @@ If your system uses a different kind of CPU, you should be able to install from 
     make
 
     # Build the httpstan wheel on your system
-    python -m pip install "poetry~=1.7.1"
+    python -m pip install "poetry~=1.8"
     python3 -m poetry build
 
     # Install the wheel
