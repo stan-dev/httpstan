@@ -1,4 +1,5 @@
 """Test Schema validation."""
+
 import pytest
 from marshmallow.exceptions import ValidationError
 

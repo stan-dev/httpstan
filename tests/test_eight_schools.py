@@ -1,4 +1,5 @@
 """Test sampling from Eight Schools model."""
+
 import typing
 
 import aiohttp

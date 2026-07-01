@@ -1,4 +1,5 @@
 """Test user-provided initial values for parameters."""
+
 from typing import Any
 
 import numpy as np

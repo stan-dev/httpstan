@@ -1,4 +1,5 @@
 """Test log_prob endpoint through a Gaussian toy problem."""
+
 import random
 
 import aiohttp

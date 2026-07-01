@@ -1,4 +1,5 @@
 """Test compiling functions."""
+
 import re
 
 import aiohttp

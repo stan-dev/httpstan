@@ -1,4 +1,5 @@
 """Test transform_inits endpoint through a simple model."""
+
 import random
 
 import aiohttp

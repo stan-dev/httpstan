@@ -1,4 +1,5 @@
 """Test sampling from linear regression model."""
+
 import numpy as np
 import pytest
 

@@ -1,4 +1,5 @@
 """Test sampling from Bernoulli model with fixed_param "method"."""
+
 import numpy as np
 import pytest
 

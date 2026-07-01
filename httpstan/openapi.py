@@ -5,6 +5,7 @@ they do they will likely encounter an ``ImportError`` due to the fact that they
 have not installed ``apispec``.
 
 """
+
 from typing import Optional
 
 import apispec

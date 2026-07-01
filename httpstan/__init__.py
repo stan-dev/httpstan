@@ -4,6 +4,7 @@ Configures logging and exposes httpstan.__version__.
 
 :license: ISC, see LICENSE for more details.
 """
+
 import importlib.metadata
 import logging
 

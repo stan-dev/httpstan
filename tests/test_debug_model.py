@@ -1,4 +1,5 @@
 """Test debug mode."""
+
 import pytest
 
 import httpstan.config

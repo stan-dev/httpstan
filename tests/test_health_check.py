@@ -1,4 +1,5 @@
 """Test health check route."""
+
 import aiohttp
 import pytest
 

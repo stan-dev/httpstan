@@ -1,4 +1,5 @@
 """Test sampling from a model with many parameters."""
+
 import pytest
 
 import helpers
