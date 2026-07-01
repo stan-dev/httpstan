@@ -3,18 +3,11 @@
 Configure the server and schedule startup and shutdown tasks.
 """
 
-import asyncio
 import logging
 
 import aiohttp.web
 
 import httpstan.routes
-
-try:
-    from uvloop import EventLoopPolicy
-except ImportError:
-    EventLoopPolicy = asyncio.DefaultEventLoopPolicy
-
 
 logger = logging.getLogger("httpstan")
 
