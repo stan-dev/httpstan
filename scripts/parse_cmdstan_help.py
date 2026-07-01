@@ -1,4 +1,5 @@
 """Parse CmdStan 'help-all' output into machine readable JSON."""
+
 import argparse
 import collections
 import json

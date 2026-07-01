@@ -1,4 +1,5 @@
 """Test write_array endpoint through a simple model."""
+
 import random
 
 import aiohttp

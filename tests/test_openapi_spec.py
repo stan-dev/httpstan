@@ -1,4 +1,5 @@
 """Test OpenAPI spec generation."""
+
 import httpstan.openapi
 
 

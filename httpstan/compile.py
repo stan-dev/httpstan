@@ -1,4 +1,5 @@
 """Runs the `stanc` binary in a subprocess to compile a Stan program."""
+
 import importlib.resources
 import os
 import subprocess

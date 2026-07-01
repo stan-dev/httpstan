@@ -1,4 +1,5 @@
 """Test sampling from Bernoulli model."""
+
 import aiohttp
 import pytest
 

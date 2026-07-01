@@ -1,4 +1,5 @@
 """Lookup arguments and argument default values for stan::services functions."""
+
 import enum
 import functools
 import importlib.resources

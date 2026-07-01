@@ -1,4 +1,5 @@
 """Test sampling from models where exceptions during sampling occur."""
+
 import aiohttp
 import pytest
 

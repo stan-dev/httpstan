@@ -3,6 +3,7 @@
 ``python3 -m httpstan`` starts a server listening on ``127.0.0.1``.
 
 """
+
 import argparse
 
 import aiohttp.web

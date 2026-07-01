@@ -1,4 +1,5 @@
 """Miscellaneous helper routines."""
+
 from typing import Tuple  # noqa: flake8 bug, #118
 from typing import List
 

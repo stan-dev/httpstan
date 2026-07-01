@@ -1,4 +1,5 @@
 """Helper functions for Stan fits."""
+
 import base64
 import hashlib
 import pickle

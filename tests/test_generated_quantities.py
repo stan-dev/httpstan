@@ -1,4 +1,5 @@
 """Superficial test of `generated quantities` block."""
+
 import numpy as np
 import pytest
 

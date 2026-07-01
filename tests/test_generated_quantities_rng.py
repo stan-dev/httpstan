@@ -1,4 +1,5 @@
 """Test generated quantities rng."""
+
 import typing
 
 import numpy as np

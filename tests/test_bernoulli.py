@@ -1,4 +1,5 @@
 """Test sampling from Bernoulli model."""
+
 import asyncio
 
 import aiohttp

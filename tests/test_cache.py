@@ -1,4 +1,5 @@
 """Test services function argument lookups."""
+
 import pytest
 
 import httpstan.app
