@@ -140,7 +140,7 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     if extra_compile_args is None:
         extra_compile_args = [
             "-O3",
-            "-std=c++14",
+            "-std=c++17",
             "-Wno-sign-compare",
         ]
 
