@@ -116,7 +116,6 @@ User Guide
 .. _CmdStan: http://mc-stan.org/interfaces/cmdstan.html
 .. _PyStan: http://mc-stan.org/interfaces/pystan.html
 .. _Stan: http://mc-stan.org/
-.. _`OpenAPI documentation for httpstan`: api.html
 
 .. |pypi| image:: https://img.shields.io/pypi/v/httpstan.svg
     :target: https://pypi.org/project/httpstan/

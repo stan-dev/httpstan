@@ -12,15 +12,6 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinxcontrib.openapi",
-    "sphinxcontrib.redoc",
-]
-
-redoc = [
-    {
-        "name": "httpstan API",
-        "page": "api",
-        "spec": "openapi.yaml",
-    },
 ]
 
 source_suffix = ".rst"
