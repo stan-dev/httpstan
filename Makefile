@@ -215,7 +215,7 @@ PYTHON_PLATINCLUDE ?= -I$(shell python3 -c'import sysconfig;print(sysconfig.get_
 # the following variables should match those in httpstan/models.py
 # One include directory is absent: `model_directory_path` as this only
 # exists when the extension module is ready to be linked
-HTTPSTAN_EXTRA_COMPILE_ARGS ?= -O3 -std=c++14
+HTTPSTAN_EXTRA_COMPILE_ARGS ?= -O3 -std=c++17
 HTTPSTAN_MACROS = -DBOOST_DISABLE_ASSERTS -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION -DSTAN_THREADS -D_REENTRANT -D_GLIBCXX_USE_CXX11_ABI=0
 HTTPSTAN_INCLUDE_DIRS = -Ihttpstan -Ihttpstan/include
 

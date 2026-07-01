@@ -9,7 +9,7 @@ extensions = [
         include_dirs=["httpstan/include"],
         language="c++",
         # -fvisibility=hidden required by pybind11
-        extra_compile_args=["-fvisibility=hidden", "-std=c++14"],
+        extra_compile_args=["-fvisibility=hidden", "-std=c++17"],
     )
 ]
 
