@@ -1,8 +1,10 @@
 #ifndef HTTPSTAN_SOCKET_WRITER_HPP
 #define HTTPSTAN_SOCKET_WRITER_HPP
 
-#include <boost/asio.hpp>
-#include <iostream>
+#include "unix_socket_client.hpp"
+#include <cstddef>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 #include <stan/callbacks/writer.hpp>
 #include <string>
 #include <vector>
@@ -62,11 +64,9 @@ enum class ProcessingAdaptationState {
 class socket_writer : public writer {
 private:
   /**
-   * Output
+   * Output socket
    */
-
-  boost::asio::io_service io_service;
-  boost::asio::local::stream_protocol::socket socket;
+  httpstan::unix_socket_client socket_;
 
   /**
    * Channel name with which to prefix strings sent to the socket.
@@ -77,14 +77,10 @@ private:
   ProcessingAdaptationState processing_adaptation_state_ = ProcessingAdaptationState::BEFORE_PROCESSING_ADAPTATION;
 
   /**
-   * Send a JSON message followed by a newline to a socket.
+   * Send a JSON message followed by a newline to the socket.
    */
-  std::size_t send_message(const rapidjson::StringBuffer &buffer,
-                           boost::asio::local::stream_protocol::socket &socket) {
-    boost::asio::streambuf stream_buffer;
-    std::ostream output_stream(&stream_buffer);
-    output_stream << buffer.GetString() << "\n";
-    return boost::asio::write(socket, stream_buffer);
+  void send_message(const rapidjson::StringBuffer &buffer) {
+    socket_.send_line(buffer.GetString(), buffer.GetSize());
   }
 
 public:
@@ -92,19 +88,11 @@ public:
    * Constructs a writer with an output socket
    * and an optional prefix for comments.
    *
-   * @param[in, out] output ostream
+   * @param[in] socket_filename path of the Unix-domain socket to connect to
    * @param[in] message_prefix will be prefixed to each string which is sent to the socket. Default is "".
    */
   explicit socket_writer(const std::string &socket_filename, const std::string &message_prefix = "")
-      : socket(io_service), message_prefix_(message_prefix) {
-    boost::asio::local::stream_protocol::endpoint ep(socket_filename);
-    socket.connect(ep);
-  }
-
-  /**
-   * Destructor
-   */
-  ~socket_writer() { socket.close(); }
+      : socket_(socket_filename), message_prefix_(message_prefix) {}
 
   /**
    * Writes a sequence of names.
@@ -138,7 +126,7 @@ public:
       }
       writer.EndArray();
 
-      send_message(buffer, socket);
+      send_message(buffer);
       return;
 
     } else if (message_prefix_ == "init_writer:") {
@@ -188,7 +176,7 @@ public:
 
       writer.EndObject();
 
-      send_message(buffer, socket);
+      send_message(buffer);
       return;
     } else if (message_prefix_ == "init_writer:") {
       rapidjson::StringBuffer buffer;
@@ -211,7 +199,7 @@ public:
 
       writer.EndObject();
 
-      send_message(buffer, socket);
+      send_message(buffer);
       return;
     } else if (message_prefix_ == "sample_writer:") {
       if (sample_fields_.empty())
@@ -242,7 +230,7 @@ public:
 
       writer.EndObject();
 
-      send_message(buffer, socket);
+      send_message(buffer);
       return;
     }
   }
@@ -278,7 +266,7 @@ public:
 
       writer.EndObject();
 
-      send_message(buffer, socket);
+      send_message(buffer);
       return;
     } else if (message_prefix_ == "init_writer:") {
       throw std::runtime_error("Unexpected string vector for init writer.");
@@ -316,7 +304,7 @@ public:
 
       writer.EndObject();
 
-      send_message(buffer, socket);
+      send_message(buffer);
       return;
     }
   }
