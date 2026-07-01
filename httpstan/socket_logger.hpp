@@ -1,8 +1,8 @@
 #ifndef HTTPSTAN_SOCKET_LOGGER_HPP
 #define HTTPSTAN_SOCKET_LOGGER_HPP
 
-#include <boost/asio.hpp>
-#include <iostream>
+#include "unix_socket_client.hpp"
+#include <cstddef>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <sstream>
@@ -28,8 +28,7 @@ private:
   /**
    * Output socket
    */
-  boost::asio::io_service io_service;
-  boost::asio::local::stream_protocol::socket socket;
+  httpstan::unix_socket_client socket_;
 
   /**
    * Channel name with which to prefix strings sent to the socket.
@@ -37,14 +36,10 @@ private:
   std::string message_prefix_;
 
   /**
-   * Send a JSON message followed by a newline to a socket.
+   * Send a JSON message followed by a newline to the socket.
    */
-  std::size_t send_message(const rapidjson::StringBuffer &buffer,
-                           boost::asio::local::stream_protocol::socket &socket) {
-    boost::asio::streambuf stream_buffer;
-    std::ostream output_stream(&stream_buffer);
-    output_stream << buffer.GetString() << "\n";
-    return boost::asio::write(socket, stream_buffer);
+  void send_message(const rapidjson::StringBuffer &buffer) {
+    socket_.send_line(buffer.GetString(), buffer.GetSize());
   }
 
 public:
@@ -52,19 +47,11 @@ public:
    * Constructs a logger with an output socket
    * and an optional prefix for comments.
    *
-   * @param[in, out] output socket
+   * @param[in] socket_filename path of the Unix-domain socket to connect to
    * @param[in] message_prefix will be prefixed to each string which is sent to the socket. Default is "".
    */
   explicit socket_logger(const std::string &socket_filename, const std::string &message_prefix = "")
-      : socket(io_service), message_prefix_(message_prefix) {
-    boost::asio::local::stream_protocol::endpoint ep(socket_filename);
-    socket.connect(ep);
-  }
-
-  /**
-   * Destructor
-   */
-  ~socket_logger() { socket.close(); }
+      : socket_(socket_filename), message_prefix_(message_prefix) {}
 
   /**
    * Logs a message with debug log level
@@ -89,7 +76,7 @@ public:
 
     writer.EndObject();
 
-    send_message(buffer, socket);
+    send_message(buffer);
   }
 
   /**
@@ -115,7 +102,7 @@ public:
 
     writer.EndObject();
 
-    send_message(buffer, socket);
+    send_message(buffer);
   }
 
   void info(const std::string &message) {
@@ -136,7 +123,7 @@ public:
 
     writer.EndObject();
 
-    send_message(buffer, socket);
+    send_message(buffer);
   }
 
   void info(const std::stringstream &message) {
@@ -157,7 +144,7 @@ public:
 
     writer.EndObject();
 
-    send_message(buffer, socket);
+    send_message(buffer);
   }
 
   void warn(const std::string &message) {
@@ -178,7 +165,7 @@ public:
 
     writer.EndObject();
 
-    send_message(buffer, socket);
+    send_message(buffer);
   }
 
   void warn(const std::stringstream &message) {
@@ -199,7 +186,7 @@ public:
 
     writer.EndObject();
 
-    send_message(buffer, socket);
+    send_message(buffer);
   }
 
   void error(const std::string &message) {
@@ -220,7 +207,7 @@ public:
 
     writer.EndObject();
 
-    send_message(buffer, socket);
+    send_message(buffer);
   }
 
   void error(const std::stringstream &message) {
@@ -241,7 +228,7 @@ public:
 
     writer.EndObject();
 
-    send_message(buffer, socket);
+    send_message(buffer);
   }
 
   void fatal(const std::string &message) {
@@ -262,7 +249,7 @@ public:
 
     writer.EndObject();
 
-    send_message(buffer, socket);
+    send_message(buffer);
   }
 
   void fatal(const std::stringstream &message) {
@@ -283,7 +270,7 @@ public:
 
     writer.EndObject();
 
-    send_message(buffer, socket);
+    send_message(buffer);
   }
 };
 

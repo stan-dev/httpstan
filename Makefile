@@ -219,7 +219,7 @@ HTTPSTAN_EXTRA_COMPILE_ARGS ?= -O3 -std=c++17
 HTTPSTAN_MACROS = -DBOOST_DISABLE_ASSERTS -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION -DSTAN_THREADS -D_REENTRANT -D_GLIBCXX_USE_CXX11_ABI=0
 HTTPSTAN_INCLUDE_DIRS = -Ihttpstan -Ihttpstan/include
 
-httpstan/stan_services.o: httpstan/stan_services.cpp httpstan/socket_logger.hpp httpstan/socket_writer.hpp | $(INCLUDES)
+httpstan/stan_services.o: httpstan/stan_services.cpp httpstan/socket_logger.hpp httpstan/socket_writer.hpp httpstan/unix_socket_client.hpp | $(INCLUDES)
 
 httpstan/stan_services.o:
 	# -fvisibility=hidden required by pybind11
