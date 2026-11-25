@@ -118,7 +118,9 @@ httpstan/include/stan: | build/stan-$(STAN_VERSION)
 	@rm -rf $@
 	cp -r build/stan-$(STAN_VERSION)/src/stan $@
 
-httpstan/include/stan/math: | build/math-$(MATH_VERSION)
+# Copy Stan Math after Stan: the httpstan/include/stan rule removes and recreates
+# the directory into which Stan Math is copied.
+httpstan/include/stan/math: | build/math-$(MATH_VERSION) httpstan/include/stan
 	@mkdir -p httpstan/include/stan
 	@rm -rf $@ httpstan/include/stan/math.hpp httpstan/include/stan/math
 	cp build/math-$(MATH_VERSION)/stan/math.hpp httpstan/include/stan
