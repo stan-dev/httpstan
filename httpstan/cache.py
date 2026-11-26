@@ -5,6 +5,7 @@ Functions in this module manage the Stan model cache and related caches.
 
 import logging
 import shutil
+import sys
 import typing
 from importlib.machinery import EXTENSION_SUFFIXES
 from pathlib import Path
@@ -37,14 +38,21 @@ def fit_path(fit_name: str) -> Path:
 
 def delete_model_directory(model_name: str) -> None:
     """Delete the directory in which a model and associated fits are stored."""
-    shutil.rmtree(model_directory(model_name), ignore_errors=True)
+    if sys.platform == "win32":
+        # Do not silently claim successful deletion if a Windows file is locked.
+        try:
+            shutil.rmtree(model_directory(model_name))
+        except FileNotFoundError:
+            pass
+    else:
+        shutil.rmtree(model_directory(model_name), ignore_errors=True)
 
 
 def dump_services_extension_module_compiler_output(compiler_output: str, model_name: str) -> None:
     """Dump compiler output from building a model-specific stan::services extension module."""
     model_directory_ = model_directory(model_name)
     model_directory_.mkdir(parents=True, exist_ok=True)
-    with (model_directory_ / "stderr.log").open("w") as fh:
+    with (model_directory_ / "stderr.log").open("w", encoding="utf-8") as fh:
         fh.write(compiler_output)
 
 
@@ -54,7 +62,7 @@ def load_services_extension_module_compiler_output(model_name: str) -> str:
     model_directory_ = model_directory(model_name)
     if not model_directory_.exists():
         raise KeyError(f"Directory for `{model_name}` at `{model_directory}` does not exist.")
-    with (model_directory_ / "stderr.log").open() as fh:
+    with (model_directory_ / "stderr.log").open(encoding="utf-8") as fh:
         return fh.read()
 
 
@@ -81,7 +89,7 @@ def dump_stanc_warnings(stanc_warnings: str, model_name: str) -> None:
     """Dump stanc warnings associated with a model."""
     model_directory_ = model_directory(model_name)
     model_directory_.mkdir(parents=True, exist_ok=True)
-    with (model_directory_ / "stanc.log").open("w") as fh:
+    with (model_directory_ / "stanc.log").open("w", encoding="utf-8") as fh:
         fh.write(stanc_warnings)
 
 
@@ -91,7 +99,7 @@ def load_stanc_warnings(model_name: str) -> str:
     model_directory_ = model_directory(model_name)
     if not model_directory_.exists():
         raise KeyError(f"Directory for `{model_name}` at `{model_directory}` does not exist.")
-    with (model_directory_ / "stanc.log").open() as fh:
+    with (model_directory_ / "stanc.log").open(encoding="utf-8") as fh:
         return fh.read()
 
 

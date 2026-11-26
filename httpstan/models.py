@@ -11,12 +11,15 @@ import hashlib
 import importlib
 import importlib.resources
 import logging
+import os
 import platform
+import shutil
 import sys
+import tempfile
 from importlib.machinery import EXTENSION_SUFFIXES
 from pathlib import Path
 from types import ModuleType
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import setuptools
 
@@ -26,6 +29,24 @@ import httpstan.compile
 
 PACKAGE_DIR = Path(__file__).parent.resolve(strict=True)
 logger = logging.getLogger("httpstan")
+_windows_dll_directory: Optional[object] = None
+_windows_loaded_modules: Dict[Path, ModuleType] = {}
+_windows_load_dir: Optional[Path] = None
+
+
+def _windows_module_path(module_path: Path) -> Path:
+    """Load a separate copy so the original model cache remains deletable."""
+    global _windows_dll_directory, _windows_load_dir
+    if _windows_dll_directory is None:
+        _windows_dll_directory = getattr(os, "add_dll_directory")(str(PACKAGE_DIR / "lib"))
+    if _windows_load_dir is None:
+        root = httpstan.cache.cache_directory() / "loaded"
+        root.mkdir(parents=True, exist_ok=True)
+        _windows_load_dir = Path(tempfile.mkdtemp(prefix=f"{os.getpid()}-", dir=root))
+    target = _windows_load_dir / module_path.name
+    if not target.exists():
+        shutil.copy2(module_path, target)
+    return target
 
 
 def calculate_model_name(program_code: str) -> str:
@@ -60,6 +81,10 @@ def calculate_model_name(program_code: str) -> str:
     hash.update(sys.version.encode())
     # include sys.executable in hash to account for different `venv`s
     hash.update(sys.executable.encode())
+    if sys.platform == "win32":
+        from httpstan._windows import cache_identity
+
+        hash.update(cache_identity())
 
     id = base64.b32encode(hash.digest()).decode().lower()
     return f"models/{id}"
@@ -83,6 +108,11 @@ def import_services_extension_module(model_name: str) -> ModuleType:
         module_path = next(filter(lambda p: p.suffix in EXTENSION_SUFFIXES, model_directory.iterdir()))
     except (FileNotFoundError, StopIteration):
         raise KeyError(f"No module for `{model_name}` found in `{model_directory}`")
+    if sys.platform == "win32":
+        if module_path in _windows_loaded_modules:
+            return _windows_loaded_modules[module_path]
+        original_path = module_path
+        module_path = _windows_module_path(module_path)
     # The module name, which is independent of the filename, is always "stan_services". The module
     # name must be defined in stan_services.cpp, which is compiled before we know with which
     # specific stan model it will be linked with. Since we want to compile stan_services.cpp in
@@ -91,6 +121,8 @@ def import_services_extension_module(model_name: str) -> ModuleType:
     module: ModuleType = importlib.util.module_from_spec(spec)  # type: ignore
     spec.loader.exec_module(module)  # type: ignore
 
+    if sys.platform == "win32":
+        _windows_loaded_modules[original_path] = module
     return module
 
 
@@ -121,8 +153,15 @@ async def build_services_extension_module(program_code: str, extra_compile_args:
     stan_model_name = f"model_{model_name.split('/')[1]}"
     cpp_code, _ = httpstan.compile.compile(program_code, stan_model_name)
     cpp_code_path = model_directory_path / f"{stan_model_name}.cpp"
-    with cpp_code_path.open("w") as fh:
+    with cpp_code_path.open("w", encoding="utf-8") as fh:
         fh.write(cpp_code)
+
+    if sys.platform == "win32":
+        from httpstan._windows import build_model
+
+        return await asyncio.get_running_loop().run_in_executor(
+            None, build_model, cpp_code_path, model_directory_path, extra_compile_args or []
+        )
 
     include_dirs = [
         str(model_directory_path),

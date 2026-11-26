@@ -45,7 +45,7 @@ async def test_build_invalid_distribution(api_url: str) -> None:
 def test_compile_filename() -> None:
     program_code = "parameters {real y;} model {y ~ normal(0,1);}"
     cpp_code, _ = httpstan.compile.compile(program_code, "test_model")
-    assert re.search(r"httpstan_\S+/test_model.stan", cpp_code)
+    assert re.search(r"httpstan_\S+[/\\]+test_model\.stan", cpp_code)
 
 
 @pytest.mark.asyncio

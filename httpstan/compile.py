@@ -3,6 +3,7 @@
 import importlib.resources
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import List, Tuple, Union
@@ -22,10 +23,11 @@ def compile(program_code: str, stan_model_name: str) -> Tuple[str, str]:
         ValueError: Syntax or semantic error in program code.
 
     """
-    with importlib.resources.path(__package__, "stanc") as stanc_binary:
+    binary_name = "stanc.exe" if sys.platform == "win32" else "stanc"
+    with importlib.resources.path(__package__, binary_name) as stanc_binary:
         with tempfile.TemporaryDirectory(prefix="httpstan_") as tmpdir:
             filepath = Path(tmpdir) / f"{stan_model_name}.stan"
-            with filepath.open("w") as fh:
+            with filepath.open("w", encoding="utf-8") as fh:
                 fh.write(program_code)
             run_args: List[Union[os.PathLike, str]] = [
                 stanc_binary,
@@ -35,7 +37,7 @@ def compile(program_code: str, stan_model_name: str) -> Tuple[str, str]:
                 "--print-cpp",
                 str(filepath),
             ]
-            completed_process = subprocess.run(run_args, capture_output=True, timeout=1)
+            completed_process = subprocess.run(run_args, capture_output=True, timeout=5 if sys.platform == "win32" else 1)
     stderr = completed_process.stderr.decode().strip()
     if completed_process.returncode != 0:
         raise ValueError(stderr)

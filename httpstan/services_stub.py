@@ -11,13 +11,16 @@ import asyncio
 import collections
 import concurrent.futures
 import functools
+import hmac
 import io
 import logging
 import multiprocessing as mp
 import os
+import secrets
 import select
 import signal
 import socket
+import sys
 import tempfile
 import typing
 import zlib
@@ -34,7 +37,21 @@ def init_worker() -> None:
     signal.signal(signal.SIGINT, signal.SIG_IGN)  # ignore KeyboardInterrupt
 
 
-executor = concurrent.futures.ProcessPoolExecutor(mp_context=mp.get_context("fork"), initializer=init_worker)
+# Do not create another executor merely by importing this module in a spawned worker.
+executor: typing.Optional[concurrent.futures.ProcessPoolExecutor] = (
+    None
+    if sys.platform == "win32"
+    else concurrent.futures.ProcessPoolExecutor(mp_context=mp.get_context("fork"), initializer=init_worker)
+)
+
+
+def _get_executor() -> concurrent.futures.ProcessPoolExecutor:
+    global executor
+    if executor is None:
+        executor = concurrent.futures.ProcessPoolExecutor(mp_context=mp.get_context("spawn"), initializer=init_worker)
+    return executor
+
+
 logger = logging.getLogger("httpstan")
 
 
@@ -93,24 +110,38 @@ async def call(
         if arg not in kwargs:
             kwargs[arg] = typing.cast(typing.Any, arguments.lookup_default(arguments.Method[method.upper()], arg))
 
-    with socket.socket(socket.AF_UNIX, type=socket.SOCK_STREAM) as socket_:
-        temp_fd, socket_filename = tempfile.mkstemp(prefix="httpstan_", suffix=".sock")
-        os.close(temp_fd)
-        os.unlink(socket_filename)
-        socket_.bind(socket_filename)
+    windows = sys.platform == "win32"
+    family = socket.AF_INET if windows else socket.AF_UNIX
+    with socket.socket(family, type=socket.SOCK_STREAM) as socket_:
+        secret = b""
+        if windows:
+            # Bind only to loopback, and authenticate each native callback.
+            if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+                socket_.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            socket_.bind(("127.0.0.1", 0))
+            secret = secrets.token_hex(32).encode("ascii")
+            socket_filename = f"tcp:{socket_.getsockname()[1]}:{secret.decode('ascii')}"
+        else:
+            temp_fd, socket_filename = tempfile.mkstemp(prefix="httpstan_", suffix=".sock")
+            os.close(temp_fd)
+            os.unlink(socket_filename)
+            socket_.bind(socket_filename)
         socket_.listen(4)  # three stan callback writers, one stan callback logger
 
         lazy_function_wrapper = _make_lazy_function_wrapper(function_basename, model_name)
         lazy_function_wrapper_partial = functools.partial(lazy_function_wrapper, socket_filename, **kwargs)
 
         # If HTTPSTAN_DEBUG is set block until sampling is complete. Do not use an executor.
-        if HTTPSTAN_DEBUG:  # pragma: no cover
+        if HTTPSTAN_DEBUG and not windows:  # pragma: no cover
             future: asyncio.Future = asyncio.Future()
             logger.debug("Calling stan::services function with debug mode on.")
             print("Warning: httpstan debug mode is on! `num_samples` must be set to a small number (e.g., 10).")
             future.set_result(lazy_function_wrapper_partial())
+        elif HTTPSTAN_DEBUG:
+            # The Windows sender must run concurrently with its socket reader.
+            future = asyncio.get_running_loop().run_in_executor(None, lazy_function_wrapper_partial)
         else:
-            future = asyncio.get_running_loop().run_in_executor(executor, lazy_function_wrapper_partial)  # type: ignore
+            future = asyncio.get_running_loop().run_in_executor(_get_executor(), lazy_function_wrapper_partial)  # type: ignore
 
         messages_files: typing.Mapping[socket.socket, io.BytesIO] = collections.defaultdict(io.BytesIO)
         # using a wbits value which makes things compatible with gzip
@@ -118,6 +149,7 @@ async def call(
             functools.partial(zlib.compressobj, level=zlib.Z_BEST_SPEED, wbits=zlib.MAX_WBITS | 16)
         )
         potential_readers = [socket_]
+        pending_auth: typing.Dict[socket.socket, bytes] = {}
 
         while True:
             # note: timeout of 0.01 seems to work well based on measurements
@@ -126,15 +158,41 @@ async def call(
                 if s is socket_:
                     conn, _ = s.accept()
                     logger.debug("Opened socket connection to a socket_logger or socket_writer.")
+                    if windows and len(potential_readers) >= 16:
+                        conn.close()
+                        logger.warning("Rejected excess callback connection.")
+                        continue
                     potential_readers.append(conn)
+                    if windows:
+                        pending_auth[conn] = b""
                     continue
-                message = s.recv(8192)
+                try:
+                    message = s.recv(8192)
+                except ConnectionResetError:
+                    if not windows:
+                        raise
+                    message = b""
                 if not len(message):
                     # `close` called on other end
                     s.close()
                     logger.debug("Closed socket connection to a socket_logger or socket_writer.")
                     potential_readers.remove(s)
+                    pending_auth.pop(s, None)
                     continue
+                if s in pending_auth:
+                    prefix = pending_auth[s] + message
+                    token, separator, message = prefix.partition(b"\n")
+                    if not separator and len(token) <= len(secret):
+                        pending_auth[s] = token
+                        continue
+                    del pending_auth[s]
+                    if not separator or not hmac.compare_digest(token, secret):
+                        s.close()
+                        potential_readers.remove(s)
+                        logger.warning("Rejected unauthenticated callback connection.")
+                        continue
+                    if not message:
+                        continue
                 # Only trigger callback if message has topic `logger`.
                 if logger_callback and b'"logger"' in message:
                     logger_callback(message)
@@ -142,6 +200,12 @@ async def call(
             # if `potential_readers == [socket_]` then either (1) no connections
             # have been opened or (2) all connections have been closed.
             if not readable:
+                if windows and future.done():
+                    # A local unrelated connection must not delay a completed job.
+                    for conn in list(pending_auth):
+                        conn.close()
+                        potential_readers.remove(conn)
+                        del pending_auth[conn]
                 if potential_readers == [socket_] and future.done():
                     logger.debug(
                         f"Stan services function `{function_basename}` returned without problems or raised a C++ exception."

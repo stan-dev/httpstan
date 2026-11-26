@@ -6,9 +6,16 @@
 #include <cstring>
 #include <stdexcept>
 #include <string>
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <algorithm>
+#include <climits>
+#else
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#endif
 
 namespace httpstan {
 
@@ -18,10 +25,78 @@ namespace httpstan {
  *
  * It is a small RAII replacement for the sliver of <code>boost::asio</code>
  * that httpstan used: connect to a filesystem path, write newline-terminated
- * messages, and close on destruction. Only Linux and macOS are supported.
+ * messages, and close on destruction. On Windows the endpoint is an
+ * authenticated TCP loopback connection because CPython lacks AF_UNIX.
  */
 class unix_socket_client {
 private:
+#ifdef _WIN32
+  SOCKET fd_ = INVALID_SOCKET;
+
+  struct winsock_session {
+    winsock_session() {
+      WSADATA data{};
+      int error = WSAStartup(MAKEWORD(2, 2), &data);
+      if (error != 0) {
+        throw std::runtime_error("WSAStartup: " + std::to_string(error));
+      }
+    }
+    ~winsock_session() { WSACleanup(); }
+  };
+  winsock_session session_;
+
+  void close_socket() noexcept {
+    if (fd_ != INVALID_SOCKET) {
+      ::closesocket(fd_);
+      fd_ = INVALID_SOCKET;
+    }
+  }
+
+  void write_all(const char *data, std::size_t remaining) {
+    while (remaining > 0) {
+      int chunk = static_cast<int>((std::min)(remaining, static_cast<std::size_t>(INT_MAX)));
+      int n = ::send(fd_, data, chunk, 0);
+      if (n == SOCKET_ERROR) {
+        int error = WSAGetLastError();
+        if (error == WSAEINTR) continue;
+        throw std::runtime_error("send: " + std::to_string(error));
+      }
+      if (n == 0) throw std::runtime_error("send: zero bytes written");
+      data += n;
+      remaining -= static_cast<std::size_t>(n);
+    }
+  }
+
+public:
+  explicit unix_socket_client(const std::string &endpoint) {
+    // endpoint = tcp:<port>:<random secret>; never include the secret in errors.
+    if (endpoint.rfind("tcp:", 0) != 0) throw std::runtime_error("invalid callback endpoint");
+    std::size_t split = endpoint.find(':', 4);
+    if (split == std::string::npos) throw std::runtime_error("invalid callback endpoint");
+    int port = std::stoi(endpoint.substr(4, split - 4));
+    std::string secret = endpoint.substr(split + 1);
+    if (port <= 0 || port > 65535 || secret.size() != 64) {
+      throw std::runtime_error("invalid callback endpoint");
+    }
+    sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(static_cast<unsigned short>(port));
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    fd_ = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (fd_ == INVALID_SOCKET) throw std::runtime_error("socket: " + std::to_string(WSAGetLastError()));
+    try {
+      if (::connect(fd_, reinterpret_cast<const sockaddr *>(&addr), sizeof(addr)) == SOCKET_ERROR) {
+        throw std::runtime_error("connect: " + std::to_string(WSAGetLastError()));
+      }
+      send_line(secret.data(), secret.size());
+    } catch (...) {
+      close_socket();
+      throw;
+    }
+  }
+
+  ~unix_socket_client() { close_socket(); }
+#else
   int fd_ = -1;
 
   /** Throw a std::runtime_error describing the current errno. */
@@ -94,6 +169,9 @@ public:
     }
   }
 
+#endif
+
+public:
   // Non-copyable and non-movable: the file descriptor is uniquely owned and the
   // client is only ever constructed in place.
   unix_socket_client(const unix_socket_client &) = delete;

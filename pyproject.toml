@@ -21,11 +21,17 @@ classifiers = [
 # include: poetry automatically excludes paths mentioned in .gitignore, selectively add back
 include = [
   "httpstan/*.o",
+  {path = "httpstan/*.obj", format = ["wheel"]},
+  {path = "httpstan/lib/*.lib", format = ["wheel"]},
+  {path = "httpstan/lib/*.dll", format = ["wheel"]},
+  {path = "httpstan/lib/TBB-LICENSE.txt", format = ["wheel"]},
+  {path = "httpstan/stanc.exe", format = ["wheel"]},
+  {path = "httpstan/windows-build.json", format = ["wheel"]},
   "httpstan/*.cpp",
   "httpstan/lib/libsundials*",
   "httpstan/lib/libtbb*",
   "httpstan/stanc",
-  "httpstan/include/**/*",
+  {path = "httpstan/include/**/*", format = ["sdist", "wheel"]},
   "doc/openapi.yaml",
 ]
 

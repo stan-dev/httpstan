@@ -1,0 +1,110 @@
+name: httpstan Windows experiment
+
+on:
+  push:
+    branches:
+      - 'windows-test/**'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Compiler and toolchain
+        type: choice
+        default: official-clang
+        options:
+          - all
+          - official-clang
+          - official-msvc
+          - portable-clang
+          - portable-msvc
+          - official-clang-od
+          - official-msvc-od
+      through:
+        description: Last stage to attempt
+        type: choice
+        default: smoke
+        options:
+          - headers
+          - services
+          - smoke
+          - full
+
+permissions:
+  contents: read
+
+jobs:
+  select:
+    runs-on: ubuntu-24.04
+    outputs:
+      profiles: ${{ steps.profiles.outputs.profiles }}
+      through: ${{ steps.profiles.outputs.through }}
+    steps:
+      - id: profiles
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_PROFILE: ${{ inputs.profile }}
+          INPUT_THROUGH: ${{ inputs.through }}
+        run: |
+          profile="${INPUT_PROFILE:-${REF_NAME#windows-test/}}"
+          through="${INPUT_THROUGH:-smoke}"
+          case "$profile" in
+            *-full) profile="${profile%-full}"; through=full ;;
+            *-headers) profile="${profile%-headers}"; through=headers ;;
+            *-services) profile="${profile%-services}"; through=services ;;
+          esac
+          case "$profile" in
+            all) profiles='["official-clang","official-msvc","portable-clang","portable-msvc"]' ;;
+            official-clang|official-msvc|portable-clang|portable-msvc|official-clang-od|official-msvc-od)
+              profiles="[\"$profile\"]" ;;
+            *) echo "Unknown experimental profile: $profile"; exit 1 ;;
+          esac
+          echo "profiles=$profiles" >> "$GITHUB_OUTPUT"
+          echo "through=$through" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: select
+    name: ${{ matrix.profile }} / ${{ needs.select.outputs.through }}
+    runs-on: windows-2022
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: ${{ fromJSON(needs.select.outputs.profiles) }}
+    env:
+      HTTPSTAN_ACCEPT_MSVC_LICENSE: ${{ vars.HTTPSTAN_ACCEPT_MSVC_LICENSE }}
+      HTTPSTAN_PORTABLE_MSVC_VERSION: ${{ vars.HTTPSTAN_PORTABLE_MSVC_VERSION }}
+      HTTPSTAN_PORTABLE_SDK_VERSION: ${{ vars.HTTPSTAN_PORTABLE_SDK_VERSION }}
+      PYTHONUTF8: '1'
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Build and test (${{ matrix.profile }})
+        shell: cmd
+        run: python -u scripts\windows_ci.py --profile ${{ matrix.profile }} --through ${{ needs.select.outputs.through }}
+      - name: Stage summary
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path windows-logs/summary.txt) {
+            Get-Content windows-logs/summary.txt | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY
+          }
+      - name: Upload diagnostics (even on failure)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-logs-${{ matrix.profile }}
+          path: windows-logs/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload experimental wheel (if built)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: httpstan-wheel-${{ matrix.profile }}
+          path: dist/*.whl
+          if-no-files-found: ignore
+          retention-days: 14

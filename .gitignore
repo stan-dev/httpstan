@@ -74,3 +74,10 @@ httpstan/include
 httpstan/stanc
 doc/openapi.yaml
 httpstan/*.o
+
+# Windows native build artifacts
+*.pyd
+httpstan/*.obj
+httpstan/stanc.exe
+httpstan/windows-build.json
+windows-logs/

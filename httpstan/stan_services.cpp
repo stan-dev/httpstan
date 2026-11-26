@@ -1,4 +1,10 @@
+#ifdef _WIN32
+// Winsock2 must precede windows.h (which may be included by Stan or pybind11).
+#include <winsock2.h>
+#endif
+
 #include <exception>
+#include <memory>
 #include <ostream>
 #include <string>
 
@@ -274,11 +280,10 @@ int hmc_nuts_diag_e_adapt_wrapper(std::string socket_filename, py::dict data, py
   stan::model::model_base &model = new_model(var_context, (unsigned int)random_seed, &std::cout);
   stan::io::array_var_context &init_var_context = new_array_var_context(init);
   stan::callbacks::interrupt interrupt;
-  stan::callbacks::logger *logger = new stan::callbacks::socket_logger(socket_filename, "logger:");
-  stan::callbacks::writer *init_writer = new stan::callbacks::socket_writer(socket_filename, "init_writer:");
-  stan::callbacks::writer *sample_writer = new stan::callbacks::socket_writer(socket_filename, "sample_writer:");
-  stan::callbacks::writer *diagnostic_writer =
-      new stan::callbacks::socket_writer(socket_filename, "diagnostic_writer:");
+  auto logger = std::make_unique<stan::callbacks::socket_logger>(socket_filename, "logger:");
+  auto init_writer = std::make_unique<stan::callbacks::socket_writer>(socket_filename, "init_writer:");
+  auto sample_writer = std::make_unique<stan::callbacks::socket_writer>(socket_filename, "sample_writer:");
+  auto diagnostic_writer = std::make_unique<stan::callbacks::socket_writer>(socket_filename, "diagnostic_writer:");
   std::exception_ptr p;
   py::gil_scoped_release release;
   try {
@@ -292,10 +297,10 @@ int hmc_nuts_diag_e_adapt_wrapper(std::string socket_filename, py::dict data, py
 
   delete &model;
   delete &init_var_context;
-  delete logger;
-  delete init_writer;
-  delete sample_writer;
-  delete diagnostic_writer;
+  logger.reset();
+  init_writer.reset();
+  sample_writer.reset();
+  diagnostic_writer.reset();
   delete &var_context;
 
   if (p)
@@ -312,11 +317,10 @@ int fixed_param_wrapper(std::string socket_filename, py::dict data, py::dict ini
   stan::model::model_base &model = new_model(var_context, (unsigned int)random_seed, &std::cout);
   stan::io::array_var_context &init_var_context = new_array_var_context(init);
   stan::callbacks::interrupt interrupt;
-  stan::callbacks::logger *logger = new stan::callbacks::socket_logger(socket_filename, "logger:");
-  stan::callbacks::writer *init_writer = new stan::callbacks::socket_writer(socket_filename, "init_writer:");
-  stan::callbacks::writer *sample_writer = new stan::callbacks::socket_writer(socket_filename, "sample_writer:");
-  stan::callbacks::writer *diagnostic_writer =
-      new stan::callbacks::socket_writer(socket_filename, "diagnostic_writer:");
+  auto logger = std::make_unique<stan::callbacks::socket_logger>(socket_filename, "logger:");
+  auto init_writer = std::make_unique<stan::callbacks::socket_writer>(socket_filename, "init_writer:");
+  auto sample_writer = std::make_unique<stan::callbacks::socket_writer>(socket_filename, "sample_writer:");
+  auto diagnostic_writer = std::make_unique<stan::callbacks::socket_writer>(socket_filename, "diagnostic_writer:");
   std::exception_ptr p;
   py::gil_scoped_release release;
   try {
@@ -329,10 +333,10 @@ int fixed_param_wrapper(std::string socket_filename, py::dict data, py::dict ini
 
   delete &model;
   delete &init_var_context;
-  delete logger;
-  delete init_writer;
-  delete sample_writer;
-  delete diagnostic_writer;
+  logger.reset();
+  init_writer.reset();
+  sample_writer.reset();
+  diagnostic_writer.reset();
   delete &var_context;
 
   if (p)
